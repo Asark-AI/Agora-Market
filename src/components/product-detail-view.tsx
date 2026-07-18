@@ -1,0 +1,171 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+import { Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCart } from '@/hooks/use-cart';
+import { useWishlist } from '@/hooks/use-wishlist';
+import type { StorefrontProduct } from '@/lib/storefront';
+import { buildProductSlug, buildSellerSlug, getCategoryLabel, getImageUrl } from '@/lib/storefront';
+
+export function ProductDetailView({ product, relatedProducts }: { product: StorefrontProduct; relatedProducts: StorefrontProduct[] }) {
+  const { addToCart } = useCart();
+  const { toggleWishlist, isFavorite } = useWishlist();
+  const [selectedImage, setSelectedImage] = useState(product.images?.[0] || '');
+  const [quantity, setQuantity] = useState(1);
+  const favorite = isFavorite(product.id);
+
+  const price = useMemo(() => product.discountPrice ?? product.price, [product]);
+  const oldPrice = useMemo(() => (product.discountPrice ? product.price : null), [product]);
+  const descriptionText = useMemo(() => {
+    if (typeof product.description === 'string') {
+      return product.description;
+    }
+
+    if (product.description && typeof product.description === 'object') {
+      return product.description.english || product.description.french || product.description.spanish || '';
+    }
+
+    return '';
+  }, [product.description]);
+
+  return (
+    <div className="space-y-8">
+      <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="space-y-4">
+          <div className="relative aspect-square overflow-hidden rounded-2xl border bg-muted">
+            <Image src={getImageUrl(selectedImage)} alt={product.name} fill className="object-cover" />
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            {(product.images || []).slice(0, 4).map((image, index) => (
+              <button key={`${image}-${index}`} type="button" onClick={() => setSelectedImage(image)} className={`relative aspect-square overflow-hidden rounded-xl border ${selectedImage === image ? 'ring-2 ring-primary' : ''}`}>
+                <Image src={getImageUrl(image)} alt={`${product.name} view ${index + 1}`} fill className="object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <div className="text-sm font-medium uppercase tracking-[0.2em] text-primary">{getCategoryLabel(product.categoryId)}</div>
+            <h1 className="mt-2 text-3xl font-bold font-headline">{product.name}</h1>
+            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1 text-amber-500">
+                <Star className="size-4 fill-current" />
+                <span className="font-semibold text-foreground">4.8</span>
+              </div>
+              <span>• 124 reviews</span>
+              <span>• In stock</span>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-muted/40 p-4">
+            <div className="flex items-end gap-3">
+              <span className="text-3xl font-semibold">GH₵{price.toFixed(2)}</span>
+              {oldPrice && <span className="text-lg text-muted-foreground line-through">GH₵{oldPrice.toFixed(2)}</span>}
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">Free shipping on orders above GH₵200</p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <div className="flex items-center rounded-full border px-3 py-2 text-sm">
+              <span className="mr-2 font-medium">Qty</span>
+              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="h-7 w-7 rounded-full bg-muted">−</button>
+              <span className="mx-3 min-w-6 text-center">{quantity}</span>
+              <button type="button" onClick={() => setQuantity((value) => value + 1)} className="h-7 w-7 rounded-full bg-muted">+</button>
+            </div>
+            <Button size="lg" onClick={() => addToCart(product as any)}>
+              <ShoppingCart className="mr-2 size-4" /> Add to cart
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => toggleWishlist(product)}>
+              <Heart className={`mr-2 size-4 ${favorite ? 'fill-current text-primary' : ''}`} /> Wishlist
+            </Button>
+            <Button size="icon" variant="outline" aria-label="Share product">
+              <Share2 className="size-4" />
+            </Button>
+          </div>
+
+          <Card>
+            <CardContent className="space-y-3 p-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2"><Truck className="size-4 text-primary" /> Estimated delivery 2–4 business days</div>
+              <div className="flex items-center gap-2"><ShieldCheck className="size-4 text-primary" /> Secure checkout with buyer protection</div>
+              <div className="flex items-center gap-2"><RotateCcw className="size-4 text-primary" /> Easy return policy within 7 days</div>
+            </CardContent>
+          </Card>
+
+          <div className="rounded-2xl border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold">Sold by</p>
+                <Link href={`/store/${buildSellerSlug({ id: product.sellerId, name: product.sellerName || 'Seller' })}`} className="text-primary hover:underline">
+                  {product.sellerName || 'Verified Seller'}
+                </Link>
+              </div>
+              <div className="text-right text-sm text-muted-foreground">
+                <div>4.9 seller rating</div>
+                <div>1.2k followers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Description</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-muted-foreground">
+            <p>{descriptionText}</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {(product.specifications || []).map((spec) => (
+                <div key={spec.name} className="rounded-xl border bg-muted/30 p-3">
+                  <div className="font-medium text-foreground">{spec.name}</div>
+                  <div>{spec.value}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Why buyers love this</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>Premium quality with reliable local delivery.</p>
+            <p>Fast response from seller and transparent shipping.</p>
+            <p>Highly rated and frequently restocked.</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {relatedProducts.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Related products</h2>
+            <Link href="/search" className="text-sm text-primary hover:underline">Browse all</Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {relatedProducts.map((item) => (
+              <Card key={item.id} className="overflow-hidden">
+                <Link href={`/product/${buildProductSlug(item)}`}>
+                  <div className="relative aspect-square">
+                    <Image src={getImageUrl(item.images?.[0])} alt={item.name} fill className="object-cover" />
+                  </div>
+                </Link>
+                <CardContent className="p-4">
+                  <Link href={`/product/${buildProductSlug(item)}`} className="font-medium hover:text-primary">{item.name}</Link>
+                  <div className="mt-2 text-sm font-semibold">GH₵{(item.discountPrice ?? item.price).toFixed(2)}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
