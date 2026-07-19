@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 
+process.env.NEXT_DISABLE_FONT_DOWNLOAD = process.env.NEXT_DISABLE_FONT_DOWNLOAD || '1';
+
 const nextConfig = {
   reactStrictMode: true,
   typescript: {
@@ -21,14 +23,7 @@ const nextConfig = {
       },
     ],
   },
-  webpack(config, { isServer, webpack }) {
-    if (isServer) {
-      // Ensure chunk filename template doesn't include folder prefix - runtime expects
-      // to prepend the `chunks/` directory itself when requiring chunks.
-      config.output = config.output || {};
-      config.output.chunkFilename = '[id].js';
-    }
-
+  webpack(config) {
     config.ignoreWarnings = [
       ...(config.ignoreWarnings || []),
       (warning) => {
