@@ -13,12 +13,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { QuickActions } from './quick-actions';
 
-export function DashboardHeader({ title }: { title: string }) {
-  const { toggleSidebar, setOpenMobile, openMobile } = useSidebar();
+export function DashboardHeader({
+  title,
+  onOpenMobileMenu,
+}: {
+  title: string;
+  onOpenMobileMenu: () => void;
+}) {
   const { user, seller, logOut } = useAuth();
   
   if (!user || !seller) return null;
@@ -33,9 +37,8 @@ export function DashboardHeader({ title }: { title: string }) {
               size="icon"
               variant="outline"
               className="md:hidden"
-              onClick={() => {
-                setOpenMobile(!openMobile);
-              }}
+              onClick={onOpenMobileMenu}
+              aria-label="Open dashboard navigation"
             >
               <Menu className="h-5 w-5" />
               <span className="sr-only">Open Menu</span>

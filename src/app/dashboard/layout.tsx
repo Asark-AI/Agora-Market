@@ -1,13 +1,15 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardNav } from '@/components/dashboard-nav';
+import { DashboardHeader } from '@/components/dashboard-header';
 import { PageLoader } from '@/components/page-loader';
 import { StorefrontEditorProvider } from '@/hooks/use-storefront-editor';
 import { AppTour } from '@/components/app-tour';
+import { businessConfig } from '@/lib/business-types';
 
 export default function AppDashboardLayout({
   children,
@@ -16,7 +18,9 @@ export default function AppDashboardLayout({
 }) {
   const { user, seller, loading, initDashboardListeners, clearListeners } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [fallbackTimer, setFallbackTimer] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setFallbackTimer(true), 3000);
@@ -47,6 +51,10 @@ export default function AppDashboardLayout({
     };
   }, [seller, initDashboardListeners, clearListeners]);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
   if (loading && !fallbackTimer) {
     return <PageLoader />;
   }
@@ -67,8 +75,12 @@ export default function AppDashboardLayout({
     <StorefrontEditorProvider>
       <SidebarProvider>
         <div className="flex h-screen w-full bg-background">
-          <DashboardNav />
-          <div className="flex flex-col flex-1 h-screen overflow-y-hidden">
+          <DashboardNav mobileOpen={mobileNavOpen} onMobileOpenChange={setMobileNavOpen} />
+          <div className="flex flex-col flex-1 h-screen overflow-x-hidden">
+            <DashboardHeader
+              title={seller ? businessConfig[seller.businessType]?.name || 'Dashboard' : 'Dashboard'}
+              onOpenMobileMenu={() => setMobileNavOpen(true)}
+            />
             <div className="relative flex-1 overflow-y-auto">
               <main className="p-4 sm:p-6 lg:p-8">
                 <SidebarInset>{children}</SidebarInset>
