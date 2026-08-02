@@ -7,13 +7,13 @@ import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? 'AIzaSyCgXWI7AkBhlfMjX0VDG4ETp-63jI3dyqE',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? 'ghana-trade-37f20.firebaseapp.com',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? 'ghana-trade-37f20',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? 'ghana-trade-37f20.firebasestorage.app',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '15751349335',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '1:15751349335:web:5ee881e5b0fc4996c80f12',
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? 'G-DRDCSJG8N2',
 };
 
 let app: FirebaseApp | null = null;
@@ -22,7 +22,7 @@ let db: Firestore | null = null;
 let storage: FirebaseStorage | null = null;
 
 try {
-  const hasValidApiKey = typeof process.env.NEXT_PUBLIC_FIREBASE_API_KEY === 'string' && process.env.NEXT_PUBLIC_FIREBASE_API_KEY.startsWith('AIza');
+  const hasValidApiKey = typeof firebaseConfig.apiKey === 'string' && firebaseConfig.apiKey.startsWith('AIza');
   if (hasValidApiKey) {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
