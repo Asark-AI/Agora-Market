@@ -1,0 +1,789 @@
+rules_version = '2';
+
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+    /*
+    ==========================================
+    SECURITY HELPER FUNCTIONS
+    ==========================================
+    */
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        request.auth.token.admin == true;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() &&
+        request.auth.token.superAdmin == true;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() &&
+        request.auth.uid == uid;
+    }
+
+    function hasFields(fields) {
+      return request.resource.data.keys()
+        .hasAll(fields);
+    }
+
+    function unchanged(field) {
+      return request.resource.data[field] ==
+             resource.data[field];
+    }
+
+    function isSellerOwner(sellerId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/sellers/$(sellerId)) &&
+        get(/databases/$(database)/documents/sellers/$(sellerId)).data.userId == request.auth.uid;
+    }
+
+    function isSellerDocumentOwner(documentId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/sellers/$(documentId)) &&
+        get(/databases/$(database)/documents/sellers/$(documentId)).data.userId == request.auth.uid;
+    }
+
+    /*
+    ==========================================
+    USERS
+
+    Collection:
+    /users/{uid}
+
+    Users can:
+    - Create their profile
+    - Read their profile
+    - Update their profile
+
+    Protected:
+    - UID cannot change
+    - Users cannot grant themselves roles
+    ==========================================
+    */
+
+    match /users/{uid} {
+
+      allow read: if isOwner(uid)
+                  || isAdmin()
+                  || isSuperAdmin();
+
+      allow create: if isOwner(uid)
+        && request.resource.data.id == uid;
+      allow update: if isOwner(uid)
+        && unchanged("id")
+        && (!("admin" in request.resource.data) || request.resource.data.admin != true)
+        && (!("superAdmin" in request.resource.data) || request.resource.data.superAdmin != true);
+      allow delete: if isOwner(uid)
+                    || isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    SELLER PROFILES
+    Collection:
+    /sellers/{uid}
+    Sellers manage their own profile.
+    Protected:
+    - UID cannot change
+    - Verification cannot be self-approved
+    ==========================================
+    */
+    match /sellers/{uid} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if isSignedIn()
+        && resource.data.userId == request.auth.uid;
+
+      /*
+      ======================================
+      SELLER CUSTOMERS
+      ======================================
+      */
+      match /customers/{customerId} {
+        allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      }
+
+
+      /*
+      ======================================
+      SELLER SUPPLIERS
+      ======================================
+      */
+      match /suppliers/{supplierId} {
+        allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      }
+
+      /*
+      ======================================
+      REPAIR REQUESTS
+      ======================================
+      */
+      match /repairRequests/{requestId} {
+        allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      }
+
+      /*
+      ======================================
+      STOCK ADJUSTMENTS
+      ======================================
+      */
+      match /stockAdjustments/{adjustmentId} {
+        allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      }
+
+      /*
+      ======================================
+      PAYOUT METHODS
+
+      Seller banking information
+      ======================================
+      */
+      match /payoutMethods/{methodId} {
+        allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      }
+
+      /*
+      ======================================
+      PURCHASE ORDERS
+      ======================================
+      */
+      match /purchaseOrders/{orderId} {
+        allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      }
+
+      /*
+      ======================================
+      SELLER MESSAGES
+
+      Seller inbox
+      ======================================
+      */
+      match /messages/{messageId} {
+        allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+        allow create: if (isSellerOwner(uid) || isSellerDocumentOwner(uid))
+          && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      }
+    }
+
+    /*
+    ==========================================
+    CUSTOMERS
+    General customer directory used by ordering flows.
+    ==========================================
+    */
+    match /customers/{customerId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    REPAIR REQUESTS
+    Buyer-created repair requests and seller updates.
+    ==========================================
+    */
+    match /repairRequests/{requestId} {
+      allow read: if isSignedIn()
+        && (
+          resource.data.buyerId == request.auth.uid
+          || isSellerOwner(resource.data.sellerId)
+        );
+      allow create: if isSignedIn()
+        && request.resource.data.buyerId == request.auth.uid;
+      allow update: if isSignedIn()
+        && (
+          resource.data.buyerId == request.auth.uid
+          || isSellerOwner(resource.data.sellerId)
+        );
+      allow delete: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    WITHDRAWAL REQUESTS
+    ==========================================
+    */
+    match /withdrawalRequests/{requestId} {
+      allow read: if isSignedIn()
+        && isSellerOwner(resource.data.sellerId);
+      allow create: if isSignedIn()
+        && exists(/databases/$(database)/documents/sellers/$(request.resource.data.sellerId))
+        && get(/databases/$(database)/documents/sellers/$(request.resource.data.sellerId)).data.userId == request.auth.uid;
+      allow update: if isSignedIn()
+        && isSellerOwner(resource.data.sellerId);
+      allow delete: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    SHOPS
+    Public seller storefronts.
+    Rules:
+    - Anyone can view shops
+    - Sellers create their own shops
+    - Sellers manage only their shops
+    - Ownership cannot be transferred
+    ==========================================
+    */
+
+
+    match /shops/{shopId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId ==
+           request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.ownerId ==
+           request.auth.uid
+        && request.resource.data.ownerId ==
+           resource.data.ownerId;
+      allow delete: if isSuperAdmin()
+        || (
+          isSignedIn()
+          && resource.data.ownerId ==
+             request.auth.uid
+        );
+    }
+
+
+    /*
+    ==========================================
+    PRODUCTS
+
+    Main marketplace products.
+    Rules:
+    - Public product browsing
+    - Seller creates products
+    - Seller edits own products
+    - Seller cannot change ownership
+    - Admin can moderate
+    ==========================================
+    */
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.sellerId ==
+           request.auth.uid
+        && request.resource.data.keys()
+          .hasAll([
+            "name",
+            "price",
+            "stock",
+            "sellerId",
+            "shopId",
+            "createdAt"
+          ])
+
+        && request.resource.data.price is number
+        && request.resource.data.stock is int;
+      allow update: if isSignedIn()
+        && resource.data.sellerId ==
+           request.auth.uid
+        && request.resource.data.sellerId ==
+           resource.data.sellerId
+        && request.resource.data.price is number
+        && request.resource.data.stock is int;
+      allow delete: if isSuperAdmin()
+        || (
+          isSignedIn()
+          && resource.data.sellerId ==
+             request.auth.uid
+        );
+    }
+
+
+    /*
+    ==========================================
+    SELLER PRIVATE PRODUCTS
+    Path:
+    /sellers/{uid}/products/{productId}
+    Used for seller dashboard
+    ==========================================
+    */
+
+
+    match /sellers/{uid}/products/{productId} {
+      allow read: if true;
+      allow create: if (isSellerOwner(uid) || isSellerDocumentOwner(uid))
+        && request.resource.data.sellerId ==
+           uid;
+      allow update: if (isSellerOwner(uid) || isSellerDocumentOwner(uid))
+        && resource.data.sellerId ==
+           uid
+        && request.resource.data.sellerId ==
+           resource.data.sellerId;
+      allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+    }
+
+
+    /*
+    ==========================================
+    CATEGORIES
+    Marketplace categories.
+    Public:
+    - Read categories
+    Admin:
+    - Create
+    - Update
+    - Delete
+    Examples:
+    - Phones
+    - Laptops
+    - Accessories
+    - Electronics
+    ==========================================
+    */
+
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create,
+            update,
+            delete: if isAdmin()
+
+                     || isSuperAdmin();
+
+
+    }
+
+        /*
+    ==========================================
+    ORDERS
+
+    Marketplace order system.
+    Buyer:
+    - Create orders
+    - View own orders
+    - Cancel orders
+    Seller:
+    - View customer orders
+    - Update order status only
+    Admin:
+    - Full management
+    ==========================================
+    */
+
+
+    match /orders/{orderId} {
+      allow read: if isSignedIn()
+        && (
+          request.auth.uid == resource.data.buyerId
+          || isSellerOwner(resource.data.sellerId)
+          || isAdmin()
+          || isSuperAdmin()
+        );
+
+      allow create: if isSignedIn()
+        && request.resource.data.total is number
+        && request.resource.data.sellerId is string;
+
+      allow update: if isSignedIn()
+        && (
+          request.auth.uid == resource.data.buyerId
+          || isSellerOwner(resource.data.sellerId)
+        );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    SELLER ORDER MANAGEMENT
+    Seller dashboard orders
+    Path:
+    /sellers/{uid}/orders/{orderId}
+    ==========================================
+    */
+    match /sellers/{uid}/orders/{orderId} {
+      allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+    }
+    /*
+    ==========================================
+    PAYMENTS
+    IMPORTANT:
+    Client apps cannot create payments.
+    Payments must come from:
+    - Backend server
+    - Firebase Cloud Functions
+    - Payment gateway webhook
+
+    ==========================================
+    */
+    match /payments/{paymentId} {
+      allow read: if isSignedIn()
+        && (
+          request.auth.uid ==
+          resource.data.buyerId
+          ||
+          isAdmin()
+          ||
+          isSuperAdmin()
+        );
+      /*
+      Block client manipulation
+
+      No:
+      create
+      update
+      delete
+
+      */
+      allow create,
+            update,
+            delete: if false;
+
+    }
+    /*
+    ==========================================
+    REFUNDS
+    Future payment refund system.
+
+    Only backend/admin controlled.
+
+    ==========================================
+    */
+    match /refunds/{refundId} {
+      allow read: if isAdmin()
+                  || isSuperAdmin();
+        
+      allow create,
+            update,
+            delete: if isSuperAdmin();
+    }
+        /*
+    ==========================================
+    CHATS
+    Buyer <-> Seller communication
+    Security:
+    - Only participants can access chats
+    - Users can only send as themselves
+    - Users cannot edit other people's messages
+    ==========================================
+    */
+
+    match /chats/{chatId} {
+      allow create: if isSignedIn()
+        && request.auth.uid in
+           request.resource.data.participants;
+      allow read, update: if isSignedIn()
+        && request.auth.uid in
+           resource.data.participants;
+
+      /*
+      Chats cannot be deleted by users
+      */
+
+      allow delete: if false;
+
+      /*
+      ======================================
+      CHAT MESSAGES
+      ======================================
+      */
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn()
+          && request.auth.uid in
+          get(
+            /databases/$(database)/documents/chats/$(chatId)
+          )
+          .data.participants;
+
+        allow create: if isSignedIn()
+          && request.resource.data.senderId ==
+             request.auth.uid
+          && request.auth.uid in
+          get(
+            /databases/$(database)/documents/chats/$(chatId)
+          )
+          .data.participants;
+
+        /*
+        Sender can delete own message
+        Editing disabled to prevent abuse
+        */
+        allow delete: if isSignedIn()
+          && resource.data.senderId ==
+             request.auth.uid;
+        allow update: if false;
+      }
+    }
+
+    /*
+    ==========================================
+    REVIEWS
+    Product reviews and ratings.
+    Public:
+    - Read reviews
+    Buyer:
+    - Create own review
+    - Edit own review
+    - Delete own review
+
+    ==========================================
+    */
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.resource.data.buyerId ==
+           request.auth.uid
+        && request.resource.data.keys()
+          .hasAll([
+            "buyerId",
+            "productId",
+            "rating",
+            "comment",
+            "createdAt"
+          ])
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update: if isSignedIn()
+        && resource.data.buyerId ==
+           request.auth.uid
+        && request.resource.data.buyerId ==
+           resource.data.buyerId;
+      allow delete: if isSignedIn()
+        && resource.data.buyerId ==
+           request.auth.uid;
+    }
+
+    /*
+    ==========================================
+    WISHLIST
+    Buyer saved products.
+    Structure:
+
+    /wishlist/{userId}/items/{productId}
+
+    ==========================================
+    */
+
+    match /wishlist/{uid} {
+      allow read, write: if isOwner(uid);
+      match /items/{productId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    /*
+    ==========================================
+    NOTIFICATIONS
+    User notifications.
+    Examples:
+    - New order
+    - Seller message
+    - Promotion
+    - Account updates
+
+    ==========================================
+    */
+
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn()
+        && request.auth.uid ==
+           resource.data.userId;
+
+      /*
+      Created by:
+      - Admin
+      - Backend services
+      */
+      allow create: if isAdmin()
+        || isSuperAdmin();
+      allow update: if isSignedIn()
+        && request.auth.uid ==
+           resource.data.userId;
+      allow delete: if isSuperAdmin();
+    }
+
+        /*
+    ==========================================
+    ANALYTICS
+    Platform statistics.
+    Examples:
+    - Sales reports
+    - Revenue
+    - User growth
+    - Seller performance
+    Recommended:
+    Write analytics from backend only.
+    ==========================================
+    */
+
+    match /analytics/{analyticsId} {
+      allow read: if isAdmin()
+                  || isSuperAdmin();
+                
+      allow create,
+            update,
+            delete: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    AUDIT LOGS
+    Records important system actions.
+    Examples:
+    - Admin actions
+    - Seller suspension
+    - Product removal
+    - Account changes
+
+    ==========================================
+    */
+
+    match /auditLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isSuperAdmin();
+      allow update,
+            delete: if false;
+    }
+
+    /*
+    ==========================================
+    SELLER APPLICATIONS
+    Seller verification process.
+    User:
+    - Submit application
+    Admin:
+    - Review
+    - Approve
+    - Reject
+
+    ==========================================
+    */
+
+    match /sellerApplications/{applicationId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId ==
+          request.auth.uid
+          ||
+          isAdmin()
+          ||
+          isSuperAdmin()
+        );
+      allow update,
+            delete: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    REPORTS
+    User complaints and reports.
+    Examples:
+    - Fake products
+    - Fraud
+    - Seller issues
+
+    ==========================================
+    */
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn()
+        && (
+          resource.data.reporterId ==
+          request.auth.uid
+          ||
+          isAdmin()
+          ||
+          isSuperAdmin()
+        );
+      allow update,
+            delete: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    SYSTEM SETTINGS
+
+    Global application configuration.
+
+    Examples:
+    - Marketplace commission
+    - Maintenance mode
+    - Feature flags
+    - App configuration
+
+    ==========================================
+    */
+    match /systemSettings/{settingId} {
+      allow read: if isAdmin()
+                  || isSuperAdmin();
+      allow write: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    ADMIN MANAGEMENT
+    Super Admin only.
+    Examples:
+    - Platform administrators
+    - Permissions
+    - Roles
+
+    ==========================================
+    */
+
+    match /adminUsers/{adminId} {
+      allow read,
+            write: if isSuperAdmin();
+    }
+
+    /*
+    ==========================================
+    FINAL SECURITY RULE
+
+    Any collection not defined above
+    is automatically blocked.
+
+    Production best practice:
+    DENY BY DEFAULT
+
+    ==========================================
+    */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

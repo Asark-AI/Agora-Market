@@ -32,17 +32,20 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignInPage() {
-  const { logIn, signInWithGoogle, user } = useAuth();
+  const { logIn, signInWithGoogle, user, loading, seller } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
   useEffect(() => {
+    if (loading) return;
+
     if (user) {
-      router.push('/dashboard');
+      const targetPath = seller ? '/dashboard' : '/seller-signup';
+      router.replace(targetPath);
     }
-  }, [user, router]);
+  }, [user, seller, loading, router]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -57,7 +60,6 @@ export default function SignInPage() {
     try {
       await logIn(data.email, data.password);
       toast({ title: 'Logged In Successfully!' });
-      router.push('/dashboard');
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
     } finally {
@@ -70,7 +72,6 @@ export default function SignInPage() {
     try {
       await signInWithGoogle();
       toast({ title: "Logged In Successfully!" });
-      router.push("/dashboard");
     } catch (error: any) {
       toast({
         variant: "destructive",

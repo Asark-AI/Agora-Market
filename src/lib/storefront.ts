@@ -1,4 +1,3 @@
-import { collection, collectionGroup, getDocs, getDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Product, Seller } from '@/lib/types';
 import { categories as catalogCategories } from '@/lib/data';
@@ -10,6 +9,30 @@ export type StorefrontProduct = Product & {
 
 const DEFAULT_PRODUCT_IMAGE = 'https://placehold.co/600x600.png';
 const DEFAULT_BANNER = 'https://picsum.photos/seed/store/1200/400';
+
+function sanitizeForClient<T>(value: T): T {
+  if (value instanceof Date) {
+    return value.toISOString() as T;
+  }
+
+  if (value && typeof value === 'object') {
+    if (typeof (value as { toJSON?: () => unknown }).toJSON === 'function') {
+      return sanitizeForClient((value as { toJSON: () => unknown }).toJSON() as T);
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => sanitizeForClient(item)) as T;
+    }
+
+    if (value.constructor === Object) {
+      return Object.fromEntries(
+        Object.entries(value as Record<string, unknown>).map(([key, entryValue]) => [key, sanitizeForClient(entryValue)])
+      ) as T;
+    }
+  }
+
+  return value;
+}
 
 export function slugify(value: string) {
   return value
@@ -43,24 +66,42 @@ export function getStoreBannerUrl(image?: string | null) {
   return image || DEFAULT_BANNER;
 }
 
-export async function getActiveSellers(): Promise<Seller[]> {
-  if (!db) return [];
+async function getFirestoreModule() {
+  if (!db) return null;
 
+  try {
+    return await import('firebase/firestore');
+  } catch (error) {
+    console.warn('Unable to load Firestore module for storefront data:', error);
+    return null;
+  }
+}
+
+export async function getActiveSellers(): Promise<Seller[]> {
+  const firestore = await getFirestoreModule();
+  if (!db || !firestore) return [];
+
+  const { collection, getDocs, query, where } = firestore;
   const sellersSnapshot = await getDocs(query(collection(db, 'sellers'), where('status', '==', 'active')));
-  return sellersSnapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as Omit<Seller, 'id'>) } as Seller));
+  return sellersSnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(sanitizeForClient(doc.data() as Omit<Seller, 'id'>) as Omit<Seller, 'id'>),
+  }) as Seller);
 }
 
 export async function getActiveProducts(): Promise<StorefrontProduct[]> {
-  if (!db) return [];
+  const firestore = await getFirestoreModule();
+  if (!db || !firestore) return [];
 
   const sellers = await getActiveSellers();
   const products: StorefrontProduct[] = [];
 
+  const { collection, getDocs, query, where } = firestore;
   for (const seller of sellers) {
     const sellerProductsSnapshot = await getDocs(query(collection(db, 'sellers', seller.id, 'products'), where('status', '==', 'active')));
     const sellerProducts = sellerProductsSnapshot.docs.map((doc) => ({
       id: doc.id,
-      ...(doc.data() as Omit<Product, 'id'>),
+      ...(sanitizeForClient(doc.data() as Omit<Product, 'id'>) as Omit<Product, 'id'>),
       seller,
       sellerName: seller.name,
     })) as StorefrontProduct[];

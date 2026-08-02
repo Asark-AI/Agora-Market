@@ -12,19 +12,24 @@ export default function SellerSignupPage() {
   const { user, seller, loading } = useAuth();
   
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        // Not logged in, send to sign in
-        router.push('/sign-in');
-      } else if (seller) {
-        // Already a seller, go to dashboard
-        router.push('/dashboard');
-      }
+    if (loading) return;
+
+    if (!user) {
+      router.replace('/sign-in');
+      return;
+    }
+
+    if (seller) {
+      router.replace('/dashboard');
     }
   }, [user, seller, loading, router]);
 
-  if (loading || !user || seller) {
+  if (loading) {
     return <PageLoader />;
+  }
+
+  if (!user || seller) {
+    return null;
   }
 
   return (

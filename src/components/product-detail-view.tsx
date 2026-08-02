@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2 } from 'lucide-react';
+import { Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, MessageCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCart } from '@/hooks/use-cart';
@@ -36,7 +36,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
     <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
-          <div className="relative aspect-square overflow-hidden rounded-2xl border bg-muted">
+          <div className="relative aspect-square overflow-hidden rounded-[24px] border bg-muted">
             <Image src={getImageUrl(selectedImage)} alt={product.name} fill className="object-cover" />
           </div>
           <div className="grid grid-cols-4 gap-3">
@@ -51,23 +51,23 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
         <div className="space-y-6">
           <div>
             <div className="text-sm font-medium uppercase tracking-[0.2em] text-primary">{getCategoryLabel(product.categoryId)}</div>
-            <h1 className="mt-2 text-3xl font-bold font-headline">{product.name}</h1>
-            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <h1 className="mt-2 text-3xl font-semibold">{product.name}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1 text-amber-500">
                 <Star className="size-4 fill-current" />
                 <span className="font-semibold text-foreground">4.8</span>
               </div>
               <span>• 124 reviews</span>
-              <span>• In stock</span>
+              <span>• {product.stock > 0 ? 'In stock' : 'Out of stock'}</span>
             </div>
           </div>
 
-          <div className="rounded-2xl border bg-muted/40 p-4">
-            <div className="flex items-end gap-3">
+          <div className="rounded-[24px] border bg-muted/40 p-4">
+            <div className="flex flex-wrap items-end gap-3">
               <span className="text-3xl font-semibold">GH₵{price.toFixed(2)}</span>
               {oldPrice && <span className="text-lg text-muted-foreground line-through">GH₵{oldPrice.toFixed(2)}</span>}
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">Free shipping on orders above GH₵200</p>
+            <p className="mt-2 text-sm text-muted-foreground">Free shipping on orders above GH₵200 • Express delivery available</p>
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -96,18 +96,26 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
             </CardContent>
           </Card>
 
-          <div className="rounded-2xl border p-4">
-            <div className="flex items-center justify-between">
+          <div className="rounded-[24px] border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">Sold by</p>
                 <Link href={`/store/${buildSellerSlug({ id: product.sellerId, name: product.sellerName || 'Seller' })}`} className="text-primary hover:underline">
                   {product.sellerName || 'Verified Seller'}
                 </Link>
               </div>
-              <div className="text-right text-sm text-muted-foreground">
-                <div>4.9 seller rating</div>
-                <div>1.2k followers</div>
+              <div className="text-sm text-muted-foreground">
+                <div className="flex items-center gap-1"><BadgeCheck className="size-4 text-primary" /> 4.9 seller rating</div>
+                <div className="mt-1 flex items-center gap-1"><Store className="size-4" /> 1.2k followers</div>
               </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/store/${buildSellerSlug({ id: product.sellerId, name: product.sellerName || 'Seller' })}`}><Store className="mr-2 size-4" /> Visit store</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/sign-in"><MessageCircle className="mr-2 size-4" /> Message seller</Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -133,12 +141,12 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
 
         <Card>
           <CardHeader>
-            <CardTitle>Why buyers love this</CardTitle>
+            <CardTitle>Highlights</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Premium quality with reliable local delivery.</p>
-            <p>Fast response from seller and transparent shipping.</p>
-            <p>Highly rated and frequently restocked.</p>
+            <div className="rounded-2xl border bg-muted/30 p-3">Premium quality with reliable local delivery.</div>
+            <div className="rounded-2xl border bg-muted/30 p-3">Fast response from seller and transparent shipping.</div>
+            <div className="rounded-2xl border bg-muted/30 p-3">Highly rated and frequently restocked.</div>
           </CardContent>
         </Card>
       </div>

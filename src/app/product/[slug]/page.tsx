@@ -3,6 +3,8 @@ import { PublicShell } from '@/components/public-shell';
 import { ProductDetailView } from '@/components/product-detail-view';
 import { notFound } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 interface ProductPageProps {
   params: { slug: string };
 }

@@ -18,18 +18,27 @@ export function PageLoader({ overlay = false, className, ...props }: PageLoaderP
   const delays = ['0s', '0.1s', '0.2s', '0.3s', '0.4s'];
 
   const animation = (
-    <div className="flex h-10 items-end gap-2">
+    <div className="flex flex-col items-center gap-3">
       <title>Loading...</title>
-      {delays.map((delay, index) => (
-        <div
-          key={index}
-          className="h-4 w-4 rounded-full animate-wave"
-          style={{
-            animationDelay: delay,
-            backgroundColor: colors[index],
-          }}
-        />
-      ))}
+      <div className="flex h-10 items-end gap-2">
+        {delays.map((delay, index) => (
+          <div
+            key={index}
+            className="relative h-4 w-4 overflow-hidden rounded-full animate-wave"
+            style={{
+              animationDelay: delay,
+              backgroundColor: colors[index],
+            }}
+          >
+            <div className="pointer-events-none absolute inset-0 rounded-full bg-white/20 shimmer-overlay" />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+          <div className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-primary/70 to-transparent animate-loader-bar" />
+        </div>
+      </div>
     </div>
   );
 

@@ -2,8 +2,8 @@
 
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { SidebarInset } from '@/components/ui/sidebar';
+import { useEffect, useState } from 'react';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardNav } from '@/components/dashboard-nav';
 import { PageLoader } from '@/components/page-loader';
 import { StorefrontEditorProvider } from '@/hooks/use-storefront-editor';
@@ -16,12 +16,23 @@ export default function AppDashboardLayout({
 }) {
   const { user, seller, loading, initDashboardListeners, clearListeners } = useAuth();
   const router = useRouter();
+  const [fallbackTimer, setFallbackTimer] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/sign-in');
-    } else if (!loading && user && !seller) {
-      router.push('/seller-signup');
+    const timeout = window.setTimeout(() => setFallbackTimer(true), 3000);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (!user) {
+      router.replace('/sign-in');
+      return;
+    }
+
+    if (!seller) {
+      router.replace('/seller-signup');
     }
   }, [user, seller, loading, router]);
 
@@ -36,23 +47,37 @@ export default function AppDashboardLayout({
     };
   }, [seller, initDashboardListeners, clearListeners]);
 
-  if (loading || !seller) {
+  if (loading && !fallbackTimer) {
     return <PageLoader />;
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  if (!seller) {
+    return (
+      <div className="p-6">
+        <p className="text-sm text-muted-foreground">Preparing your dashboard...</p>
+      </div>
+    );
   }
   
   return (
     <StorefrontEditorProvider>
+      <SidebarProvider>
         <div className="flex h-screen w-full bg-background">
           <DashboardNav />
           <div className="flex flex-col flex-1 h-screen overflow-y-hidden">
             <div className="relative flex-1 overflow-y-auto">
-                <main className="p-4 sm:p-6 lg:p-8">
-                    <SidebarInset>{children}</SidebarInset>
-                </main>
+              <main className="p-4 sm:p-6 lg:p-8">
+                <SidebarInset>{children}</SidebarInset>
+              </main>
             </div>
           </div>
         </div>
         <AppTour />
+      </SidebarProvider>
     </StorefrontEditorProvider>
   );
 }

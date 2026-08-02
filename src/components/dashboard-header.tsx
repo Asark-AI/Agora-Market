@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bell, User, PanelLeft, Search, Building } from 'lucide-react';
+import { Bell, User, PanelLeft, Search, Building, Menu } from 'lucide-react';
 import Link from 'next/link';
 
 import {
@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { QuickActions } from './quick-actions';
 
 export function DashboardHeader({ title }: { title: string }) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, setOpenMobile } = useSidebar();
   const { user, seller, logOut } = useAuth();
   
   if (!user || !seller) return null;
@@ -32,11 +32,14 @@ export function DashboardHeader({ title }: { title: string }) {
             <Button
               size="icon"
               variant="outline"
-              className="sm:hidden"
-              onClick={toggleSidebar}
+              className="md:hidden"
+              onClick={() => {
+                toggleSidebar();
+                setOpenMobile(true);
+              }}
             >
-              <PanelLeft className="h-5 w-5" />
-              <span className="sr-only">Toggle Menu</span>
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Open Menu</span>
             </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Welcome Back, {user.name.split(' ')[0]}!</h1>

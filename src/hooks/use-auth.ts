@@ -51,7 +51,6 @@ import type {
   PayoutMethod,
 } from '@/lib/types';
 import { db, auth, storage } from '@/lib/firebase';
-import { generateProductDescription } from '@/ai/flows/generate-product-description';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -62,6 +61,7 @@ export interface AuthState extends PublicAuthState {
   clearListeners: () => void;
   clearAllData: () => void;
   init: () => void;
+  refreshAuthProfile: () => Promise<void>;
   initDashboardListeners: () => void;
   addCustomer: (customerData: { name: string, email: string, phone: string }) => Promise<Customer>;
 }
@@ -82,6 +82,19 @@ const ensureFirestore = (): Firestore => {
     throw new Error('Firestore is unavailable.');
   }
   return db;
+};
+
+const createFallbackUser = (firebaseUser: FirebaseUser | null): User | null => {
+  if (!firebaseUser) {
+    return null;
+  }
+
+  return {
+    id: firebaseUser.uid,
+    name: firebaseUser.displayName || 'Signed In User',
+    email: firebaseUser.email || '',
+    role: 'Owner',
+  };
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -146,59 +159,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        set({ firebaseUser, loading: true });
-
-        // When auth state changes, clear any existing data listeners
-        get().clearListeners();
-
-        try {
-          if (firebaseUser) {
-            if (!db) {
-              set({ user: null, seller: null, loading: false });
-              return;
-            }
-
-            const userRef = doc(ensureFirestore(), 'users', firebaseUser.uid);
-            const userDoc = await getDoc(userRef);
-
-            if (userDoc.exists()) {
-              const userData = userDoc.data() as User;
-              set({ user: { ...userData, id: userDoc.id } });
-
-              const sellerQuery = query(collection(ensureFirestore(), 'sellers'), where('userId', '==', firebaseUser.uid));
-              const sellerSnapshot = await getDocs(sellerQuery);
-
-              if (!sellerSnapshot.empty) {
-                const sellerDoc = sellerSnapshot.docs[0];
-                const sellerData = { id: sellerDoc.id, ...sellerDoc.data() } as Seller;
-                set({ seller: sellerData });
-              } else {
-                set({ seller: null });
-              }
-            } else {
-              set({ user: null, seller: null });
-            }
-          } else {
-            set({
-              user: null,
-              firebaseUser: null,
-              seller: null,
-              loading: false,
-            });
-          }
-        } catch (error) {
-          console.warn('Firebase auth state handling failed:', error);
-          set({ user: null, seller: null, loading: false });
-        } finally {
-          set({ loading: false, initialized: true });
-        }
+        await get().refreshAuthProfile(firebaseUser as FirebaseUser | null);
       });
 
-      // Mark the app as initialized immediately so the app shell can render,
-      // even before the auth callback resolves.
       set({ initialized: true, loading: false });
 
-      // Keep the unsubscribe function around for cleanup if needed later.
       void authUnsubscribe;
     } catch (error) {
       console.warn('Firebase auth initialization failed:', error);
@@ -209,6 +174,77 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         loading: false,
         initialized: true,
       });
+    }
+  },
+
+  refreshAuthProfile: async (firebaseUserOverride?: FirebaseUser | null) => {
+    const authUser = firebaseUserOverride ?? auth?.currentUser ?? null;
+
+    set({ firebaseUser: authUser });
+
+    if (!authUser) {
+      set({
+        user: null,
+        firebaseUser: null,
+        seller: null,
+        loading: false,
+        initialized: true,
+      });
+      return;
+    }
+
+    try {
+      if (!db) {
+        set({ user: null, seller: null, loading: false });
+        return;
+      }
+
+      const userRef = doc(ensureFirestore(), 'users', authUser.uid);
+      const userDoc = await getDoc(userRef);
+
+      let userData: User;
+      if (userDoc.exists()) {
+        userData = { ...(userDoc.data() as User), id: userDoc.id };
+      } else {
+        userData = {
+          id: authUser.uid,
+          name: authUser.displayName || 'New User',
+          email: authUser.email || '',
+          role: 'Owner',
+        };
+        await setDoc(userRef, userData);
+      }
+      set({ user: userData });
+
+      const sellerQuery = query(collection(ensureFirestore(), 'sellers'), where('userId', '==', authUser.uid));
+      const sellerSnapshot = await getDocs(sellerQuery);
+
+      if (!sellerSnapshot.empty) {
+        const sellerDoc = sellerSnapshot.docs[0];
+        const sellerData = { id: sellerDoc.id, ...sellerDoc.data() } as Seller;
+        set({ seller: sellerData });
+      } else {
+        const fallbackSellerRef = doc(ensureFirestore(), 'sellers', authUser.uid);
+        const fallbackSellerDoc = await getDoc(fallbackSellerRef);
+        if (fallbackSellerDoc.exists()) {
+          const sellerData = { id: fallbackSellerDoc.id, ...fallbackSellerDoc.data() } as Seller;
+          set({ seller: sellerData });
+        } else {
+          set({ seller: null });
+        }
+      }
+    } catch (error) {
+      console.warn('Firebase auth state handling failed:', error);
+      const fallbackUser = createFallbackUser(authUser);
+      set({
+        firebaseUser: authUser,
+        user: fallbackUser,
+        seller: get().seller ?? null,
+        loading: false,
+        initialized: true,
+      });
+    } finally {
+      set({ loading: false, initialized: true });
     }
   },
 
@@ -268,8 +304,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = userCredential;
 
     const newUser: User = { id: user.uid, name, email, role: 'Owner' };
+    set({ user: newUser, firebaseUser: user, loading: false, initialized: true });
     await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
-    set({ user: newUser, firebaseUser: user });
+    await get().refreshAuthProfile(user);
     return user;
   },
 
@@ -279,7 +316,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    const authUser = userCredential.user;
+    const fallbackUser = createFallbackUser(authUser);
+    set({ firebaseUser: authUser, user: fallbackUser, loading: false, initialized: true });
+    void get().refreshAuthProfile(authUser);
+    return authUser;
   },
 
   signInWithGoogle: async () => {
@@ -290,6 +331,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const { user } = result;
+    const fallbackUser = createFallbackUser(user);
+    set({ firebaseUser: user, user: fallbackUser, loading: false, initialized: true });
 
     const userRef = doc(ensureFirestore(), 'users', user.uid);
     const userDoc = await getDoc(userRef);
@@ -304,7 +347,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
       set({ user: newUser, firebaseUser: user });
     }
-    // Existing user will be handled by onAuthStateChanged listener
+    await get().refreshAuthProfile(user);
     return user;
   },
 
@@ -343,6 +386,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const docRef = await addDoc(collection(ensureFirestore(), 'sellers'), finalSellerData);
     const newSeller = { id: docRef.id, ...finalSellerData };
     set({ seller: newSeller as Seller });
+    await get().refreshAuthProfile(auth?.currentUser ?? null);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await get().refreshAuthProfile(auth?.currentUser ?? null);
     return newSeller as Seller;
   },
 
@@ -373,10 +419,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         ? productData.description
         : productData.description?.english || '';
 
-    const { englishDescription } = await generateProductDescription({ 
-        shortDescription: productData.name, 
+    let englishDescription = productData.description?.english || '';
+
+    try {
+      const { generateProductDescription } = await import('@/ai/flows/generate-product-description');
+      const result = await generateProductDescription({
+        shortDescription: productData.name,
         keywords: descriptionKeywords,
-    });
+      });
+      englishDescription = result.englishDescription;
+    } catch (error) {
+      console.warn('AI description generation unavailable, using fallback text:', error);
+      englishDescription = productData.name || 'Product description pending';
+    }
 
     if (!db) {
       throw new Error('Firestore is unavailable.');

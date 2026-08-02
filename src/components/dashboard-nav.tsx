@@ -151,7 +151,7 @@ export function DashboardNav() {
 
   return (
     <div id="dashboard-nav">
-      <Sidebar>
+      <Sidebar collapsible="offcanvas" className="md:flex">
         <SidebarHeader>
           <div className="flex items-center gap-2">
               <AppLogo className="w-8 h-8 text-primary" />

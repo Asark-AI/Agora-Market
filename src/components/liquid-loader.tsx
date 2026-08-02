@@ -19,12 +19,14 @@ export function LiquidLoader(props: HTMLAttributes<HTMLDivElement>) {
       {delays.map((delay, index) => (
         <div
           key={index}
-          className="h-2 w-2 rounded-full animate-wave"
-           style={{ 
+          className="relative h-2 w-2 overflow-hidden rounded-full animate-wave"
+          style={{
             animationDelay: delay,
             backgroundColor: colors[index],
           }}
-        />
+        >
+          <div className="pointer-events-none absolute inset-0 rounded-full bg-white/20 shimmer-overlay" />
+        </div>
       ))}
     </div>
   );

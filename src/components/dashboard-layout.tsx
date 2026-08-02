@@ -3,7 +3,7 @@
 
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import { DashboardNav } from '@/components/dashboard-nav';
 import { LiquidLoader } from '@/components/liquid-loader';
@@ -17,15 +17,27 @@ export default function AppDashboardLayout({
 }) {
   const { seller, loading } = useAuth();
   const router = useRouter();
+  const [fallbackTimer, setFallbackTimer] = useState(false);
 
   useEffect(() => {
-    if (!loading && !seller) {
-      router.push('/seller-signup');
+    const timeout = window.setTimeout(() => setFallbackTimer(true), 3000);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (!seller) {
+      router.replace('/seller-signup');
     }
   }, [seller, loading, router]);
 
-  if (loading || !seller) {
+  if (loading && !fallbackTimer) {
     return <LiquidLoader />;
+  }
+
+  if (!seller) {
+    return null;
   }
   
   const config = businessConfig[seller.businessType];

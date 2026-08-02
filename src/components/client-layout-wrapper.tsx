@@ -11,13 +11,14 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
     const init = useAuthStore(state => state.init);
     const initialized = useAuthStore(state => state.initialized);
     const { isLoading } = usePageLoaderStore();
+    const authState = useAuthStore(state => state.user);
 
     useEffect(() => {
         init();
     }, [init]);
 
-    if (!initialized) {
-        return <PageLoader />;
+    if (!initialized && !authState) {
+        return <>{children}</>;
     }
 
     return (
