@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { QuickActions } from './quick-actions';
 
 export function DashboardHeader({ title }: { title: string }) {
-  const { toggleSidebar, setOpenMobile } = useSidebar();
+  const { toggleSidebar, setOpenMobile, openMobile } = useSidebar();
   const { user, seller, logOut } = useAuth();
   
   if (!user || !seller) return null;
@@ -34,8 +34,7 @@ export function DashboardHeader({ title }: { title: string }) {
               variant="outline"
               className="md:hidden"
               onClick={() => {
-                toggleSidebar();
-                setOpenMobile(true);
+                setOpenMobile(!openMobile);
               }}
             >
               <Menu className="h-5 w-5" />

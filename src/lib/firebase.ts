@@ -5,15 +5,40 @@ import { getAuth, type Auth } from "firebase/auth";
 import { initializeFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
+const getFirebaseEnvValue = (key: keyof NodeJS.ProcessEnv, fallback: string) => {
+  const value = process.env[key];
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+  return fallback;
+};
+
+const getBrowserAuthDomain = (fallback: string) => {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+
+  const host = window.location.hostname;
+  if (!host) {
+    return fallback;
+  }
+
+  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
+    return 'localhost';
+  }
+
+  return host;
+};
+
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? 'AIzaSyCgXWI7AkBhlfMjX0VDG4ETp-63jI3dyqE',
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? 'ghana-trade-37f20.firebaseapp.com',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? 'ghana-trade-37f20',
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? 'ghana-trade-37f20.firebasestorage.app',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? '15751349335',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '1:15751349335:web:5ee881e5b0fc4996c80f12',
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ?? 'G-DRDCSJG8N2',
+  apiKey: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_API_KEY', 'AIzaSyCgXWI7AkBhlfMjX0VDG4ETp-63jI3dyqE'),
+  authDomain: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', getBrowserAuthDomain('ghana-trade-37f20.firebaseapp.com')),
+  projectId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'ghana-trade-37f20'),
+  storageBucket: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'ghana-trade-37f20.firebasestorage.app'),
+  messagingSenderId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '15751349335'),
+  appId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_APP_ID', '1:15751349335:web:5ee881e5b0fc4996c80f12'),
+  measurementId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID', 'G-DRDCSJG8N2'),
 };
 
 let app: FirebaseApp | null = null;

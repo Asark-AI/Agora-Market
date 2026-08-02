@@ -315,12 +315,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       throw new Error('Authentication is unavailable.');
     }
 
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const authUser = userCredential.user;
-    const fallbackUser = createFallbackUser(authUser);
-    set({ firebaseUser: authUser, user: fallbackUser, loading: false, initialized: true });
-    void get().refreshAuthProfile(authUser);
-    return authUser;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const authUser = userCredential.user;
+      const fallbackUser = createFallbackUser(authUser);
+      set({ firebaseUser: authUser, user: fallbackUser, loading: false, initialized: true });
+      await get().refreshAuthProfile(authUser);
+      return authUser;
+    } catch (error: any) {
+      if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found' || error?.code === 'auth/wrong-password') {
+        throw new Error('The email or password is incorrect.');
+      }
+      throw error;
+    }
   },
 
   signInWithGoogle: async () => {

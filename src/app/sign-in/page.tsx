@@ -60,6 +60,9 @@ export default function SignInPage() {
     try {
       await logIn(data.email, data.password);
       toast({ title: 'Logged In Successfully!' });
+      setTimeout(() => {
+        router.replace(seller ? '/dashboard' : '/seller-signup');
+      }, 150);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
     } finally {
@@ -72,6 +75,9 @@ export default function SignInPage() {
     try {
       await signInWithGoogle();
       toast({ title: "Logged In Successfully!" });
+      setTimeout(() => {
+        router.replace(seller ? '/dashboard' : '/seller-signup');
+      }, 150);
     } catch (error: any) {
       toast({
         variant: "destructive",

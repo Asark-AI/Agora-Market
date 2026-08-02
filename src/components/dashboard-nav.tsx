@@ -40,6 +40,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { AppLogo } from './app-logo';
 import { useTheme } from 'next-themes';
 import { usePageLoaderStore } from '@/hooks/use-page-loader';
+import { useSidebar } from '@/components/ui/sidebar';
 
 function ThemeToggle() {
     const { setTheme, theme } = useTheme();
@@ -69,6 +70,7 @@ export function DashboardNav() {
   const pathname = usePathname();
   const { seller } = useAuth();
   const { show: showLoader } = usePageLoaderStore();
+  const { setOpenMobile } = useSidebar();
 
   const isStore = seller?.businessType === 'store' || seller?.businessType === 'manufacturing';
   const isService = seller?.businessType === 'services';
@@ -168,7 +170,10 @@ export function DashboardNav() {
                   tooltip={{
                       children: item.label,
                   }}
-                  onClick={showLoader}
+                  onClick={() => {
+                    showLoader();
+                    setOpenMobile(false);
+                  }}
                   >
                   <Link href={item.href as Route}>
                       <item.icon />
@@ -190,7 +195,10 @@ export function DashboardNav() {
                       tooltip={{
                           children: item.label,
                       }}
-                      onClick={showLoader}
+                      onClick={() => {
+                        showLoader();
+                        setOpenMobile(false);
+                      }}
                       >
                       <Link href={item.href as Route}>
                           <item.icon />
