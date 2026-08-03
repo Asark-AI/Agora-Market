@@ -54,25 +54,8 @@ export default function CheckoutPage() {
     customizations: {
       title: 'Agora Store Purchase',
       description: `Payment for ${items.length} item(s)`,
-      logo: 'https://www.logolynx.com/images/logolynx/22/2239ca38f5505fbfce7e55bbc0604386.jpeg',
+      logo: '/agora-logo.png',
     },
-  };
-
-  const handlePayment = useFlutterwave(flutterwaveConfig);
-  
-  const onPaymentSuccess = async (response: any) => {
-    closePaymentModal();
-    if (!sellerId) return;
-    setIsLoading(true);
-    try {
-      await addOrderFromCart(sellerId, items, total, response.transaction_id);
-      toast({ title: 'Payment Successful!', description: 'Your order has been placed.' });
-      clearCart();
-      router.push('/profile');
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Order Creation Failed', description: 'Your payment was successful but we failed to create the order. Please contact support.' });
-      setIsLoading(false);
-    }
   };
 
   if (!isClient) {

@@ -127,7 +127,7 @@ export default function SubscriptionPage() {
         customizations: {
           title: 'Agora Seller Subscription',
           description: `Payment for ${planToUpgradeTo?.name} Plan`,
-          logo: 'https://www.logolynx.com/images/logolynx/22/2239ca38f5505fbfce7e55bbc0604386.jpeg',
+          logo: '/agora-logo.png',
         },
     };
     
