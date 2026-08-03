@@ -6,7 +6,7 @@ import { ArrowRight, Instagram, Facebook, MessageCircle, House, Layers3, Search 
 const mobileNavItems = [
   { href: '/', label: 'Home', icon: House },
   { href: '/categories', label: 'Categories', icon: Layers3 },
-  { href: '/products', label: 'Products', icon: SearchIcon },
+  { href: '/search', label: 'Search', icon: SearchIcon },
   { href: '/stores', label: 'Stores', icon: Store },
   { href: '/sign-in', label: 'Account', icon: UserRound },
 ];

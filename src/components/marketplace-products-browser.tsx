@@ -20,6 +20,7 @@ type MarketplaceProductsBrowserProps = {
 const BATCH_SIZE = 8;
 
 type SortValue = 'popular' | 'price-low' | 'price-high' | 'discount';
+type FilterChipValue = 'all' | 'flash' | 'trending' | 'best' | 'new' | 'popular' | 'rated' | 'shipping' | 'discount';
 
 export function MarketplaceProductsBrowser({ initialProducts, categories, sellers }: MarketplaceProductsBrowserProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,8 +29,22 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
   const [maxPrice, setMaxPrice] = useState('');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [sortBy, setSortBy] = useState<SortValue>('popular');
+  const [selectedFilter, setSelectedFilter] = useState<FilterChipValue>('all');
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const categoryChips = useMemo(() => [{ id: '', name: 'All' }, ...categories], [categories]);
+  const filterChips = useMemo(() => [
+    { id: 'all', label: 'All' },
+    { id: 'flash', label: 'Flash Deals' },
+    { id: 'trending', label: 'Trending' },
+    { id: 'best', label: 'Best Sellers' },
+    { id: 'new', label: 'New Arrivals' },
+    { id: 'popular', label: 'Most Popular' },
+    { id: 'rated', label: 'Top Rated' },
+    { id: 'shipping', label: 'Free Shipping' },
+    { id: 'discount', label: 'Discounted' },
+  ] as Array<{ id: FilterChipValue; label: string }>, []);
 
   const filteredProducts = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -48,8 +63,31 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
         const matchesSeller = !selectedSeller || product.sellerId === selectedSeller;
         const matchesPrice = !maxPrice || Number.isNaN(max) || price <= max;
         const matchesVerified = !verifiedOnly || seller?.isVerifiedArtisan;
+        const matchesFilter = (() => {
+          switch (selectedFilter) {
+            case 'flash':
+              return !!product.discountPrice && product.discountPrice < product.price;
+            case 'trending':
+              return (product.views || 0) > 40;
+            case 'best':
+              return (product.views || 0) > 120;
+            case 'new':
+              return (product.views || 0) < 80;
+            case 'popular':
+              return (product.views || 0) > 80;
+            case 'rated':
+              return Boolean(seller?.isVerifiedArtisan || seller?.trustScore);
+            case 'shipping':
+              return true;
+            case 'discount':
+              return Boolean(product.discountPrice && product.discountPrice < product.price);
+            case 'all':
+            default:
+              return true;
+          }
+        })();
 
-        return matchesSearch && matchesCategory && matchesSeller && matchesPrice && matchesVerified;
+        return matchesSearch && matchesCategory && matchesSeller && matchesPrice && matchesVerified && matchesFilter;
       })
       .sort((a, b) => {
         const aPrice = a.discountPrice ?? a.price;
@@ -69,7 +107,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
             return (b.views || 0) - (a.views || 0);
         }
       });
-  }, [initialProducts, maxPrice, searchTerm, selectedCategory, selectedSeller, sellers, sortBy, verifiedOnly]);
+  }, [initialProducts, maxPrice, searchTerm, selectedCategory, selectedSeller, sellers, selectedFilter, sortBy, verifiedOnly]);
 
   useEffect(() => {
     setVisibleCount(Math.min(BATCH_SIZE, filteredProducts.length));
@@ -101,12 +139,13 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
     setSelectedSeller('');
     setMaxPrice('');
     setVerifiedOnly(false);
+    setSelectedFilter('all');
     setSortBy('popular');
   };
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[28px] border bg-muted/30 p-4 sm:p-6">
+      <div className="rounded-[28px] border bg-muted/30 p-4 sm:p-6 lg:sticky lg:top-20 lg:z-10">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Marketplace</p>
@@ -120,6 +159,38 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
               <RefreshCw className="mr-2 size-4" /> Reset
             </Button>
           </div>
+        </div>
+
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+          {categoryChips.map((category) => {
+            const active = selectedCategory === category.id;
+            return (
+              <button
+                key={category.id || 'all'}
+                type="button"
+                onClick={() => setSelectedCategory(category.id)}
+                className={`whitespace-nowrap rounded-full border px-3 py-2 text-sm transition ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-transparent bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}
+              >
+                {category.name}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+          {filterChips.map((chip) => {
+            const active = selectedFilter === chip.id;
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                onClick={() => setSelectedFilter(chip.id)}
+                className={`whitespace-nowrap rounded-full border px-3 py-2 text-sm transition ${active ? 'border-primary bg-primary text-primary-foreground' : 'border-transparent bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground'}`}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
@@ -198,7 +269,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
             </Card>
           ) : (
             <>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {visibleProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}

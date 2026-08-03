@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 const navItems = [
   { href: '/', label: 'Home', icon: House },
   { href: '/categories', label: 'Categories', icon: Layers3 },
-  { href: '/products', label: 'Products', icon: Search },
+  { href: '/search', label: 'Search', icon: Search },
   { href: '/stores', label: 'Stores', icon: Store },
 ];
 
@@ -50,7 +50,7 @@ export function SiteHeader() {
             <div className="flex items-center gap-2">
               <nav className="hidden items-center gap-2 lg:flex">
                 {navItems.map(({ href, label }) => {
-                  const active = pathname === href;
+                  const active = href === '/' ? pathname === '/' || pathname === '/products' : pathname === href || pathname.startsWith(`${href}/`);
                   return (
                     <Link key={href} href={href} className={`rounded-full px-3 py-2 text-sm font-medium transition ${active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}>
                       {label}
