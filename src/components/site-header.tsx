@@ -33,7 +33,7 @@ export function SiteHeader() {
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <Link href="/" className="flex items-center gap-3">
-              <AppLogo className="h-8 w-8 text-primary" />
+              <AppLogo className="h-8 w-8 md:h-10 md:w-10 text-primary" />
               <div>
                 <p className="text-base font-semibold">Agora</p>
                 <p className="text-xs text-muted-foreground">Premium marketplace</p>
