@@ -21,16 +21,16 @@ export default async function PublicHomePage() {
   return (
     <PublicShell>
       <section className="border-b bg-gradient-to-br from-primary/10 via-background to-muted/30">
-        <div className="container mx-auto max-w-7xl px-4 py-10 lg:py-16">
-          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="container mx-auto max-w-7xl px-4 py-8 lg:py-12">
+          <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border bg-background/80 px-3 py-1 text-sm text-muted-foreground">
                 <Sparkles className="size-4 text-primary" /> Premium discovery for trusted products and stores
               </div>
-              <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
                 Find what you need faster with a cleaner marketplace experience.
               </h1>
-              <p className="mt-5 text-base leading-7 text-muted-foreground sm:text-lg">
+              <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg">
                 Explore curated deals, browse by category, and discover sellers that match your taste without the clutter.
               </p>
               <form action="/search" className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -63,15 +63,15 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-7xl px-4 py-10 sm:py-12">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Featured categories</p>
             <h2 className="text-2xl font-semibold">Popular picks for every shopper</h2>
           </div>
           <Link href="/categories" className="text-sm font-medium text-primary hover:underline">View all categories</Link>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {categories.map((category) => (
             <Link key={category.id} href={`/categories?category=${category.id}`} className="block">
               <Card className="h-full min-h-[140px] transition hover:-translate-y-1 hover:shadow-md">
@@ -90,8 +90,8 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-7xl px-4 py-10 sm:py-12">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Flash deals</p>
             <h2 className="text-2xl font-semibold">Limited-time savings</h2>
@@ -122,8 +122,8 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-7xl px-4 py-10 sm:py-12">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Trending now</p>
             <h2 className="text-2xl font-semibold">Curated picks for your next order</h2>
@@ -137,8 +137,8 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-7xl px-4 py-10 sm:py-12">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">New arrivals</p>
             <h2 className="text-2xl font-semibold">Freshly added to the marketplace</h2>
@@ -152,8 +152,8 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-7xl px-4 py-10 sm:py-12">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Best sellers</p>
             <h2 className="text-2xl font-semibold">Most-loved items this week</h2>
@@ -167,8 +167,8 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-7xl px-4 py-10 sm:py-12">
-        <div className="grid gap-4 lg:grid-cols-3">
+      <section className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
+        <div className="grid gap-3 lg:grid-cols-3">
           {[{title:'Free shipping', description:'On orders above GH₵200', icon: ShoppingBag}, {title:'Weekend deals', description:'Save on essentials and electronics', icon: BadgePercent}, {title:'Verified sellers', description:'Shop with trusted local partners', icon: ShieldCheck}].map(({title, description, icon: Icon}) => (
             <Card key={title} className="border-0 bg-muted/40">
               <CardContent className="flex items-start gap-3 p-5">
@@ -183,8 +183,8 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-7xl px-4 py-10 sm:py-12">
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <section className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Featured stores</p>
             <h2 className="text-2xl font-semibold">Trusted sellers near the top</h2>
@@ -226,9 +226,9 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      <section className="container mx-auto max-w-7xl px-4 py-12">
+      <section className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
         <Card className="overflow-hidden border-0 bg-gradient-to-r from-primary/80 to-primary/60 text-primary-foreground">
-          <CardContent className="flex flex-col gap-6 p-8 md:flex-row md:items-center md:justify-between">
+          <CardContent className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between md:p-7">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-sm">
                 <BadgePercent className="size-4" /> Discover more every week

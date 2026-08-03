@@ -79,10 +79,18 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 5.5rem;
+  }
+
   body {
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;

@@ -8,7 +8,7 @@ export default async function ProductsPage() {
 
   return (
     <PublicShell>
-      <div className="container mx-auto max-w-7xl px-4 py-8 sm:py-12">
+      <div className="container mx-auto max-w-7xl px-4 py-6 sm:py-8">
         <MarketplaceProductsBrowser initialProducts={products} categories={categories} sellers={sellers} />
       </div>
     </PublicShell>
