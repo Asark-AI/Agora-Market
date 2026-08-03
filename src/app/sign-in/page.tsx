@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { AppLogo } from '@/components/app-logo';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -103,7 +104,10 @@ export default function SignInPage() {
       </div>
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
-          <div className="grid gap-2 text-center">
+          <div className="grid gap-4 text-center">
+            <div className="mx-auto h-16 w-16 rounded-full bg-muted/80 p-3">
+              <AppLogo className="h-full w-full text-primary" />
+            </div>
             <h1 className="text-3xl font-bold font-headline">Welcome Back</h1>
             <p className="text-balance text-muted-foreground">
               Enter your credentials to access your seller dashboard.

@@ -245,8 +245,8 @@ export function StorefrontSettingsTab() {
                             <div className="space-y-2">
                                 <Label>Store Logo</Label>
                                 <div className="flex items-center gap-4">
-                                    <div className="relative size-16 border rounded-md bg-secondary flex-shrink-0">
-                                        {logo && <Image src={logo} alt="Logo preview" fill className="object-contain rounded-md p-1" />}
+                                    <div className="relative size-16 border rounded-md bg-secondary flex-shrink-0 overflow-hidden">
+                                        <Image src={logo || '/agora-logo.png'} alt="Logo preview" fill className="object-contain rounded-md p-1" />
                                     </div>
                                     <Input type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={handleLogoChange} />
                                 </div>

@@ -581,7 +581,14 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                                   </button>
                                 </div>
                               ) : (
-                                <div className="text-xs text-muted-foreground">Accepted: .jpg, .png, .webp — max 5MB</div>
+                                <div className="relative w-36 h-36 rounded overflow-hidden border bg-secondary">
+                                  <Image
+                                    src="/agora-logo.png"
+                                    alt="Agora logo placeholder"
+                                    fill
+                                    className="object-contain p-4"
+                                  />
+                                </div>
                               )}
                             </div>
                           </FormControl>
