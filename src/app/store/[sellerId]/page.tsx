@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { BadgeCheck, MessageCircle, Store, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { SellerFollowButton } from '@/components/seller-follow-button';
 
 interface StorePageProps {
   params: { sellerId: string };
@@ -56,13 +57,14 @@ export default async function StorefrontPage({ params }: StorePageProps) {
                     <p className="mt-4 text-sm text-muted-foreground">{seller.description || 'Trusted seller on Agora Marketplace'}</p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
                   <Button asChild>
                     <a href={`mailto:${seller.email || ''}`} className="inline-flex items-center gap-2"><MessageCircle className="size-4" /> Message seller</a>
                   </Button>
                   <Button variant="outline" asChild>
                     <Link href="/search">Browse products</Link>
                   </Button>
+                  <SellerFollowButton seller={seller} />
                 </div>
               </div>
             </div>

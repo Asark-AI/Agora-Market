@@ -118,6 +118,9 @@ export type Product = {
   barcode?: string;
   views: number;
   favorites: number;
+  ratingAverage?: number;
+  ratingCount?: number;
+  ratingTotal?: number;
   specifications?: Specification[];
   clicks?: number;
   clickHistory?: ProductClick[];
@@ -435,7 +438,8 @@ export interface AuthState {
   addWalkInOrder: (items: OrderItem[], total: number, customerId: string, paymentMethod: 'cash' | 'mobile_money' | 'card' | 'other') => Promise<string>;
   addOrderFromCart: (sellerId: string, items: CartItem[], total: number, transactionId: string) => Promise<void>;
   addPurchaseOrder: (po: Omit<PurchaseOrder, 'id'>) => void;
-  followSeller: (sellerId: string) => Promise<void>;
+  followSeller: (sellerId: string) => Promise<boolean>;
+  rateProduct: (sellerId: string, productId: string, rating: number, review?: string) => Promise<void>;
   sendMessage: (customerId: string, text: string) => Promise<void>;
   addStockAdjustment: (adjustment: Omit<StockAdjustment, 'id' | 'date' | 'userId'>) => Promise<void>;
   addPayoutMethod: (method: Omit<PayoutMethod, 'id' | 'isDefault'>) => Promise<void>;

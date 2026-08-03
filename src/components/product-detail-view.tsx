@@ -1,11 +1,14 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, MessageCircle, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Check, Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, MessageCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
 import type { StorefrontProduct } from '@/lib/storefront';
@@ -20,6 +23,15 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
 
   const price = useMemo(() => product.discountPrice ?? product.price, [product]);
   const oldPrice = useMemo(() => (product.discountPrice ? product.price : null), [product]);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [ratingAverage, setRatingAverage] = useState(product.ratingAverage ?? 0);
+  const [ratingCount, setRatingCount] = useState(product.ratingCount ?? 0);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const router = useRouter();
+  const { user, rateProduct } = useAuth();
+
   const descriptionText = useMemo(() => {
     if (typeof product.description === 'string') {
       return product.description;
@@ -31,6 +43,34 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
 
     return '';
   }, [product.description]);
+
+  const displayRating = ratingCount > 0 ? ratingAverage : 4.8;
+  const displayReviewText = ratingCount > 0 ? `${ratingCount} review${ratingCount === 1 ? '' : 's'}` : 'No reviews yet';
+
+  const handleSubmitRating = async () => {
+    if (!user) {
+      router.push('/sign-in');
+      return;
+    }
+    if (selectedRating < 1) {
+      return;
+    }
+
+    setSubmittingRating(true);
+
+    try {
+      const result = await rateProduct(product.sellerId, product.id, selectedRating, reviewText);
+      setRatingAverage(result.ratingAverage);
+      setRatingCount(result.ratingCount);
+      setRatingSubmitted(true);
+      setSelectedRating(0);
+      setReviewText('');
+    } catch (error: any) {
+      console.error(error);
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -55,9 +95,9 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
             <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1 text-amber-500">
                 <Star className="size-4 fill-current" />
-                <span className="font-semibold text-foreground">4.8</span>
+                <span className="font-semibold text-foreground">{displayRating.toFixed(1)}</span>
               </div>
-              <span>• 124 reviews</span>
+              <span>• {displayReviewText}</span>
               <span>• {product.stock > 0 ? 'In stock' : 'Out of stock'}</span>
             </div>
           </div>
@@ -139,16 +179,52 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Highlights</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <div className="rounded-2xl border bg-muted/30 p-3">Premium quality with reliable local delivery.</div>
-            <div className="rounded-2xl border bg-muted/30 p-3">Fast response from seller and transparent shipping.</div>
-            <div className="rounded-2xl border bg-muted/30 p-3">Highly rated and frequently restocked.</div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Highlights</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <div className="rounded-2xl border bg-muted/30 p-3">Premium quality with reliable local delivery.</div>
+              <div className="rounded-2xl border bg-muted/30 p-3">Fast response from seller and transparent shipping.</div>
+              <div className="rounded-2xl border bg-muted/30 p-3">Highly rated and frequently restocked.</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Rate this product</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">Share a star rating and optional buyer review to help others choose wisely.</p>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSelectedRating(value)}
+                    className={`rounded-full p-2 transition ${value <= selectedRating ? 'bg-amber-500 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+                    aria-label={`${value} star${value === 1 ? '' : 's'}`}
+                  >
+                    <Star className="size-5" />
+                  </button>
+                ))}
+              </div>
+              <Textarea
+                value={reviewText}
+                onChange={(event) => setReviewText(event.target.value)}
+                placeholder="Tell other buyers what you liked..."
+                className="min-h-[120px]"
+              />
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-sm text-muted-foreground">{ratingSubmitted ? 'Thanks for rating this product!' : 'You can rate once per product.'}</span>
+                <Button onClick={handleSubmitRating} disabled={submittingRating || selectedRating === 0}>
+                  {submittingRating ? 'Submitting...' : 'Submit rating'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {relatedProducts.length > 0 && (

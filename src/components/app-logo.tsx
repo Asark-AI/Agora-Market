@@ -15,7 +15,6 @@ export function AppLogo({ logoPath, className, ...props }: AppLogoProps) {
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 200 200"
         className={cn("size-6", className)}
-        {...props}
       >
         <title>Agora Logo</title>
         <path d={logoPath || appConfig.logo.path} fillRule="evenodd" fill="currentColor" />

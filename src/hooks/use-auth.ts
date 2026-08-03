@@ -712,10 +712,82 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   followSeller: async (sellerId: string) => {
-    const sellerRef = doc(ensureFirestore(), 'sellers', sellerId);
-    await updateDoc(sellerRef, {
-        followerCount: increment(1)
+    const user = get().user;
+    if (!user) {
+      throw new Error('Please sign in to follow sellers.');
+    }
+    if (sellerId === get().seller?.id) {
+      throw new Error('You cannot follow your own store.');
+    }
+
+    const firestore = ensureFirestore();
+    const sellerRef = doc(firestore, 'sellers', sellerId);
+    const followerRef = doc(firestore, 'sellers', sellerId, 'followers', user.id);
+
+    const added = await runTransaction(firestore, async (transaction) => {
+      const followerSnapshot = await transaction.get(followerRef);
+      if (followerSnapshot.exists()) {
+        return false;
+      }
+
+      transaction.set(followerRef, {
+        userId: user.id,
+        followedAt: serverTimestamp(),
+      });
+      transaction.update(sellerRef, {
+        followerCount: increment(1),
+      });
+      return true;
     });
+
+    return added;
+  },
+
+  rateProduct: async (sellerId: string, productId: string, rating: number, review = '') => {
+    const user = get().user;
+    if (!user) {
+      throw new Error('Please sign in to rate products.');
+    }
+
+    const firestore = ensureFirestore();
+    const productRef = doc(firestore, 'sellers', sellerId, 'products', productId);
+    const reviewRef = doc(firestore, 'sellers', sellerId, 'products', productId, 'reviews', user.id);
+
+    const result = await runTransaction(firestore, async (transaction) => {
+      const productSnapshot = await transaction.get(productRef);
+      if (!productSnapshot.exists()) {
+        throw new Error('Product not found.');
+      }
+
+      const reviewSnapshot = await transaction.get(reviewRef);
+      const productData = productSnapshot.data();
+      const previousRating = reviewSnapshot.exists() ? reviewSnapshot.data()?.rating || 0 : 0;
+      const currentCount = productData.ratingCount ?? 0;
+      const currentTotal = productData.ratingTotal ?? (productData.ratingAverage ? productData.ratingAverage * currentCount : 0);
+      const newCount = reviewSnapshot.exists() ? currentCount : currentCount + 1;
+      const newTotal = currentTotal - previousRating + rating;
+      const newAverage = newCount > 0 ? newTotal / newCount : 0;
+
+      transaction.set(reviewRef, {
+        userId: user.id,
+        rating,
+        review,
+        createdAt: serverTimestamp(),
+      });
+      transaction.update(productRef, {
+        ratingAverage: newAverage,
+        ratingCount: newCount,
+        ratingTotal: newTotal,
+      });
+
+      return {
+        ratingAverage: newAverage,
+        ratingCount: newCount,
+        ratingTotal: newTotal,
+      };
+    });
+
+    return result;
   },
 
   sendMessage: async (customerId, text) => {
