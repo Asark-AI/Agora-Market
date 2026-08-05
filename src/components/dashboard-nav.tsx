@@ -6,29 +6,23 @@ import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { 
-    LayoutDashboard, 
-    Package, 
-    ShoppingCart, 
-    Users, 
-    Truck, 
-    BarChart2, 
+    LayoutDashboard,
+    Package,
+    ShoppingCart,
+    Users,
+    Truck,
+    BarChart2,
     Settings,
     Wallet,
     MessageSquare,
     Wrench,
-    Paintbrush,
-    Sun,
-    Moon,
-    X,
-    LogOut,
+    Store,
 } from 'lucide-react';
-
 import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
   SidebarMenu,
-  SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
   SidebarSeparator,
@@ -131,8 +125,8 @@ export function DashboardNav({
     },
     {
         href: '/dashboard/storefront',
-        label: 'Store',
-        icon: Paintbrush,
+        label: 'Business',
+        icon: Store,
         group: 'settings'
     },
     {

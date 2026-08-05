@@ -14,7 +14,7 @@ import {
   DollarSign,
   Package,
   Users,
-  Eye,
+  Store,
   Edit,
   PlusCircle,
   MessageSquare,
@@ -125,7 +125,7 @@ export default function DashboardPage() {
     const isProfileIncomplete = !seller.description || !seller.logoUrl || !seller.storefrontBannerUrl;
     if (isProfileIncomplete) {
       items.push({
-        text: 'Complete your store profile to attract more buyers',
+        text: 'Complete your business profile to attract more buyers',
         href: '/dashboard/storefront',
         icon: Edit,
       });
@@ -170,7 +170,7 @@ export default function DashboardPage() {
           <QuickActionButton label="Orders" href="/dashboard/orders" icon={ShoppingCart} onNavigate={showLoader} />
           <QuickActionButton label="Inventory" href="/dashboard/stock" icon={Boxes} onNavigate={showLoader} />
           <QuickActionButton label="Analytics" href="/dashboard/analytics" icon={TrendingUp} onNavigate={showLoader} />
-          <QuickActionButton label="Storefront" href="/dashboard/storefront" icon={Eye} onNavigate={showLoader} />
+          <QuickActionButton label="Business" href="/dashboard/storefront" icon={Store} onNavigate={showLoader} />
         </div>
       </section>
 

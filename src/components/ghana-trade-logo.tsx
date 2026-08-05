@@ -7,7 +7,6 @@ import { ShieldAlert } from 'lucide-react';
 import { AccountSettingsTab } from '@/components/settings/account-settings-tab';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { User, Store, MessageSquare, Wallet } from 'lucide-react';
-import { StorefrontSettingsTab } from '@/components/settings/storefront-settings-tab';
 import { CommsSettingsTab } from '@/components/settings/comms-settings-tab';
 import { FinancialsSettingsTab } from '@/components/settings/financials-settings-tab';
 
@@ -56,15 +55,15 @@ export default function SettingsPage() {
           <Tabs defaultValue="account" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="account"><User className="mr-2 size-4"/>Account</TabsTrigger>
-              <TabsTrigger value="storefront"><Store className="mr-2 size-4"/>Storefront</TabsTrigger>
+              <TabsTrigger value="business"><Store className="mr-2 size-4"/>Business</TabsTrigger>
               <TabsTrigger value="comms"><MessageSquare className="mr-2 size-4"/>Communications</TabsTrigger>
               <TabsTrigger value="financials"><Wallet className="mr-2 size-4"/>Financials</TabsTrigger>
             </TabsList>
             <TabsContent value="account">
               <AccountSettingsTab />
             </TabsContent>
-            <TabsContent value="storefront">
-              <p className="text-sm text-muted-foreground p-4 text-center bg-secondary rounded-lg">Storefront customization has moved. Please use the dedicated <a href="/dashboard/storefront" className="underline font-semibold">Storefront Editor</a>.</p>
+            <TabsContent value="business">
+              <p className="text-sm text-muted-foreground p-4 text-center bg-secondary rounded-lg">Business settings are now centralized under the dashboard “Business” section.</p>
             </TabsContent>
             <TabsContent value="comms">
                 <CommsSettingsTab />
