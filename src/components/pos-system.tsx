@@ -22,7 +22,7 @@ import {
     Trash2, UserPlus, Users, Barcode, CheckCircle, Printer, ShoppingCart, DollarSign, Wallet, ChevronsUpDown, Check
 } from 'lucide-react';
 import type { Product, Customer, OrderItem, Order } from '@/lib/types';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { cn } from '@/lib/utils';
 import { categories } from '@/lib/data';
 
@@ -85,7 +85,7 @@ const PosProductCard = ({ product, onAddToCart }: { product: Product, onAddToCar
     return (
         <Card className="cursor-pointer hover:border-primary transition-colors overflow-hidden" onClick={() => onAddToCart(product)}>
             <div className="relative aspect-square w-full bg-muted">
-                <Image src={product.images[0]} alt={product.name} fill className="object-cover" />
+                <NextImage src={product.images[0]} alt={product.name} fill className="object-cover" />
                 {product.stock <= 5 && (
                     <div className="absolute top-1 right-1 bg-destructive/80 text-destructive-foreground text-xs font-bold px-2 py-0.5 rounded-full">{product.stock} left</div>
                 )}
@@ -301,7 +301,7 @@ export function PosSystem() {
                                {cart.size > 0 ? (
                                    Array.from(cart.values()).map(({ product, quantity }) => (
                                        <div key={product.id} className="flex items-center gap-2">
-                                           <Image src={product.images[0]} width={40} height={40} alt={product.name} className="rounded-md object-cover" />
+                                           <NextImage src={product.images[0]} width={40} height={40} alt={product.name} className="rounded-md object-cover" />
                                            <div className="flex-grow">
                                                 <p className="text-sm font-medium truncate">{product.name}</p>
                                                 <p className="text-xs text-muted-foreground">₵{(product.discountPrice ?? product.price).toFixed(2)}</p>

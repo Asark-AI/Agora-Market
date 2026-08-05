@@ -2,7 +2,7 @@ import { getActiveProducts, getActiveSellers, getCategoryOptions, getImageUrl } 
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { ArrowRight, BadgePercent, Clock3, Sparkles, Store, TrendingUp, ShoppingBag, Star, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -50,12 +50,12 @@ export default async function PublicHomePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Card className="overflow-hidden rounded-[24px] border-0 shadow-lg">
                 <div className="relative aspect-[4/3]">
-                  <Image src="https://picsum.photos/seed/hero/800/600" alt="Marketplace discovery" fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 50vw" />
+                  <NextImage src="https://picsum.photos/seed/hero/800/600" alt="Marketplace discovery" fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 50vw" />
                 </div>
               </Card>
               <Card className="overflow-hidden rounded-[24px] border-0 shadow-lg">
                 <div className="relative aspect-[4/3]">
-                  <Image src="https://picsum.photos/seed/hero2/800/600" alt="Featured products" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+                  <NextImage src="https://picsum.photos/seed/hero2/800/600" alt="Featured products" fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
                 </div>
               </Card>
             </div>
@@ -103,8 +103,8 @@ export default async function PublicHomePage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {flashDeals.map((product) => (
             <Card key={product.id} className="overflow-hidden">
-              <div className="relative aspect-square bg-muted">
-                <Image src={getImageUrl(product.images?.[0])} alt={product.name} fill className="object-cover" />
+                <div className="relative aspect-square bg-muted">
+                <NextImage src={getImageUrl(product.images?.[0])} alt={product.name} fill className="object-cover" />
               </div>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -194,8 +194,8 @@ export default async function PublicHomePage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {featuredStores.map((seller) => (
             <Card key={seller.id} className="overflow-hidden transition hover:-translate-y-1 hover:shadow-md">
-              <div className="relative h-32 bg-muted">
-                <Image src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                <div className="relative h-32 bg-muted">
+                <NextImage src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
               </div>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3">

@@ -2,7 +2,7 @@ import { getActiveSellers, getImageUrl } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { BadgeCheck, Search, Store, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -34,14 +34,14 @@ export default async function StoresPage() {
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sellers.map((seller) => (
             <Card key={seller.id} className="overflow-hidden transition hover:-translate-y-1 hover:shadow-md">
-              <div className="relative h-36 bg-muted">
-                <Image src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
+                <div className="relative h-36 bg-muted">
+                <NextImage src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
               </div>
               <CardContent className="p-5">
                 <div className="flex items-center gap-3">
                   <div className="relative h-12 w-12 overflow-hidden rounded-full bg-muted">
                     {seller.logoUrl ? (
-                      <Image src={getImageUrl(seller.logoUrl)} alt={`${seller.name} logo`} fill className="object-cover" />
+                      <NextImage src={getImageUrl(seller.logoUrl)} alt={`${seller.name} logo`} fill className="object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-primary/10 text-sm font-semibold text-primary">{seller.name.slice(0, 1)}</div>
                     )}

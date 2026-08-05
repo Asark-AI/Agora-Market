@@ -42,7 +42,7 @@ import {
   CheckCircle,
   Lightbulb,
 } from 'lucide-react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, subDays, startOfMonth, endOfMonth, eachMonthOfInterval, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
 
@@ -400,7 +400,7 @@ export default function AnalyticsPage() {
                                     <TableRow key={item.id}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                <Image src={item.image || 'https://placehold.co/40x40.png'} alt={item.name} width={40} height={40} className="rounded-md" />
+                                                <NextImage src={item.image || 'https://placehold.co/40x40.png'} alt={item.name} width={40} height={40} className="rounded-md" />
                                                 <span className="font-medium">{item.name}</span>
                                             </div>
                                         </TableCell>

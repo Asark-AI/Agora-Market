@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, notFound } from 'next/navigation';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { useAuth } from '@/hooks/use-auth';
 import type { RepairRequest, OrderStatus } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -167,9 +167,9 @@ export default function RepairDetailsPage({ params }: { params: { repairId: stri
                                 <div>
                                     <h4 className="font-semibold mb-2">Photos from Customer</h4>
                                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                                        {request.photos.map((photo, index) => (
+                                                {request.photos.map((photo, index) => (
                                             <a href={photo} target="_blank" rel="noreferrer" key={index}>
-                                                <Image src={photo} alt={`Issue photo ${index + 1}`} width={100} height={100} className="rounded-md object-cover aspect-square border" />
+                                                <NextImage src={photo} alt={`Issue photo ${index + 1}`} width={100} height={100} className="rounded-md object-cover aspect-square border" />
                                             </a>
                                         ))}
                                     </div>
@@ -196,7 +196,7 @@ export default function RepairDetailsPage({ params }: { params: { repairId: stri
                                                 <p className="text-sm text-muted-foreground">{format(new Date(update.date), 'dd MMM yyyy, h:mm a')}</p>
                                                 {update.photo && (
                                                     <a href={update.photo} target="_blank" rel="noreferrer">
-                                                        <Image src={update.photo} alt="Progress update photo" width={150} height={100} className="mt-2 rounded-md border aspect-video object-cover" />
+                                                        <NextImage src={update.photo} alt="Progress update photo" width={150} height={100} className="mt-2 rounded-md border aspect-video object-cover" />
                                                     </a>
                                                 )}
                                             </div>

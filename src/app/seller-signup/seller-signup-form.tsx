@@ -38,6 +38,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 import { LiquidLoader } from '@/components/liquid-loader';
 import { Store, Wrench, Briefcase, Factory, Check } from 'lucide-react';
+import NextImage from 'next/image';
 import { cn } from '@/lib/utils';
 import { regions, mobileGroupedCategories } from '@/lib/data';
 import type { Seller, User, BusinessType } from '@/lib/types';
@@ -582,7 +583,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                                 </div>
                               ) : (
                                 <div className="relative w-36 h-36 rounded overflow-hidden border bg-secondary">
-                                  <Image
+                                  <NextImage
                                     src="/agora-logo.png"
                                     alt="Agora logo placeholder"
                                     fill

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Search, Store, Users } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
+import NextImage from 'next/image';
 
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
   const [products, sellers] = await Promise.all([getActiveProducts(), getActiveSellers()]);
@@ -72,8 +72,8 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {filteredStores.slice(0, 6).map((seller) => (
                 <Card key={seller.id} className="overflow-hidden transition hover:-translate-y-1 hover:shadow-md">
-                  <div className="relative h-32 bg-muted">
-                    <Image src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                    <div className="relative h-32 bg-muted">
+                    <NextImage src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
                   </div>
                   <CardContent className="p-5">
                     <div className="flex items-center gap-3">

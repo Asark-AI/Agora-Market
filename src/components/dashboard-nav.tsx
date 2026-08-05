@@ -17,6 +17,10 @@ import {
     MessageSquare,
     Wrench,
     Store,
+    Sun,
+    Moon,
+    X,
+    LogOut,
 } from 'lucide-react';
 import {
   Sidebar,

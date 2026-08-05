@@ -181,6 +181,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const authUser = firebaseUserOverride ?? auth?.currentUser ?? null;
 
     set({ firebaseUser: authUser });
+    // Indicate we're loading profile data (prevents UI redirects before seller is fetched)
+    set({ loading: true });
 
     if (!authUser) {
       set({

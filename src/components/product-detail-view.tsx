@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { Check, Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, MessageCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,13 +76,13 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
     <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
-          <div className="relative aspect-square overflow-hidden rounded-[24px] border bg-muted">
-            <Image src={getImageUrl(selectedImage)} alt={product.name} fill className="object-cover" />
+            <div className="relative aspect-square overflow-hidden rounded-[24px] border bg-muted">
+            <NextImage src={getImageUrl(selectedImage)} alt={product.name} fill className="object-cover" />
           </div>
           <div className="grid grid-cols-4 gap-3">
             {(product.images || []).slice(0, 4).map((image, index) => (
               <button key={`${image}-${index}`} type="button" onClick={() => setSelectedImage(image)} className={`relative aspect-square overflow-hidden rounded-xl border ${selectedImage === image ? 'ring-2 ring-primary' : ''}`}>
-                <Image src={getImageUrl(image)} alt={`${product.name} view ${index + 1}`} fill className="object-cover" />
+                <NextImage src={getImageUrl(image)} alt={`${product.name} view ${index + 1}`} fill className="object-cover" />
               </button>
             ))}
           </div>
@@ -237,8 +237,8 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
             {relatedProducts.map((item) => (
               <Card key={item.id} className="overflow-hidden">
                 <Link href={`/product/${buildProductSlug(item)}`}>
-                  <div className="relative aspect-square">
-                    <Image src={getImageUrl(item.images?.[0])} alt={item.name} fill className="object-cover" />
+                    <div className="relative aspect-square">
+                    <NextImage src={getImageUrl(item.images?.[0])} alt={item.name} fill className="object-cover" />
                   </div>
                 </Link>
                 <CardContent className="p-4">

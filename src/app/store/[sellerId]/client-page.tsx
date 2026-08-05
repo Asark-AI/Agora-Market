@@ -1,7 +1,7 @@
 
 'use client';
 
-import Image from 'next/image';
+import NextImage from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useEffect, useState, useMemo } from 'react';
@@ -171,14 +171,14 @@ function ManufacturingStorefront({ seller, products }: { seller: Seller; product
     <>
       <div className="bg-background">
         <header className="relative">
-          <div className="h-48 md:h-64 bg-muted">
-            <Image src={seller.storefrontBannerUrl || 'https://placehold.co/1200x300.png'} alt={`${seller.name} banner`} fill className="object-cover" data-ai-hint="store banner industrial" />
-          </div>
+                        <div className="h-48 md:h-64 bg-muted">
+                        <NextImage src={seller.storefrontBannerUrl || 'https://placehold.co/1200x300.png'} alt={`${seller.name} banner`} fill className="object-cover" data-ai-hint="store banner industrial" />
+                    </div>
            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-background p-2 rounded-full">
              <div className="relative size-24 md:size-32 rounded-full border-4 border-background overflow-hidden bg-muted flex items-center justify-center">
-                {seller.logoUrl ? (
-                     <Image src={seller.logoUrl} alt={`${seller.name} logo`} fill className="object-cover" data-ai-hint="store logo" />
-                ) : (
+                 {seller.logoUrl ? (
+                     <NextImage src={seller.logoUrl} alt={`${seller.name} logo`} fill className="object-cover" data-ai-hint="store logo" />
+                 ) : (
                     <Factory className="size-16" />
                 )}
             </div>
@@ -208,7 +208,7 @@ function ManufacturingStorefront({ seller, products }: { seller: Seller; product
                         <Card key={product.id} className="overflow-hidden flex flex-col">
                             <CardHeader className="p-0">
                                 <div className="relative aspect-square w-full bg-muted">
-                                    <Image src={product.images?.[0] || 'https://placehold.co/300x300.png'} alt={product.name} fill className="object-cover" data-ai-hint="industrial product" />
+                                    <NextImage src={product.images?.[0] || 'https://placehold.co/300x300.png'} alt={product.name} fill className="object-cover" data-ai-hint="industrial product" />
                                 </div>
                             </CardHeader>
                             <CardContent className="p-4 flex-grow">
@@ -386,19 +386,19 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
         <div className={cn("bg-background", fontClass, isEditorPreview && "font-sans")}>
             <header className="bg-secondary/30">
                 <div className="relative h-48 md:h-64 bg-muted">
-                    <Image 
-                        src={bannerUrl || 'https://placehold.co/1200x300.png'} 
-                        alt={`${sellerName} banner`} 
-                        fill 
-                        className="object-cover" 
-                        data-ai-hint="store banner"
-                    />
-                </div>
+                        <NextImage 
+                            src={bannerUrl || 'https://placehold.co/1200x300.png'} 
+                            alt={`${sellerName} banner`} 
+                            fill 
+                            className="object-cover" 
+                            data-ai-hint="store banner"
+                        />
+                    </div>
                 <div className="container mx-auto max-w-7xl px-4">
                     <div className="flex flex-col sm:flex-row items-center gap-6 -mt-16 relative z-10">
                         <div className="relative size-32 rounded-full border-4 border-background overflow-hidden bg-muted flex items-center justify-center shrink-0">
                             {logoUrl ? (
-                                <Image src={logoUrl} alt={`${sellerName} logo`} fill className="object-cover" data-ai-hint="store logo" />
+                                <NextImage src={logoUrl} alt={`${sellerName} logo`} fill className="object-cover" data-ai-hint="store logo" />
                             ) : (
                                 <AppLogo className="size-16" />
                             )}
@@ -452,7 +452,7 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
                             <Card key={item.id} className="overflow-hidden flex flex-col group h-full">
                                 <CardHeader className="p-0">
                                     <div className="relative aspect-square w-full bg-muted overflow-hidden">
-                                        <Image 
+                                        <NextImage 
                                             src={image} 
                                             alt={name} 
                                             fill 
@@ -484,7 +484,7 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
                                 <div key={item.id}>
                                     <Card className="overflow-hidden flex flex-col sm:flex-row group">
                                         <div className="relative aspect-video sm:aspect-square sm:w-1/4 bg-muted shrink-0 overflow-hidden">
-                                            <Image 
+                                            <NextImage 
                                                 src={image} 
                                                 alt={name} 
                                                 fill 

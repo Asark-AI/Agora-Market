@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/use-auth';
 import { LiquidLoader } from '@/components/liquid-loader';
 import { PlusCircle, Trash2, Sparkles, MousePointerClick, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { AiDescriptionModal } from './ai-description-modal';
 import { generateProductDescription } from '@/ai/flows/generate-product-description';
@@ -607,7 +607,7 @@ export function EditProductForm({ productId }: EditProductFormProps) {
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-2">
                             {currentImages.map((img, index) => (
                                 <div key={index} className="relative group">
-                                    <Image src={img} alt={`Product image ${index + 1}`} width={100} height={100} className="rounded-md object-cover aspect-square" />
+                                    <NextImage src={img} alt={`Product image ${index + 1}`} width={100} height={100} className="rounded-md object-cover aspect-square" />
                                     <Button
                                         type="button"
                                         variant="destructive"

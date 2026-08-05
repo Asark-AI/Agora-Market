@@ -1,7 +1,7 @@
 
 'use client';
 
-import Image from 'next/image';
+import NextImage from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -167,8 +167,8 @@ export default function SignUpPage() {
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="hidden bg-muted lg:block">
-        <Image
+        <div className="hidden bg-muted lg:block">
+        <NextImage
           src="https://picsum.photos/seed/4/1200/1800"
           alt="A collection of handmade Ghanaian crafts"
           width={1200}

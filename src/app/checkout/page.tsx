@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/use-cart';
@@ -106,8 +106,8 @@ export default function CheckoutPage() {
                     {items.map(({ product, quantity }) => (
                         <Card key={product.id} className="flex flex-col gap-4 rounded-3xl border p-4 md:flex-row md:items-center md:justify-between md:p-5">
                             <div className="flex min-w-0 gap-4 md:items-center">
-                                <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-3xl bg-muted">
-                                    <Image src={(product as Product).images[0]} alt={product.name} fill className="object-cover" />
+                                    <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-3xl bg-muted">
+                                    <NextImage src={(product as Product).images[0]} alt={product.name} fill className="object-cover" />
                                 </div>
                                 <div className="min-w-0">
                                     <h3 className="truncate text-lg font-semibold">{product.name}</h3>

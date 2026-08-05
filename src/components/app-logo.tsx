@@ -1,5 +1,5 @@
 
-import Image from "next/image";
+import NextImage from "next/image";
 import { cn } from "@/lib/utils";
 import type { HTMLAttributes } from "react";
 import { appConfig } from "@/lib/config";
@@ -24,7 +24,7 @@ export function AppLogo({ logoPath, className, ...props }: AppLogoProps) {
 
   return (
     <div className={cn("relative overflow-hidden", className)} {...props}>
-      <Image src="/agora-logo.png" alt="Agora Logo" fill className="object-contain" />
+      <NextImage src="/agora-logo.png" alt="Agora Logo" fill className="object-contain" />
     </div>
   );
 }

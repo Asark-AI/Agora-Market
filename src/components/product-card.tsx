@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { Check, Heart, Plus, ShoppingCart, Star } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
@@ -51,7 +51,7 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-muted/70">
         <Link href={`/product/${buildProductSlug(product)}`} className="block h-full w-full" aria-label={`View ${product.name}`}>
-          <Image
+          <NextImage
             src={getImageUrl(product.images?.[0])}
             alt={product.name}
             fill

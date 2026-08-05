@@ -4,7 +4,7 @@ import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import { notFound } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { BadgeCheck, MessageCircle, Store, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -31,15 +31,15 @@ export default async function StorefrontPage({ params }: StorePageProps) {
       <div className="border-b bg-muted/40">
         <div className="container mx-auto max-w-7xl px-4 py-12">
           <div className="relative overflow-hidden rounded-3xl border bg-background">
-            <div className="relative h-56 bg-muted">
-              <Image src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" />
+              <div className="relative h-56 bg-muted">
+              <NextImage src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" />
             </div>
             <div className="p-6 md:p-8">
               <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div className="flex items-center gap-4">
                   <div className="relative h-20 w-20 overflow-hidden rounded-full bg-muted">
                     {seller.logoUrl ? (
-                      <Image src={getImageUrl(seller.logoUrl)} alt={`${seller.name} logo`} fill className="object-cover" />
+                      <NextImage src={getImageUrl(seller.logoUrl)} alt={`${seller.name} logo`} fill className="object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center rounded-full bg-primary/10 text-2xl font-semibold text-primary">{seller.name.slice(0, 1)}</div>
                     )}

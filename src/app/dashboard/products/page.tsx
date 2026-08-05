@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,7 +125,7 @@ export default function ProductsPage() {
                             return (
                                 <TableRow key={product.id}>
                                     <TableCell>
-                                        <Image
+                                        <NextImage
                                             src={(product.images && product.images[0]) || 'https://placehold.co/40x40.png'}
                                             alt={product.name}
                                             width={40}

@@ -14,7 +14,7 @@ import { LiquidLoader } from '@/components/liquid-loader';
 import { Check, ChevronsUpDown, Trash2, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Product, Supplier, PurchaseOrderItem } from '@/lib/types';
-import Image from 'next/image';
+import NextImage from 'next/image';
 
 interface PurchaseOrderModalProps {
     isOpen: boolean;

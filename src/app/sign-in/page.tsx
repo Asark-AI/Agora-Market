@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { AppLogo } from '@/components/app-logo';
 
 import { Button } from '@/components/ui/button';
@@ -43,8 +43,11 @@ export default function SignInPage() {
     if (loading) return;
 
     if (user) {
-      const targetPath = seller ? '/dashboard' : '/seller-signup';
-      router.replace(targetPath);
+      const tid = setTimeout(() => {
+        const targetPath = seller ? '/dashboard' : '/seller-signup';
+        router.replace(targetPath);
+      }, 250);
+      return () => clearTimeout(tid);
     }
   }, [user, seller, loading, router]);
 
@@ -61,9 +64,7 @@ export default function SignInPage() {
     try {
       await logIn(data.email, data.password);
       toast({ title: 'Logged In Successfully!' });
-      setTimeout(() => {
-        router.replace(seller ? '/dashboard' : '/seller-signup');
-      }, 150);
+      // navigation handled by effect when auth state settles
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
     } finally {
@@ -76,9 +77,7 @@ export default function SignInPage() {
     try {
       await signInWithGoogle();
       toast({ title: "Logged In Successfully!" });
-      setTimeout(() => {
-        router.replace(seller ? '/dashboard' : '/seller-signup');
-      }, 150);
+      // navigation handled by effect when auth state settles
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -92,8 +91,8 @@ export default function SignInPage() {
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="hidden bg-muted lg:block">
-        <Image
+        <div className="hidden bg-muted lg:block">
+        <NextImage
           src="https://picsum.photos/seed/3/1200/1800"
           alt="Artisans at work in a vibrant market"
           width="1200"

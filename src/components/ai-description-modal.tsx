@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiquidLoader } from '@/components/liquid-loader';
 import { UploadCloud, PenSquare, Sparkles } from 'lucide-react';
-import Image from 'next/image';
+import NextImage from 'next/image';
 import { Label } from './ui/label';
 
 const textFormSchema = z.object({
@@ -179,7 +179,7 @@ export function AiDescriptionModal({ open, onOpenChange, onInsert }: AiDescripti
                       render={({ field }) => (
                         <FormItem>
                             <FormLabel htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-secondary hover:bg-muted">
-                              {imagePreview ? <Image src={imagePreview} alt="Preview" width={160} height={160} className="h-full w-auto object-contain p-2" /> : (
+                              {imagePreview ? <NextImage src={imagePreview} alt="Preview" width={160} height={160} className="h-full w-auto object-contain p-2" /> : (
                                 <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
                                   <UploadCloud className="w-10 h-10 mb-3 text-muted-foreground" />
                                   <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span></p>
