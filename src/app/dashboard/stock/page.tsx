@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,9 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeftRight, SlidersHorizontal, Package, AlertTriangle, Coins } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { StockAdjustmentModal } from '@/components/stock-adjustment-modal';
 import type { Product, StockAdjustment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+
+const StockAdjustmentModal = dynamic(() => import('@/components/stock-adjustment-modal'), {
+  ssr: false,
+  loading: () => null,
+});
 
 type StockMovementType = 'adjustment-add' | 'adjustment-remove' | 'transfer' | 'sale' | 'purchase';
 

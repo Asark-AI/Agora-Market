@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +17,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { LiquidLoader } from '@/components/liquid-loader';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PurchaseOrderModal } from '@/components/purchase-order-modal';
+import { z as zod } from 'zod';
+
+const PurchaseOrderModal = dynamic(() => import('@/components/purchase-order-modal'), {
+  ssr: false,
+  loading: () => null,
+});
 
 const supplierSchema = z.object({
   name: z.string().min(2, 'Supplier name is required.'),

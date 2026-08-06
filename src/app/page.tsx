@@ -1,3 +1,3 @@
 
-export { default } from './products/page';
+export { default } from './(public)/public-home-page';
 

@@ -1,6 +1,7 @@
 
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
@@ -18,9 +19,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { LiquidLoader } from '@/components/liquid-loader';
-import { AddPayoutMethodModal } from '@/components/add-payout-method-modal';
-import { WithdrawalRequestModal } from '@/components/withdrawal-request-modal';
 import type { PayoutMethod, Transaction } from '@/lib/types';
+
+const AddPayoutMethodModal = dynamic(() => import('@/components/add-payout-method-modal'), {
+  ssr: false,
+  loading: () => null,
+});
+
+const WithdrawalRequestModal = dynamic(() => import('@/components/withdrawal-request-modal'), {
+  ssr: false,
+  loading: () => null,
+});
 
 
 const plans = [

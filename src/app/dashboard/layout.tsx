@@ -3,12 +3,17 @@
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardNav } from '@/components/dashboard-nav';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { PageLoader } from '@/components/page-loader';
-import { AppTour } from '@/components/app-tour';
 import { businessConfig } from '@/lib/business-types';
+
+const AppTour = dynamic(() => import('@/components/app-tour'), {
+  ssr: false,
+  loading: () => null,
+});
 
 export default function AppDashboardLayout({
   children,

@@ -17,8 +17,6 @@ import { Button } from '@/components/ui/button';
 import { AppLogo } from '@/components/app-logo';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AiChatWidget } from '@/components/ai-chat-widget';
-import { InquiryForm } from '@/components/inquiry-form';
 import { Star, Smartphone, Laptop, Tv, WashingMachine, Phone, Mail, ChevronRight, Rss, Factory, Award, Users, FileText, BadgeCheck } from 'lucide-react';
 
 import type { Seller, Product, ServiceProduct, RepairRequest, FaqItem } from '@/lib/types';
@@ -30,7 +28,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const lora = Lora({ subsets: ['latin'], variable: '--font-serif' });
 const montserrat = Montserrat({ subsets: ['latin'], variable: '--font-minimalist' });
 
-
+const AiChatWidget = dynamic(() => import('@/components/ai-chat-widget'), { ssr: false, loading: () => null });
+const InquiryForm = dynamic(() => import('@/components/inquiry-form'), { ssr: false, loading: () => null });
 const AuthModal = dynamic(() => import('@/components/auth-modal'), { ssr: false });
 
 type StorefrontItem = Product | ServiceProduct | RepairRequest;
