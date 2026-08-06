@@ -38,11 +38,11 @@ import {
 } from '@/components/dashboard/overview-components';
 
 export default function DashboardPage() {
-  const { 
-    user, 
-    seller, 
-    loading: authLoading, 
-    sellerOrders, 
+  const {
+    user,
+    seller,
+    loading: authLoading,
+    sellerOrders,
     sellerProducts,
     sellerMessages,
     sellerRepairRequests,
@@ -54,28 +54,37 @@ export default function DashboardPage() {
 
   if (loading || !seller || !user) {
     return (
-        <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <Skeleton className="h-28 w-full" />
-                <Skeleton className="h-28 w-full" />
-                <Skeleton className="h-28 w-full" />
-                <Skeleton className="h-28 w-full" />
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="lg:col-span-2"><Skeleton className="h-48 w-full" /></div>
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-            </div>
+      <div className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-28 w-full" />
         </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="lg:col-span-2">
+            <Skeleton className="h-48 w-full" />
+          </div>
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
     );
   }
 
+  const isRepairShop = seller.businessType === 'repairs';
+  const isStore = seller.businessType === 'store' || seller.businessType === 'manufacturing';
+
+  const unreadMessagesCount = sellerMessages.filter((message) => !message.read && message.senderId !== user.id).length;
+  const pendingOrdersCount = sellerOrders.filter((order) => order.status === 'pending').length;
+  const pendingRepairsCount = sellerRepairRequests.filter((request) => request.status === 'pending').length;
+  const productsWithStock = sellerProducts.filter((product) => 'stock' in product) as Product[];
+  const lowStockCount = productsWithStock.filter((product) => product.stock > 0 && product.stock <= 5).length;
+  const outOfStockCount = productsWithStock.filter((product) => product.stock === 0).length;
+  const activeProducts = sellerProducts.filter((product) => product.status === 'active').length;
+
   const actionItems = useMemo(() => {
     const items: Array<{ text: string; href: string; icon: LucideIcon }> = [];
-
-    const isRepairShop = seller.businessType === 'repairs';
-    const pendingOrdersCount = sellerOrders.filter((order) => order.status === 'pending').length;
-    const pendingRepairsCount = sellerRepairRequests.filter((request) => request.status === 'pending').length;
 
     if (!isRepairShop && pendingOrdersCount > 0) {
       items.push({
@@ -84,6 +93,7 @@ export default function DashboardPage() {
         icon: ShoppingCart,
       });
     }
+
     if (isRepairShop && pendingRepairsCount > 0) {
       items.push({
         text: `${pendingRepairsCount} new repair request${pendingRepairsCount > 1 ? 's' : ''}`,
@@ -92,7 +102,6 @@ export default function DashboardPage() {
       });
     }
 
-    const unreadMessagesCount = sellerMessages.filter((message) => !message.read && message.senderId !== user.id).length;
     if (unreadMessagesCount > 0) {
       items.push({
         text: `${unreadMessagesCount} unread message${unreadMessagesCount > 1 ? 's' : ''}`,
@@ -101,11 +110,7 @@ export default function DashboardPage() {
       });
     }
 
-    if (seller.businessType === 'store' || seller.businessType === 'manufacturing') {
-      const productsWithStock = sellerProducts.filter((product) => 'stock' in product) as Product[];
-      const outOfStockCount = productsWithStock.filter((product) => product.stock === 0).length;
-      const lowStockCount = productsWithStock.filter((product) => product.stock > 0 && product.stock <= 5).length;
-
+    if (isStore) {
       if (lowStockCount > 0) {
         items.push({
           text: `${lowStockCount} item${lowStockCount > 1 ? 's are' : ' is'} running low on stock`,
@@ -132,93 +137,113 @@ export default function DashboardPage() {
     }
 
     return items;
-  }, [seller, sellerOrders, sellerProducts, sellerMessages, sellerRepairRequests, user.id]);
+  }, [isRepairShop, pendingOrdersCount, pendingRepairsCount, unreadMessagesCount, lowStockCount, outOfStockCount, seller.description, seller.logoUrl, seller.storefrontBannerUrl]);
 
   const totalRevenue = sellerOrders
     .filter((order) => order.status === 'fulfilled' || order.status === 'completed')
     .reduce((sum, order) => sum + order.total, 0);
 
-  const activeProducts = sellerProducts.filter((product) => product.status === 'active').length;
-  const isStore = seller.businessType === 'store' || seller.businessType === 'manufacturing';
-  const pendingOrdersCount = sellerOrders.filter((order) => order.status === 'pending').length;
-  const lowStockCount = sellerProducts.filter((product) => 'stock' in product && product.stock > 0 && product.stock <= 5).length;
+  const businessModeLabel = isRepairShop ? 'Repair shop' : isStore ? 'Storefront' : 'Service studio';
+  const quickActions = [
+    { label: `New ${isStore ? 'Product' : 'Service'}`, href: '/dashboard/add-product', icon: PlusCircle },
+    { label: isRepairShop ? 'Repair requests' : 'Orders', href: isRepairShop ? '/dashboard/repairs' : '/dashboard/orders', icon: ShoppingCart },
+    { label: 'Messages', href: '/dashboard/messages', icon: MessageSquare },
+    { label: 'Storefront', href: `/store/${seller.id}`, icon: Store },
+  ];
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-[28px] border border-border/70 bg-[linear-gradient(135deg,rgba(30,41,59,0.04),rgba(14,116,144,0.08),rgba(255,255,255,1))] p-4 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.30)] sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-[0.24em] text-primary">
-              <Sparkles className="size-3.5" />
-              Operations overview
+    <div className="space-y-4 pb-24">
+      <section className="rounded-[28px] border border-border/70 bg-background/80 p-5 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.30)]">
+        <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-slate-700">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+              Live business pulse
             </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-              Good morning, {user.name.split(' ')[0]} 👋
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {seller.name} is performing smoothly. Focus on the items that need attention most.
-            </p>
+            <div>
+              <p className="text-sm text-muted-foreground">Good morning, {user.name.split(' ')[0]}.</p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                {businessModeLabel} performance at a glance.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Your key metrics are ready. Use the actions below to move orders, stock, and messages forward without leaving the dashboard.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <BusinessBadge label="Business type" detail={businessModeLabel} />
+              <BusinessBadge label="Plan" detail={seller.subscriptionPlan} />
+              <BusinessBadge label="Status" detail="Healthy" />
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <BusinessBadge label="Live status" detail="Healthy" />
-            <BusinessBadge label="Plan" detail={seller.subscriptionPlan} />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[22px] border border-border/70 bg-gradient-to-br from-white via-slate-50 to-slate-100 p-5 shadow-sm">
+              <p className="text-sm font-medium text-muted-foreground">Revenue</p>
+              <p className="mt-3 text-3xl font-semibold text-slate-950">GHS {totalRevenue.toFixed(2)}</p>
+              <p className="mt-2 text-sm text-muted-foreground">Confirmed sales</p>
+            </div>
+            <div className="rounded-[22px] border border-border/70 bg-gradient-to-br from-white via-slate-50 to-slate-100 p-5 shadow-sm">
+              <p className="text-sm font-medium text-muted-foreground">Active products</p>
+              <p className="mt-3 text-3xl font-semibold text-slate-950">{activeProducts}</p>
+              <p className="mt-2 text-sm text-muted-foreground">Your current listings</p>
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <QuickActionButton label={`New ${isStore ? 'Product' : 'Service'}`} href="/dashboard/add-product" icon={PlusCircle} onNavigate={showLoader} />
-          <QuickActionButton label="Orders" href="/dashboard/orders" icon={ShoppingCart} onNavigate={showLoader} />
-          <QuickActionButton label="Inventory" href="/dashboard/stock" icon={Boxes} onNavigate={showLoader} />
-          <QuickActionButton label="Analytics" href="/dashboard/analytics" icon={TrendingUp} onNavigate={showLoader} />
-          <QuickActionButton label="Business" href="/dashboard/storefront" icon={Store} onNavigate={showLoader} />
+        <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {quickActions.map((item) => (
+            <QuickActionButton key={item.label} label={item.label} href={item.href as Route} icon={item.icon} onNavigate={showLoader} />
+          ))}
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Revenue" value={`GHS ${totalRevenue.toFixed(2)}`} subtitle="Today’s sales" trend="+18%" icon={DollarSign} accent="bg-emerald-50 text-emerald-600" />
-        <MetricCard label="Orders" value={sellerOrders.length} subtitle="Live orders" trend="+6%" icon={ShoppingCart} accent="bg-sky-50 text-sky-600" />
-        <MetricCard label="Products" value={activeProducts} subtitle="Active listings" trend="Stable" icon={Package} accent="bg-violet-50 text-violet-600" />
-        <MetricCard label="Visitors" value="2,103" subtitle="This week" trend="+12%" icon={Users} accent="bg-amber-50 text-amber-600" />
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Revenue" value={`GHS ${totalRevenue.toFixed(2)}`} subtitle="Confirmed sales" trend="+18%" icon={DollarSign} accent="bg-emerald-50 text-emerald-600" />
+        <MetricCard label={isRepairShop ? 'Jobs' : 'Orders'} value={isRepairShop ? sellerRepairRequests.length : sellerOrders.length} subtitle="Open tasks" trend={isRepairShop ? '+9%' : '+6%'} icon={ShoppingCart} accent="bg-sky-50 text-sky-600" />
+        <MetricCard label="Products" value={activeProducts} subtitle="Live listings" trend="Stable" icon={Package} accent="bg-violet-50 text-violet-600" />
+        <MetricCard label="Messages" value={unreadMessagesCount} subtitle="Unread" trend="+4%" icon={Users} accent="bg-amber-50 text-amber-600" />
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card className="border-border/60 bg-background/80">
+        <Card className="border-border/70 bg-background/80">
           <CardHeader className="pb-3">
-            <SectionHeader title="What needs attention" actionLabel="View all" actionHref="/dashboard/orders" onAction={showLoader} />
+            <SectionHeader title="Focus queue" actionLabel="Manage tasks" actionHref={isRepairShop ? '/dashboard/repairs' : '/dashboard/orders'} onAction={showLoader} />
           </CardHeader>
-          <CardContent className="space-y-2">
-            {actionItems.length > 0 ? actionItems.map((item, index) => (
-              <div key={index} className="flex items-center justify-between rounded-2xl border border-border/60 bg-muted/20 px-3 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-background p-2 text-primary">
-                    <item.icon className="size-4" />
+          <CardContent className="space-y-3">
+            {actionItems.length > 0 ? (
+              actionItems.map((item, index) => (
+                <div key={index} className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/20 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-2xl bg-background p-2 text-primary">
+                      <item.icon className="size-4" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-950">{item.text}</p>
                   </div>
-                  <p className="text-sm font-medium">{item.text}</p>
+                  <Button size="sm" variant="ghost" asChild onClick={showLoader}>
+                    <Link href={item.href as Route}>Open</Link>
+                  </Button>
                 </div>
-                <Button size="sm" variant="ghost" asChild onClick={showLoader}>
-                  <Link href={item.href as Route}>Open</Link>
-                </Button>
-              </div>
-            )) : (
-              <EmptyState title="Everything looks healthy" description="No urgent actions right now. Great work." />
+              ))
+            ) : (
+              <EmptyState title="Smooth operations" description="Everything is up to date. No immediate actions required." />
             )}
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-background/80">
+        <Card className="border-border/70 bg-background/80">
           <CardHeader className="pb-3">
-            <SectionHeader title="Seller essentials" />
+            <SectionHeader title="Essential health" />
           </CardHeader>
           <CardContent className="space-y-3">
-            <InsightCard title="Pending orders" value={`${pendingOrdersCount}`} detail="Ready to fulfil" icon={ShoppingCart} />
-            <InsightCard title="Low stock" value={`${lowStockCount}`} detail="Need replenishment" icon={Boxes} />
-            <InsightCard title="Unread messages" value={`${sellerMessages.filter((message) => !message.read && message.senderId !== user.id).length}`} detail="Customer follow-up" icon={MessageSquare} />
+            <InsightCard title="Pending orders" value={`${pendingOrdersCount}`} detail="Awaiting fulfilment" icon={ShoppingCart} />
+            <InsightCard title="Low stock" value={`${lowStockCount}`} detail="Restock soon" icon={Boxes} />
+            <InsightCard title="Unread messages" value={`${unreadMessagesCount}`} detail="Respond quickly" icon={MessageSquare} />
           </CardContent>
         </Card>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="border-border/60 bg-background/80">
+        <Card className="border-border/70 bg-background/80">
           <CardHeader className="pb-3">
             <SectionHeader title="Recent activity" actionLabel="Open messages" actionHref="/dashboard/messages" onAction={showLoader} />
           </CardHeader>
@@ -229,7 +254,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/60 bg-background/80">
+        <Card className="border-border/70 bg-background/80">
           <CardHeader className="pb-3">
             <SectionHeader title="Performance highlights" />
           </CardHeader>
@@ -240,6 +265,38 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </section>
+
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border/70 bg-background/95 px-4 py-3 shadow-[0_-14px_32px_-20px_rgba(15,23,42,0.30)] md:hidden">
+        <div className="flex items-center gap-2">
+          <Button asChild variant="secondary" className="flex-1 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90" onClick={showLoader}>
+            <Link href="/dashboard/add-product" className="inline-flex flex-col items-center gap-1 text-center">
+              <PlusCircle className="size-6" />
+              <span className="inline-block sm:hidden">Add</span>
+              <span className="hidden sm:inline-block">Create</span>
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className="flex-1 rounded-2xl border border-border/70 bg-slate-100 px-3 py-3 text-sm font-semibold transition hover:bg-slate-200" onClick={showLoader}>
+            <Link href="/dashboard/orders" className="inline-flex flex-col items-center gap-1 text-center text-slate-900">
+              <ShoppingCart className="size-6" />
+              Orders
+            </Link>
+          </Button>
+        </div>
+        <div className="mt-2 flex items-center gap-2">
+          <Button asChild variant="ghost" className="flex-1 rounded-2xl border border-border/70 bg-slate-100 px-3 py-3 text-sm font-semibold transition hover:bg-slate-200" onClick={showLoader}>
+            <Link href="/dashboard/products" className="inline-flex flex-col items-center gap-1 text-center text-slate-900">
+              <Package className="size-6" />
+              Products
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className="flex-1 rounded-2xl border border-border/70 bg-slate-100 px-3 py-3 text-sm font-semibold transition hover:bg-slate-200" onClick={showLoader}>
+            <Link href="/dashboard/messages" className="inline-flex flex-col items-center gap-1 text-center text-slate-900">
+              <MessageSquare className="size-6" />
+              Messages
+            </Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

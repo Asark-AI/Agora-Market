@@ -19,7 +19,7 @@ type MetricCardProps = {
 
 export function MetricCard({ label, value, subtitle, trend, accent, icon: Icon }: MetricCardProps) {
   return (
-    <Card className="overflow-hidden rounded-[22px] border border-border/70 bg-gradient-to-br from-background via-background to-muted/30 shadow-[0_20px_45px_-24px_rgba(15,23,42,0.28)]">
+    <Card className="overflow-hidden rounded-[22px] border border-border/70 bg-gradient-to-br from-background via-background to-muted/30 shadow-[0_20px_45px_-24px_rgba(15,23,42,0.28)] min-h-[170px]">
       <CardContent className="flex h-full flex-col justify-between p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -48,7 +48,7 @@ type QuickActionButtonProps = {
 
 export function QuickActionButton({ label, href, icon: Icon, onNavigate }: QuickActionButtonProps) {
   return (
-    <Button asChild variant="outline" className="h-10 shrink-0 rounded-full border-border/70 bg-background/90 px-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md" onClick={onNavigate}>
+    <Button asChild variant="outline" className="h-12 min-w-[10rem] shrink-0 rounded-full border-border/70 bg-background/90 px-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md" onClick={onNavigate}>
       <Link href={href} className="inline-flex items-center gap-2 whitespace-nowrap">
         <Icon className="size-4" />
         <span>{label}</span>
