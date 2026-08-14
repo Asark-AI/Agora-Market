@@ -12,7 +12,7 @@ import { format, parseISO } from 'date-fns';
 import type { Product, StockAdjustment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const StockAdjustmentModal = dynamic(() => import('@/components/stock-adjustment-modal'), {
+const StockAdjustmentModal = dynamic(() => import('@/components/stock-adjustment-modal').then((mod) => mod.StockAdjustmentModal), {
   ssr: false,
   loading: () => null,
 });

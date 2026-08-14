@@ -28,8 +28,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const lora = Lora({ subsets: ['latin'], variable: '--font-serif' });
 const montserrat = Montserrat({ subsets: ['latin'], variable: '--font-minimalist' });
 
-const AiChatWidget = dynamic(() => import('@/components/ai-chat-widget'), { ssr: false, loading: () => null });
-const InquiryForm = dynamic(() => import('@/components/inquiry-form'), { ssr: false, loading: () => null });
+const AiChatWidget = dynamic(() => import('@/components/ai-chat-widget').then((mod) => mod.AiChatWidget), { ssr: false, loading: () => null });
+const InquiryForm = dynamic(() => import('@/components/inquiry-form').then((mod) => mod.InquiryForm), { ssr: false, loading: () => null });
 const AuthModal = dynamic(() => import('@/components/auth-modal'), { ssr: false });
 
 type StorefrontItem = Product | ServiceProduct | RepairRequest;

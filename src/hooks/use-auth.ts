@@ -325,7 +325,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await get().refreshAuthProfile(authUser);
       return authUser;
     } catch (error: any) {
-      if (error?.code === 'auth/invalid-credential' || error?.code === 'auth/user-not-found' || error?.code === 'auth/wrong-password') {
+      const invalidCredentialCodes = [
+        'auth/invalid-credential',
+        'auth/user-not-found',
+        'auth/wrong-password',
+        'auth/invalid-login-credentials',
+      ];
+
+      const invalidCredentialMessage = String(error?.message ?? '').toLowerCase().includes('invalid_login_credentials');
+
+      if (invalidCredentialCodes.includes(error?.code) || invalidCredentialMessage) {
         throw new Error('The email or password is incorrect.');
       }
       throw error;

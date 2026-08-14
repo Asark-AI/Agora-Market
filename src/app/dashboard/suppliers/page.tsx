@@ -19,7 +19,7 @@ import { LiquidLoader } from '@/components/liquid-loader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { z as zod } from 'zod';
 
-const PurchaseOrderModal = dynamic(() => import('@/components/purchase-order-modal'), {
+const PurchaseOrderModal = dynamic(() => import('@/components/purchase-order-modal').then((mod) => mod.PurchaseOrderModal), {
   ssr: false,
   loading: () => null,
 });

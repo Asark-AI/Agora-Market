@@ -154,7 +154,7 @@ export default function SignInPage() {
               <Button type="submit" className="w-full" disabled={isFormLoading || isGoogleLoading}>
                 {isFormLoading ? <><LiquidLoader className="mr-2" />Logging In...</> : 'Log In'}
               </Button>
-              <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isFormLoading || isGoogleLoading}>
+              <Button type="button" variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isFormLoading || isGoogleLoading}>
                 {isGoogleLoading ? <><LiquidLoader className="mr-2" />Please wait...</> : 'Login with Google'}
               </Button>
             </form>

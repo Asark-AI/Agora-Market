@@ -21,12 +21,12 @@ import Link from 'next/link';
 import { LiquidLoader } from '@/components/liquid-loader';
 import type { PayoutMethod, Transaction } from '@/lib/types';
 
-const AddPayoutMethodModal = dynamic(() => import('@/components/add-payout-method-modal'), {
+const AddPayoutMethodModal = dynamic(() => import('@/components/add-payout-method-modal').then((mod) => mod.AddPayoutMethodModal), {
   ssr: false,
   loading: () => null,
 });
 
-const WithdrawalRequestModal = dynamic(() => import('@/components/withdrawal-request-modal'), {
+const WithdrawalRequestModal = dynamic(() => import('@/components/withdrawal-request-modal').then((mod) => mod.WithdrawalRequestModal), {
   ssr: false,
   loading: () => null,
 });

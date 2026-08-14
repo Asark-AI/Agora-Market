@@ -21,6 +21,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import {
     Trash2, UserPlus, Users, Barcode, CheckCircle, Printer, ShoppingCart, DollarSign, Wallet, ChevronsUpDown, Check
 } from 'lucide-react';
+import { useCart } from '@/hooks/use-cart';
 import type { Product, Customer, OrderItem, Order } from '@/lib/types';
 import NextImage from 'next/image';
 import { cn } from '@/lib/utils';
@@ -102,8 +103,8 @@ export function PosSystem() {
     const { seller, sellerProducts, sellerCustomers, addWalkInOrder, addCustomer } = useAuth();
     const { toast } = useToast();
 
-    // POS State
-    const [cart, setCart] = useState<Map<string, { product: Product; quantity: number }>>(new Map());
+    // POS State (use global cart)
+    const { items, addToCart: addToCartGlobal, removeFromCart, updateQuantity: updateQuantityGlobal, clearCart } = useCart();
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<'cash' | 'mobile_money' | 'card'>('cash');
     const [amountReceived, setAmountReceived] = useState<number>(0);
@@ -141,11 +142,11 @@ export function PosSystem() {
     }, [sellerProducts, categoryFilter, searchTerm]);
 
     const total = useMemo(() => {
-        return Array.from(cart.values()).reduce((acc, { product, quantity }) => {
-            const price = product.discountPrice ?? product.price;
-            return acc + price * quantity;
+        return items.reduce((acc, item) => {
+            const price = item.product.discountPrice ?? item.product.price;
+            return acc + price * item.quantity;
         }, 0);
-    }, [cart]);
+    }, [items]);
     
     const changeDue = useMemo(() => {
         if(paymentMethod === 'cash' && amountReceived > 0 && amountReceived >= total) {
@@ -159,16 +160,13 @@ export function PosSystem() {
             toast({ variant: 'destructive', title: 'Out of Stock' });
             return;
         }
-        const existingItem = cart.get(product.id);
-        if (existingItem) {
-            if (existingItem.quantity < product.stock) {
-                setCart(new Map(cart.set(product.id, { ...existingItem, quantity: existingItem.quantity + 1 })));
-            } else {
-                toast({ variant: 'destructive', title: 'Stock limit reached' });
-            }
-        } else {
-            setCart(new Map(cart.set(product.id, { product, quantity: 1 })));
+        const existing = items.find((i) => i.product.id === product.id);
+        const currentQty = existing?.quantity ?? 0;
+        if (currentQty >= product.stock) {
+            toast({ variant: 'destructive', title: 'Stock limit reached' });
+            return;
         }
+        addToCartGlobal(product);
     };
     
     const handleBarcodeScan = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -185,20 +183,11 @@ export function PosSystem() {
     };
 
     const updateQuantity = (productId: string, newQuantity: number) => {
-        const item = cart.get(productId);
-        if (item) {
-            if (newQuantity <= 0) {
-                const newCart = new Map(cart);
-                newCart.delete(productId);
-                setCart(newCart);
-            } else if (newQuantity <= item.product.stock) {
-                setCart(new Map(cart.set(productId, { ...item, quantity: newQuantity })));
-            }
-        }
+        updateQuantityGlobal(productId, newQuantity);
     };
     
     const resetSale = () => {
-        setCart(new Map());
+        clearCart();
         const walkIn = sellerCustomers.find(c => c.name === 'Walk-in Customer');
         setSelectedCustomer(walkIn || null);
         setPaymentMethod('cash');
@@ -207,7 +196,7 @@ export function PosSystem() {
     };
 
     const handleSubmit = async () => {
-        if (cart.size === 0) {
+        if (items.length === 0) {
             toast({ variant: 'destructive', title: 'Empty Cart' });
             return;
         }
@@ -218,7 +207,7 @@ export function PosSystem() {
         }
 
         setIsSubmitting(true);
-        const orderItems: OrderItem[] = Array.from(cart.values()).map(({ product, quantity }) => ({
+        const orderItems: OrderItem[] = items.map(({ product, quantity }) => ({
             productId: product.id,
             price: product.discountPrice ?? product.price,
             quantity
@@ -298,8 +287,8 @@ export function PosSystem() {
                     <CardContent className="flex-grow overflow-hidden flex flex-col">
                        <ScrollArea className="flex-grow pr-3 -mr-3">
                            <div className="space-y-2">
-                               {cart.size > 0 ? (
-                                   Array.from(cart.values()).map(({ product, quantity }) => (
+                               {items.length > 0 ? (
+                                   items.map(({ product, quantity }) => (
                                        <div key={product.id} className="flex items-center gap-2">
                                            <NextImage src={product.images[0]} width={40} height={40} alt={product.name} className="rounded-md object-cover" />
                                            <div className="flex-grow">
@@ -337,7 +326,7 @@ export function PosSystem() {
                                 <Input readOnly value={`Change: ₵${changeDue.toFixed(2)}`} />
                             </div>
                         }
-                        <Button className="w-full mt-4" size="lg" disabled={isSubmitting || cart.size === 0} onClick={handleSubmit}>
+                        <Button className="w-full mt-4" size="lg" disabled={isSubmitting || items.length === 0} onClick={handleSubmit}>
                             {isSubmitting ? 'Processing...' : `Confirm Payment (₵${total.toFixed(2)})`}
                         </Button>
                     </CardContent>

@@ -72,32 +72,53 @@ export function SiteHeader() {
           </div>
 
           <div className="grid gap-3 sm:grid-cols-[1fr_auto] lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-4">
-            <form action="/search" className="order-2 sm:order-1 sm:col-span-1 lg:col-span-1">
+            <form action="/search" className="order-2 sm:order-1 sm:col-span-1 lg:col-span-1 block">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="q"
                   placeholder="Search products, stores, brands"
-                  className="h-11 rounded-full border border-border/70 py-3 pl-11 pr-4 text-sm"
+                  className="h-12 w-[calc(100vw-420px)] max-w-[780px] rounded-full border border-border/70 py-3 pl-12 pr-4 text-sm"
                 />
               </div>
             </form>
 
-            <div className="order-1 flex shrink-0 items-center justify-center gap-2 md:order-3">
-              <Button asChild variant="ghost" className="hidden rounded-full px-4 py-3 text-sm font-semibold md:inline-flex">
+            <div className="order-1 flex shrink-0 items-center justify-center gap-3 md:order-3">
+              <Button asChild variant="ghost" className="rounded-full px-3 py-2 text-sm font-semibold hidden lg:inline-flex">
                 <Link href="/product">Products</Link>
               </Button>
-              <Button asChild variant="ghost" className="hidden rounded-full px-4 py-3 text-sm font-semibold md:inline-flex">
+              <Button asChild variant="ghost" className="rounded-full px-3 py-2 text-sm font-semibold hidden lg:inline-flex">
                 <Link href="/stores">Stores</Link>
               </Button>
             </div>
 
-            <div className="order-3 flex items-center justify-end gap-2 lg:order-2">
-              <Button asChild variant="ghost" className="hidden rounded-full px-4 py-3 text-sm font-semibold lg:inline-flex">
-                <Link href="/about">About</Link>
+            <div className="order-3 flex items-center justify-end gap-3 lg:order-2">
+              <div className="hidden items-center gap-2 text-sm text-muted-foreground lg:flex">
+                <span>Deliver to</span>
+                <span className="rounded-full border border-border/70 px-2 py-1">Accra</span>
+                <span className="mx-2">•</span>
+                <span>GH₵</span>
+              </div>
+              <Button asChild variant="ghost" className="rounded-full px-3 py-2 text-sm font-semibold">
+                <Link href="/sign-in">Account</Link>
               </Button>
-              <Button asChild variant="ghost" className="hidden rounded-full px-4 py-3 text-sm font-semibold lg:inline-flex">
-                <Link href="/sign-in">Sign in</Link>
+              <Button asChild variant="ghost" className="rounded-full px-3 py-2 text-sm font-semibold">
+                <Link href="/orders">Orders</Link>
+              </Button>
+              <Button asChild variant="ghost" className="rounded-full p-3">
+                <Link href="/wishlist" aria-label="Wishlist">
+                  <Heart className="h-5 w-5" />
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" className="relative rounded-full p-3">
+                <Link href="/cart" aria-label="Cart">
+                  <ShoppingCart className="h-5 w-5" />
+                  {itemCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                      {itemCount}
+                    </span>
+                  )}
+                </Link>
               </Button>
             </div>
           </div>

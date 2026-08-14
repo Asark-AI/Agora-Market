@@ -13,7 +13,8 @@ import { Progress } from '@/components/ui/progress';
 import { LiquidLoader } from '@/components/liquid-loader';
 import { Check, ChevronsUpDown, Trash2, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Product, Supplier, PurchaseOrderItem } from '@/lib/types';
+import type { Product, Supplier } from '@/lib/types';
+import { usePurchaseOrder } from '@/hooks/use-purchase-order';
 import NextImage from 'next/image';
 
 interface PurchaseOrderModalProps {
@@ -26,7 +27,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
     const { toast } = useToast();
 
     const [step, setStep] = useState(0);
-    const [cart, setCart] = useState<Map<string, { product: Product; quantity: number; cost: number }>>(new Map());
+    const { items, addItem, updateItem, removeItem, clear, totalCost } = usePurchaseOrder();
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSupplierPopoverOpen, setIsSupplierPopoverOpen] = useState(false);
@@ -34,30 +35,21 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
     
     const products = useMemo(() => sellerProducts.filter(p => 'stock' in p) as Product[], [sellerProducts]);
 
-    const totalCost = useMemo(() => {
-        return Array.from(cart.values()).reduce((acc, { quantity, cost }) => acc + quantity * cost, 0);
-    }, [cart]);
+    // totalCost is available from hook; keep derived value for reactivity
+    const derivedTotalCost = useMemo(() => totalCost(), [items]);
 
     const addToCart = (product: Product) => {
-        if (!cart.has(product.id)) {
-            setCart(new Map(cart.set(product.id, { product, quantity: 1, cost: 0 })));
-            toast({ title: "Item Added", description: `${product.name} added to the purchase order.` });
-        }
+        addItem(product);
+        toast({ title: 'Item Added', description: `${product.name} added to the purchase order.` });
         setIsProductPopoverOpen(false);
     };
 
     const updateCart = (productId: string, field: 'quantity' | 'cost', value: number) => {
-        const item = cart.get(productId);
-        if (item) {
-            const newValue = Math.max(0, value);
-            setCart(new Map(cart.set(productId, { ...item, [field]: newValue })));
-        }
+        updateItem(productId, field, value);
     };
     
     const removeFromCart = (productId: string) => {
-        const newCart = new Map(cart);
-        newCart.delete(productId);
-        setCart(newCart);
+        removeItem(productId);
     };
 
     const handleNext = () => {
@@ -65,7 +57,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
             toast({ variant: 'destructive', title: 'No Supplier Selected', description: 'Please select a supplier.' });
             return;
         }
-        if (step === 1 && cart.size === 0) {
+        if (step === 1 && items.length === 0) {
             toast({ variant: 'destructive', title: 'Empty Order', description: 'Please add at least one product.' });
             return;
         }
@@ -73,9 +65,9 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
     };
 
     const handleSubmit = () => {
-        if (!selectedSupplier || cart.size === 0) return;
+        if (!selectedSupplier || items.length === 0) return;
         setIsSubmitting(true);
-        const poItems: PurchaseOrderItem[] = Array.from(cart.values()).map(({ product, quantity, cost }) => ({
+        const poItems = items.map(({ product, quantity, cost }) => ({
             productId: product.id,
             productName: product.name,
             quantity,
@@ -100,7 +92,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
         onOpenChange(false);
         setTimeout(() => {
             setStep(0);
-            setCart(new Map());
+            clear();
             setSelectedSupplier(null);
             setIsSubmitting(false);
         }, 300);
@@ -161,14 +153,14 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
                     </Command>
                 </PopoverContent>
             </Popover>
-            <div className="mt-4 border rounded-md max-h-64 overflow-y-auto">
+                    <div className="mt-4 border rounded-md max-h-64 overflow-y-auto">
                 <Table>
                     <TableHeader>
                         <TableRow><TableHead>Product</TableHead><TableHead>Qty</TableHead><TableHead>Cost/Item</TableHead><TableHead></TableHead></TableRow>
                     </TableHeader>
                     <TableBody>
-                        {cart.size > 0 ? (
-                            Array.from(cart.values()).map(({ product, quantity, cost }) => (
+                        {items.length > 0 ? (
+                            items.map(({ product, quantity, cost }) => (
                                 <TableRow key={product.id}>
                                     <TableCell className="font-medium">{product.name}</TableCell>
                                     <TableCell><Input type="number" className="h-8 w-20" value={quantity} onChange={e => updateCart(product.id, 'quantity', parseInt(e.target.value, 10))} /></TableCell>
@@ -204,7 +196,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
             </div>
             <div className="mt-4 text-lg font-bold flex justify-between">
                 <span>Total Cost:</span>
-                <span>₵{totalCost.toFixed(2)}</span>
+                <span>₵{derivedTotalCost.toFixed(2)}</span>
             </div>
         </div>
     ];

@@ -10,7 +10,7 @@ import { DashboardHeader } from '@/components/dashboard-header';
 import { PageLoader } from '@/components/page-loader';
 import { businessConfig } from '@/lib/business-types';
 
-const AppTour = dynamic(() => import('@/components/app-tour'), {
+const AppTour = dynamic(() => import('@/components/app-tour').then((mod) => mod.AppTour), {
   ssr: false,
   loading: () => null,
 });
