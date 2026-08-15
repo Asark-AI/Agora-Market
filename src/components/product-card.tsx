@@ -52,15 +52,17 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
       onMouseEnter={() => setHoverSwap(true)}
       onMouseLeave={() => setHoverSwap(false)}
     >
-      <div className="relative overflow-hidden bg-muted/70 rounded-t-sm h-56 sm:h-60 md:h-64 lg:h-64">
+      <div className="relative overflow-hidden bg-muted/70 rounded-t-sm aspect-square">
         <Link href={`/product/${buildProductSlug(product)}`} className="block h-full w-full" aria-label={`View ${product.name}`}>
           <NextImage
             src={getImageUrl(product.images?.[0])}
             alt={product.name}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw"
             loading="lazy"
-            className={`object-contain md:object-cover transition duration-300 ${hoverSwap && secondaryImage ? 'group-hover:scale-105 scale-105' : 'group-hover:scale-105'}`}
+            className={`transition duration-300 ${hoverSwap && secondaryImage ? 'group-hover:scale-105 scale-105' : 'group-hover:scale-105'}`}
+            // object-fit chosen by category for better clarity on mobile
+            style={{ objectFit: categoryLabel?.toLowerCase?.()?.includes('elect') ? 'contain' : 'cover' }}
           />
         </Link>
 

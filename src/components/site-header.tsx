@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Search, Heart, House, Layers3, Store, UserRound, ChevronDown, ShieldCheck, Award, Sparkles, TrendingUp, Menu } from 'lucide-react';
+import { ShoppingCart, Search, Heart, House, Layers3, Store, UserRound, ChevronDown, ShieldCheck, Award, Sparkles, TrendingUp, Menu, Camera } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useCart } from '@/hooks/use-cart';
 import { Button } from '@/components/ui/button';
@@ -52,172 +52,44 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur-xl shadow-sm">
-      <div className="container mx-auto max-w-7xl px-4 py-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-3">
-              <AppLogo className="h-10 w-10 text-primary" />
-              <div>
-                <p className="text-base font-semibold tracking-tight">Agora</p>
-                <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Enterprise-grade marketplace</p>
-              </div>
-            </Link>
-
-            <div className="hidden items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-2 shadow-sm lg:flex">
-              <div className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-                <Sparkles className="size-4" /> Trusted commerce
-              </div>
-              <span className="text-xs text-muted-foreground">Curated for fast adoption and high conversion.</span>
-            </div>
+      <div className="container mx-auto max-w-7xl px-4 py-3">
+        {/* Mobile compact header: logo + wishlist + cart */}
+        <div className="flex items-center justify-between lg:hidden">
+          <Link href="/" className="flex items-center gap-3">
+            <AppLogo className="h-8 w-8 text-primary" />
+            <span className="text-sm font-semibold">Agora</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" className="rounded-full p-2">
+              <Link href="/wishlist" aria-label="Wishlist">
+                <Heart className="h-5 w-5" />
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" className="relative rounded-full p-2">
+              <Link href="/cart" aria-label="Cart">
+                <ShoppingCart className="h-5 w-5" />
+                {itemCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                    {itemCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
           </div>
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto] lg:grid-cols-[1fr_auto_1fr] lg:items-center lg:gap-4">
-            <form action="/search" className="order-2 sm:order-1 sm:col-span-1 lg:col-span-1 block">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  name="q"
-                  placeholder="Search products, stores, brands"
-                  className="h-12 w-[calc(100vw-420px)] max-w-[780px] rounded-full border border-border/70 py-3 pl-12 pr-4 text-sm"
-                />
-              </div>
-            </form>
-
-            <div className="order-1 flex shrink-0 items-center justify-center gap-3 md:order-3">
-              <Button asChild variant="ghost" className="rounded-full px-3 py-2 text-sm font-semibold hidden lg:inline-flex">
-                <Link href="/product">Products</Link>
-              </Button>
-              <Button asChild variant="ghost" className="rounded-full px-3 py-2 text-sm font-semibold hidden lg:inline-flex">
-                <Link href="/stores">Stores</Link>
-              </Button>
+        {/* Mobile search bar (prominent but compact) */}
+        <div className="mt-3 lg:hidden">
+          <form action="/search" className="flex w-full items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input name="q" placeholder="Search products, stores & brands" className="h-10 w-full rounded-full pl-10 pr-10 text-sm" />
+              <Button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-sm">Search</Button>
             </div>
-
-            <div className="order-3 flex items-center justify-end gap-3 lg:order-2">
-              <div className="hidden items-center gap-2 text-sm text-muted-foreground lg:flex">
-                <span>Deliver to</span>
-                <span className="rounded-full border border-border/70 px-2 py-1">Accra</span>
-                <span className="mx-2">•</span>
-                <span>GH₵</span>
-              </div>
-              <Button asChild variant="ghost" className="rounded-full px-3 py-2 text-sm font-semibold">
-                <Link href="/sign-in">Account</Link>
-              </Button>
-              <Button asChild variant="ghost" className="rounded-full px-3 py-2 text-sm font-semibold">
-                <Link href="/orders">Orders</Link>
-              </Button>
-              <Button asChild variant="ghost" className="rounded-full p-3">
-                <Link href="/wishlist" aria-label="Wishlist">
-                  <Heart className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" className="relative rounded-full p-3">
-                <Link href="/cart" aria-label="Cart">
-                  <ShoppingCart className="h-5 w-5" />
-                  {itemCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                      {itemCount}
-                    </span>
-                  )}
-                </Link>
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between gap-2 lg:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" className="rounded-full p-3">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="max-w-[340px] px-0">
-                <div className="space-y-6 px-6 py-8">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-lg font-semibold">Menu</p>
-                      <p className="text-sm text-muted-foreground">Quick navigation</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Products</p>
-                      <div className="mt-3 space-y-2">
-                        <Link href="/products" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Browse all products
-                        </Link>
-                        <Link href="/flash-deals" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Flash deals
-                        </Link>
-                        <Link href="/categories" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Curated categories
-                        </Link>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Stores</p>
-                      <div className="mt-3 space-y-2">
-                        <Link href="/stores" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Browse verified stores
-                        </Link>
-                        <Link href="/store/featured" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Top-rated vendor hubs
-                        </Link>
-                        <Link href="/store-collections" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Shop collections
-                        </Link>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">Explore</p>
-                      <div className="mt-3 space-y-2">
-                        <Link href="/about" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          About Agora
-                        </Link>
-                        <Link href="/contact" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Contact sales
-                        </Link>
-                        <Link href="/terms" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Terms of service
-                        </Link>
-                        <Link href="/privacy" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-base font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                          Privacy policy
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 pt-4">
-                    <Link href="/seller-signup" className="block rounded-2xl bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground transition hover:bg-primary/90">
-                      Become a seller
-                    </Link>
-                    <Link href="/sign-in" className="block rounded-2xl border border-border/70 bg-background px-4 py-3 text-center text-sm font-semibold text-foreground transition hover:border-primary/80 hover:bg-primary/5">
-                      Sign in
-                    </Link>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-            <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" className="rounded-full p-3">
-                <Link href="/wishlist" aria-label="Wishlist">
-                  <Heart className="h-5 w-5" />
-                </Link>
-              </Button>
-              <Button asChild variant="ghost" className="relative rounded-full p-3">
-                <Link href="/cart" aria-label="Cart">
-                  <ShoppingCart className="h-5 w-5" />
-                  {itemCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                      {itemCount}
-                    </span>
-                  )}
-                </Link>
-              </Button>
-            </div>
-          </div>
+            <Button variant="ghost" className="rounded-full p-2">
+              <Camera className="h-5 w-5 text-muted-foreground" />
+            </Button>
+          </form>
         </div>
 
         <div className="mt-4 hidden gap-2 lg:flex">

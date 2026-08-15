@@ -28,7 +28,7 @@ export default async function PublicHomePage() {
             <Button type="submit" className="rounded-full px-4 py-2">Search</Button>
           </form>
 
-          <div className="mt-2 flex items-center gap-2 overflow-x-auto py-2">
+          <div className="mt-2 flex items-center gap-3 overflow-x-auto py-2">
             <Link href="/products" className="whitespace-nowrap rounded-full border border-border/70 bg-background px-3 py-2 text-sm font-semibold">All</Link>
             {categories.slice(0, 12).map(c => (
               <Link key={c.id} href={`/categories?category=${c.id}`} className="whitespace-nowrap rounded-full border border-border/70 bg-white px-3 py-2 text-sm font-medium">{c.name}</Link>
@@ -44,7 +44,7 @@ export default async function PublicHomePage() {
         </div>
       </section>
 
-      {/* Secondary nav: marketplace categories & quick tabs */}
+      {/* Secondary nav: marketplace categories & quick tabs (compact) */}
       <nav className="border-b bg-background/60">
         <div className="container mx-auto max-w-7xl px-4">
           <div className="flex items-center gap-3 overflow-x-auto py-2 text-sm">
@@ -60,7 +60,7 @@ export default async function PublicHomePage() {
         </div>
       </nav>
 
-      <main className="container mx-auto max-w-7xl px-4 py-6">
+      <main className="container mx-auto max-w-7xl px-4 py-4">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
           {/* Left sidebar */}
           <aside className="hidden flex-col gap-3 lg:flex">
@@ -87,19 +87,26 @@ export default async function PublicHomePage() {
 
           {/* Main content */}
           <section>
-            {/* Flash deals horizontal */}
-            <div className="mb-4">
+            {/* Discovery tabs + product grid (mobile-first) */}
+            <div className="mb-3 flex items-center gap-2 overflow-x-auto py-2">
+              {['all','deals','5star','best','new','recommended'].map(t => (
+                <a key={t} href={`/?tab=${t}`} className="whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold bg-background border border-border/70">{t==='5star' ? '⭐ 5-Star' : t==='best'? 'Best-Selling' : t==='new'? 'New Arrivals' : t==='deals'? '🔥 Deals' : t==='recommended' ? 'Recommended' : 'All'}</a>
+              ))}
+            </div>
+
+            {/* Flash deals horizontal (compact) */}
+            <div className="mb-3">
               <div className="mb-2 flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">🔥 Flash Deals</p>
-                  <h3 className="text-lg font-semibold text-foreground">Limited time offers</h3>
+                  <h3 className="text-base font-semibold text-foreground">Limited time offers</h3>
                 </div>
-                <Link href="/flash-deals" className="text-sm text-primary">View all deals →</Link>
+                <Link href="/flash-deals" className="text-sm text-primary">View all →</Link>
               </div>
               <div className="-mx-4 overflow-x-auto px-4">
-                <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
-                  {primaryFeed.filter(p => p.discountPrice).slice(0, 10).map(p => (
-                    <div key={p.id} className="w-[220px] shrink-0">
+                <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
+                  {primaryFeed.filter(p => p.discountPrice).slice(0, 8).map(p => (
+                    <div key={p.id} className="w-[160px] shrink-0">
                       <ProductCard product={p} />
                     </div>
                   ))}
@@ -107,14 +114,8 @@ export default async function PublicHomePage() {
               </div>
             </div>
 
-            {/* Discovery tabs + product grid */}
-            <div className="mb-4 flex items-center gap-3 overflow-x-auto py-2">
-              {['all','deals','5star','best','new','recommended'].map(t => (
-                <a key={t} href={`/?tab=${t}`} className="whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold bg-background border border-border/70">{t==='5star' ? '⭐ 5-Star' : t==='best'? 'Best-Selling' : t==='new'? 'New Arrivals' : t==='deals'? '🔥 Deals' : t==='recommended' ? 'Recommended' : 'All'}</a>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {/* Product feed: mobile 2-column grid */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {primaryFeed.map(p => (
                 <ProductCard key={p.id} product={p} />
               ))}
