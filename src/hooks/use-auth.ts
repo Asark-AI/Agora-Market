@@ -426,23 +426,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   addProduct: async (productData, imageFiles, videoFiles) => {
      const seller = get().seller;
     if (!seller) throw new Error('Seller not found');
+    console.log('addProduct: start', { sellerId: seller.id, name: productData.name });
 
     const firestore = ensureFirestore();
     const imageUrls: string[] = [];
     const videoUrls: string[] = [];
-    
+
     if (imageFiles) {
-        for (const file of Array.from(imageFiles)) {
-            const url = await uploadFile(file, `sellers/${seller.id}/products/${Date.now()}-${file.name}`);
-            imageUrls.push(url);
-        }
+      let idx = 0;
+      for (const file of Array.from(imageFiles)) {
+        console.log(`addProduct: uploading image ${idx} ${file.name}`);
+        const url = await uploadFile(file, `sellers/${seller.id}/products/${Date.now()}-${file.name}`);
+        console.log(`addProduct: uploaded image ${idx} -> ${url}`);
+        imageUrls.push(url);
+        idx++;
+      }
     }
-    
+
     if (videoFiles) {
-        for (const file of Array.from(videoFiles)) {
-            const url = await uploadFile(file, `sellers/${seller.id}/products/videos/${Date.now()}-${file.name}`);
-            videoUrls.push(url);
-        }
+      let vidIdx = 0;
+      for (const file of Array.from(videoFiles)) {
+        console.log(`addProduct: uploading video ${vidIdx} ${file.name}`);
+        const url = await uploadFile(file, `sellers/${seller.id}/products/videos/${Date.now()}-${file.name}`);
+        console.log(`addProduct: uploaded video ${vidIdx} -> ${url}`);
+        videoUrls.push(url);
+        vidIdx++;
+      }
     }
 
     const descriptionKeywords =
@@ -453,6 +462,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     let englishDescription = productData.description?.english || '';
 
     try {
+      console.log('addProduct: generating AI description');
       // Attempt to call server action to generate product description, but guard with timeout
       const aiTimeoutMs = 10000;
       const aiPromise = (async () => {
@@ -471,6 +481,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         englishDescription = productData.name || 'Product description pending';
       }
+      console.log('addProduct: ai description ready');
     } catch (error) {
       console.warn('AI description generation unavailable, using fallback text:', error);
       englishDescription = productData.name || 'Product description pending';
@@ -481,6 +492,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     try {
+      console.log('addProduct: writing product to Firestore');
       const docRef = await addDoc(collection(firestore, 'sellers', seller.id, 'products'), {
         ...productData,
         description: englishDescription,
@@ -494,6 +506,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         clicks: 0,
         clickHistory: [],
       });
+      console.log('addProduct: product created', docRef.id);
       return { id: docRef.id };
     } catch (serverError: any) {
       console.error('Failed to write product to Firestore:', serverError);
