@@ -427,6 +427,36 @@ function AddProductFormContent() {
                             </Button>
                         )}
                     </CardFooter>
+                        {process.env.NODE_ENV === 'development' && (
+                            <div className="p-4">
+                                <button id="debug-invoke-addproduct" type="button" onClick={async () => {
+                                    try {
+                                        console.log('DEBUG: direct addProduct invoke start');
+                                        const data = form.getValues();
+                                        const sellerData = {
+                                            name: data.name || 'Debug Product',
+                                            description: data.description || 'Debug description',
+                                            price: parseFloat(String(data.price || '1')) || 1,
+                                            costPrice: undefined,
+                                            discountPrice: undefined,
+                                            categoryId: data.categoryId || '',
+                                            regionId: seller?.regionId || '',
+                                            stock: parseInt(String(data.stock || '1'), 10) || 1,
+                                            barcode: data.barcode || '',
+                                            specifications: data.specifications || [],
+                                            status: 'active'
+                                        };
+                                        // call addProduct directly
+                                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                                        // @ts-ignore
+                                        await addProduct(sellerData, data.images, data.videos);
+                                        console.log('DEBUG: direct addProduct invoke finished');
+                                    } catch (err) {
+                                        console.error('DEBUG addProduct error', err);
+                                    }
+                                }} className="mt-3 inline-block rounded bg-amber-500 px-3 py-2 text-white">Debug AddProduct</button>
+                            </div>
+                        )}
                 </form>
             </Form>
             <AiDescriptionModal open={isAiModalOpen} onOpenChange={setIsAiModalOpen} onInsert={(desc) => { form.setValue('description', desc); setIsAiModalOpen(false); }} />
