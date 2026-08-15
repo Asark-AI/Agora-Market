@@ -173,6 +173,7 @@ function AddProductFormContent() {
 
     const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
         if (!seller) return;
+        console.log('FORM_ONSUBMIT start', { name: data.name, publishAction: data.publishAction });
         setIsLoading(true);
         
         try {
