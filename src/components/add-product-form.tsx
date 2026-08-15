@@ -201,8 +201,9 @@ function AddProductFormContent() {
             router.push('/dashboard/products');
 
         } catch (error) {
-            console.error("Error adding product:", error);
-            toast({ variant: 'destructive', title: "Error", description: "Failed to add product." });
+                console.error("Error adding product:", error);
+                const message = error instanceof Error ? error.message : String(error);
+                toast({ variant: 'destructive', title: "Error adding product", description: message });
         } finally {
             setIsLoading(false);
         }

@@ -66,15 +66,28 @@ export interface AuthState extends PublicAuthState {
   addCustomer: (customerData: { name: string, email: string, phone: string }) => Promise<Customer>;
 }
 
-const uploadFile = async (file: File, path: string): Promise<string> => {
+const uploadFile = async (file: File, path: string, timeoutMs = 20000): Promise<string> => {
   if (!storage) {
     throw new Error('Storage is unavailable.');
   }
 
   const storageRef = ref(storage, path);
-  const snapshot = await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(snapshot.ref);
-  return downloadURL;
+
+  const uploadPromise = (async () => {
+    try {
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
+    } catch (err: any) {
+      const msg = err?.message ? `${err.message}` : 'Unknown upload error';
+      throw new Error(`Failed to upload ${file.name}: ${msg}`);
+    }
+  })();
+
+  // timeout wrapper to avoid hanging uploads
+  const timeout = new Promise<string>((_, reject) => setTimeout(() => reject(new Error(`Upload timed out for ${file.name}`)), timeoutMs));
+
+  return Promise.race([uploadPromise, timeout]);
 };
 
 const ensureFirestore = (): Firestore => {
@@ -440,12 +453,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     let englishDescription = productData.description?.english || '';
 
     try {
-      const { generateProductDescription } = await import('@/ai/flows/generate-product-description');
-      const result = await generateProductDescription({
-        shortDescription: productData.name,
-        keywords: descriptionKeywords,
+      // Attempt to call server action to generate product description, but guard with timeout
+      const aiTimeoutMs = 10000;
+      const aiPromise = (async () => {
+        const { generateProductDescription } = await import('@/ai/flows/generate-product-description');
+        return generateProductDescription({ shortDescription: productData.name, keywords: descriptionKeywords });
+      })();
+
+      const aiTimeout = new Promise<any>((_, reject) => setTimeout(() => reject(new Error('AI generation timed out')), aiTimeoutMs));
+      const result = await Promise.race([aiPromise, aiTimeout]).catch((err) => {
+        console.warn('AI description generation failed or timed out:', err);
+        return null;
       });
-      englishDescription = result.englishDescription;
+
+      if (result && result.englishDescription) {
+        englishDescription = result.englishDescription;
+      } else {
+        englishDescription = productData.name || 'Product description pending';
+      }
     } catch (error) {
       console.warn('AI description generation unavailable, using fallback text:', error);
       englishDescription = productData.name || 'Product description pending';
@@ -454,20 +479,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!db) {
       throw new Error('Firestore is unavailable.');
     }
-    
-    await addDoc(collection(firestore, 'sellers', seller.id, 'products'), {
-      ...productData,
-      description: englishDescription,
-      images: imageUrls,
-      videos: videoUrls,
-      sellerId: seller.id,
-      userId: seller.userId,
-      createdAt: serverTimestamp(),
-      views: 0,
-      favorites: 0,
-      clicks: 0,
-      clickHistory: [],
-    });
+
+    try {
+      const docRef = await addDoc(collection(firestore, 'sellers', seller.id, 'products'), {
+        ...productData,
+        description: englishDescription,
+        images: imageUrls,
+        videos: videoUrls,
+        sellerId: seller.id,
+        userId: seller.userId,
+        createdAt: serverTimestamp(),
+        views: 0,
+        favorites: 0,
+        clicks: 0,
+        clickHistory: [],
+      });
+      return { id: docRef.id };
+    } catch (serverError: any) {
+      console.error('Failed to write product to Firestore:', serverError);
+      throw new Error(serverError?.message || 'Failed to create product in database.');
+    }
   },
 
   updateProduct: async (productId, updates) => {
