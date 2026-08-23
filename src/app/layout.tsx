@@ -7,9 +7,9 @@ export const metadata: Metadata = {
   title: 'Agora Seller App',
   description: 'Your all-in-one platform for Ghanaian goods and services.',
   icons: {
-    icon: '/agora-logo.png',
-    shortcut: '/agora-logo.png',
-    apple: '/agora-logo.png',
+    icon: '/favicon.png',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
   },
 };
 

@@ -454,39 +454,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     }
 
-    const descriptionKeywords =
-      typeof productData.description === 'string'
-        ? productData.description
-        : productData.description?.english || '';
-
-    let englishDescription = productData.description?.english || '';
-
-    try {
-      console.log('addProduct: generating AI description');
-      // Attempt to call server action to generate product description, but guard with timeout
-      const aiTimeoutMs = 10000;
-      const aiPromise = (async () => {
-        const { generateProductDescription } = await import('@/ai/flows/generate-product-description');
-        return generateProductDescription({ shortDescription: productData.name, keywords: descriptionKeywords });
-      })();
-
-      const aiTimeout = new Promise<any>((_, reject) => setTimeout(() => reject(new Error('AI generation timed out')), aiTimeoutMs));
-      const result = await Promise.race([aiPromise, aiTimeout]).catch((err) => {
-        console.warn('AI description generation failed or timed out:', err);
-        return null;
-      });
-
-      if (result && result.englishDescription) {
-        englishDescription = result.englishDescription;
-      } else {
-        englishDescription = productData.name || 'Product description pending';
-      }
-      console.log('addProduct: ai description ready');
-    } catch (error) {
-      console.warn('AI description generation unavailable, using fallback text:', error);
-      englishDescription = productData.name || 'Product description pending';
-    }
-
     if (!db) {
       throw new Error('Firestore is unavailable.');
     }
@@ -495,7 +462,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('addProduct: writing product to Firestore');
       const docRef = await addDoc(collection(firestore, 'sellers', seller.id, 'products'), {
         ...productData,
-        description: englishDescription,
+        description: productData.description || productData.name || 'Product description pending',
         images: imageUrls,
         videos: videoUrls,
         sellerId: seller.id,
