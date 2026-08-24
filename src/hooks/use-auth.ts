@@ -110,6 +110,19 @@ const createFallbackUser = (firebaseUser: FirebaseUser | null): User | null => {
   };
 };
 
+const syncServerSession = async (firebaseUser: FirebaseUser) => {
+  const idToken = await firebaseUser.getIdToken(true);
+  const response = await fetch('/api/auth/session', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (!response.ok) throw new Error('Unable to establish a secure session.');
+};
+
+const clearServerSession = async () => {
+  await fetch('/api/auth/session', { method: 'DELETE' });
+};
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   seller: null,
   user: null,
@@ -322,6 +335,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: newUser, firebaseUser: user, loading: false, initialized: true });
     await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
     await get().refreshAuthProfile(user);
+    try {
+      await syncServerSession(user);
+    } catch (sessionError) {
+      console.warn('Secure server session could not be synchronized:', sessionError);
+    }
     return user;
   },
 
@@ -336,6 +354,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const fallbackUser = createFallbackUser(authUser);
       set({ firebaseUser: authUser, user: fallbackUser, loading: false, initialized: true });
       await get().refreshAuthProfile(authUser);
+      try {
+        await syncServerSession(authUser);
+      } catch (sessionError) {
+        console.warn('Secure server session could not be synchronized:', sessionError);
+      }
       return authUser;
     } catch (error: any) {
       const invalidCredentialCodes = [
@@ -364,6 +387,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = result;
     const fallbackUser = createFallbackUser(user);
     set({ firebaseUser: user, user: fallbackUser, loading: false, initialized: true });
+    try {
+      await syncServerSession(user);
+    } catch (sessionError) {
+      console.warn('Secure server session could not be synchronized:', sessionError);
+    }
 
     const userRef = doc(ensureFirestore(), 'users', user.uid);
     const userDoc = await getDoc(userRef);
@@ -392,6 +420,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     await signOut(auth);
+    await clearServerSession();
     // onAuthStateChanged in init() will handle clearing the state.
   },
 

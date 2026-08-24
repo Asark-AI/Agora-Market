@@ -4,9 +4,7 @@ import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
 import NextImage from 'next/image';
 import { Clock3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 // Note: render the initial product grid server-side so products appear immediately on first load
 
 export default async function PublicHomePage() {
@@ -20,15 +18,10 @@ export default async function PublicHomePage() {
 
   return (
     <PublicShell>
-      {/* Top: compact search + categories */}
+      {/* Top: categories and trust signals; search lives in the shared mobile header. */}
       <section className="sticky top-14 z-20 border-b bg-background">
         <div className="container mx-auto max-w-7xl px-4 py-3">
-          <form action="/search" className="flex w-full items-center gap-3">
-            <Input name="q" placeholder="Search products, stores & brands" className="h-12 w-full rounded-full px-4 text-sm" />
-            <Button type="submit" className="rounded-full px-4 py-2">Search</Button>
-          </form>
-
-          <div className="mt-2 flex items-center gap-3 overflow-x-auto py-2">
+          <div className="flex items-center gap-3 overflow-x-auto py-2">
             <Link href="/products" className="whitespace-nowrap rounded-full border border-border/70 bg-background px-3 py-2 text-sm font-semibold">All</Link>
             {categories.slice(0, 12).map(c => (
               <Link key={c.id} href={`/categories?category=${c.id}`} className="whitespace-nowrap rounded-full border border-border/70 bg-white px-3 py-2 text-sm font-medium">{c.name}</Link>

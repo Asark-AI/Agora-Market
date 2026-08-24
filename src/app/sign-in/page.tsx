@@ -46,15 +46,24 @@ export default function SignInPage() {
       let active = true;
       const routeUser = async () => {
         let isSuperAdmin = false;
+        let secureSessionReady = false;
         try {
           const token = await firebaseUser?.getIdTokenResult(true);
           isSuperAdmin = token?.claims.superAdmin === true;
+          const idToken = await firebaseUser?.getIdToken();
+          if (idToken) {
+            const sessionResponse = await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${idToken}` },
+            });
+            secureSessionReady = sessionResponse.ok;
+          }
         } catch (error) {
           console.warn('Unable to check admin claims after sign in:', error);
         }
 
         if (active) {
-          const targetPath = isSuperAdmin ? '/admin' : '/';
+          const targetPath = isSuperAdmin && secureSessionReady ? '/admin' : '/';
           router.replace(targetPath);
         }
       };

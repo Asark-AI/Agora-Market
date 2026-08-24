@@ -346,7 +346,7 @@ service cloud.firestore {
            uid
         && request.resource.data.sellerId ==
            resource.data.sellerId;
-      allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      allow delete: if isSuperAdmin() || isSellerOwner(uid) || isSellerDocumentOwner(uid);
     }
 
 
@@ -672,7 +672,14 @@ service cloud.firestore {
 
     match /auditLogs/{logId} {
       allow read: if isSuperAdmin();
-      allow create: if isSuperAdmin();
+      allow create: if false;
+      allow update,
+            delete: if false;
+    }
+
+    match /adminAuditLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if false;
       allow update,
             delete: if false;
     }
