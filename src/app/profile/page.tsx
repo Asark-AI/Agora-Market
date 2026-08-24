@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Order, RepairRequest } from '@/lib/types';
@@ -17,6 +18,8 @@ import { LogOut, ShoppingCart, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { PublicShell } from '@/components/public-shell';
+import { ArrowRight, Heart, LayoutDashboard, Store, Star, Eye } from 'lucide-react';
 
 function OrderHistory({ orders }: { orders: Order[] }) {
     if (orders.length === 0) {
@@ -79,8 +82,9 @@ function RepairHistory({ repairs }: { repairs: RepairRequest[] }) {
 }
 
 export default function ProfilePage() {
-    const { user, logOut, loading: authLoading } = useAuth();
+    const { user, seller, logOut, loading: authLoading } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
     
     const [orders, setOrders] = useState<Order[]>([]);
     const [repairs, setRepairs] = useState<RepairRequest[]>([]);
@@ -136,8 +140,9 @@ export default function ProfilePage() {
         );
     }
 
-    return (
-        <div className="container mx-auto max-w-4xl py-12 px-4">
+        return (
+            <PublicShell>
+                <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                 <div className="flex items-center gap-6">
                     <Avatar className="size-24">
@@ -154,8 +159,34 @@ export default function ProfilePage() {
                     Log Out
                 </Button>
             </div>
+
+            <section className="mb-8 overflow-hidden rounded-[28px] border border-primary/15 bg-primary/[0.06] p-5 sm:p-6">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Store className="size-4" /> {seller ? 'Your store is ready' : 'One account, two capabilities'}</div>
+                        <h2 className="mt-2 text-2xl font-semibold tracking-tight">{seller ? 'Open Seller Center' : 'Start selling on Agora'}</h2>
+                        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{seller ? 'Manage products, orders, inventory, and customer conversations without leaving Agora.' : 'Turn your products into sales with the same Agora identity you use for shopping.'}</p>
+                    </div>
+                    <Button asChild className="shrink-0">
+                        <Link href={seller ? '/dashboard' : '/seller-signup'}>{seller ? 'Open Seller Center' : 'Start Selling'} <ArrowRight className="ml-2 size-4" /></Link>
+                    </Button>
+                </div>
+            </section>
+
+            <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                    { label: 'My Orders', href: '/profile?tab=orders', icon: ShoppingCart },
+                    { label: 'Wishlist', href: '/wishlist', icon: Heart },
+                    { label: 'Recently Viewed', href: '/products', icon: Eye },
+                    { label: 'My Reviews', href: '/profile?tab=orders', icon: Star },
+                ].map(({ label, href, icon: Icon }) => (
+                    <Link key={label} href={href} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background px-4 py-4 text-sm font-semibold transition hover:border-primary/50 hover:bg-primary/[0.03]">
+                        <Icon className="size-4 text-primary" /> {label}
+                    </Link>
+                ))}
+            </div>
             
-            <Tabs defaultValue="orders">
+            <Tabs defaultValue={searchParams.get('tab') === 'repairs' ? 'repairs' : 'orders'}>
                 <TabsList>
                     <TabsTrigger value="orders"><ShoppingCart className="mr-2 size-4" /> Order History</TabsTrigger>
                     <TabsTrigger value="repairs"><Wrench className="mr-2 size-4" /> Repair History</TabsTrigger>
@@ -167,6 +198,7 @@ export default function ProfilePage() {
                     <RepairHistory repairs={repairs} />
                 </TabsContent>
             </Tabs>
-        </div>
+                </div>
+            </PublicShell>
     )
 }

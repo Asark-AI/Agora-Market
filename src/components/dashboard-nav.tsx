@@ -21,6 +21,7 @@ import {
     Moon,
     X,
     LogOut,
+    ShoppingBag,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -223,6 +224,14 @@ export function DashboardNav({
               </SidebarMenuItem>
             );
           })}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip={{ children: 'Shopping' }} onClick={handleNavigation} className={cn(isMobile && 'h-12 rounded-xl px-3')}>
+              <Link href="/">
+                <ShoppingBag className="size-4" />
+                <span>Back to Shopping</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild

@@ -2,9 +2,10 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Search, Heart, House, Layers3, Store, UserRound, ChevronDown, ShieldCheck, Award, Sparkles, TrendingUp, Menu, Camera } from 'lucide-react';
+import { ShoppingCart, Search, Heart, House, Layers3, Store, UserRound, Package, ChevronDown, ShieldCheck, Award, Sparkles, TrendingUp, Menu, Camera } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useCart } from '@/hooks/use-cart';
+import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AppLogo } from './app-logo';
@@ -41,6 +42,7 @@ const businessLinks = [
 
 export function SiteHeader() {
   const { items } = useCart();
+  const { user } = useAuth();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
 
@@ -53,6 +55,30 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur-xl shadow-sm">
       <div className="container mx-auto max-w-7xl px-4 py-3">
+        <div className="hidden items-center justify-between lg:flex">
+          <Link href="/" className="flex items-center gap-3">
+            <AppLogo className="h-9 w-9 text-primary" />
+            <span className="text-lg font-semibold tracking-tight">Agora</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" className="rounded-full px-4">
+              <Link href="/stores"><Store className="mr-2 size-4" /> Stores</Link>
+            </Button>
+            <Button asChild variant="ghost" className="rounded-full px-4">
+              <Link href="/profile?tab=orders"><Package className="mr-2 size-4" /> Orders</Link>
+            </Button>
+            <Button asChild variant="ghost" size="icon" className="relative rounded-full" aria-label="Cart">
+              <Link href="/cart">
+                <ShoppingCart className="size-5" />
+                {itemCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{itemCount}</span>}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="rounded-full">
+              <Link href={user ? '/profile' : '/sign-in'}><UserRound className="mr-2 size-4" /> {user ? 'Account' : 'Sign in'}</Link>
+            </Button>
+          </div>
+        </div>
+
         {/* Mobile compact header: logo + wishlist + cart */}
         <div className="flex items-center justify-between lg:hidden">
           <Link href="/" className="flex items-center gap-3">

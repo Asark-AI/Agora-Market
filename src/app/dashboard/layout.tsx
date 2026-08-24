@@ -8,7 +8,8 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { DashboardNav } from '@/components/dashboard-nav';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { PageLoader } from '@/components/page-loader';
-import { businessConfig } from '@/lib/business-types';
+import Link from 'next/link';
+import { LayoutDashboard, MoreHorizontal, Package, ShoppingCart } from 'lucide-react';
 
 const AppTour = dynamic(() => import('@/components/app-tour').then((mod) => mod.AppTour), {
   ssr: false,
@@ -81,16 +82,29 @@ export default function AppDashboardLayout({
         <DashboardNav mobileOpen={mobileNavOpen} onMobileOpenChange={setMobileNavOpen} />
         <div className="flex flex-col flex-1 h-screen overflow-x-hidden">
           <DashboardHeader
-            title={seller ? businessConfig[seller.businessType]?.name || 'Dashboard' : 'Dashboard'}
+            title="Seller Center"
             onOpenMobileMenu={() => setMobileNavOpen(true)}
           />
           <div className="relative flex-1 overflow-y-auto">
-            <main className="p-4 sm:p-6 lg:p-8">
+            <main className="p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8">
               <SidebarInset>{children}</SidebarInset>
             </main>
           </div>
         </div>
       </div>
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border/70 bg-background/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_-20px_rgba(15,23,42,0.28)] backdrop-blur-xl md:hidden" aria-label="Seller Center navigation">
+        {[
+          { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+          { href: '/dashboard/orders', label: 'Orders', icon: ShoppingCart },
+          { href: '/dashboard/products', label: 'Products', icon: Package },
+          { href: '/dashboard/analytics', label: 'More', icon: MoreHorizontal },
+        ].map(({ href, label, icon: Icon }) => (
+          <Link key={label} href={href} className="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">
+            <Icon className="size-4" />
+            <span>{label}</span>
+          </Link>
+        ))}
+      </nav>
       <AppTour />
     </SidebarProvider>
   );

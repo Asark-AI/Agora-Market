@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bell, User, Search, Menu } from 'lucide-react';
+import { Bell, User, Search, Menu, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 
 import {
@@ -47,6 +47,9 @@ export function DashboardHeader({
           </div>
 
           <div className="flex items-center gap-2">
+            <Button asChild variant="outline" className="hidden rounded-full sm:inline-flex">
+              <Link href="/"><ShoppingBag className="mr-2 size-4" /> Shopping</Link>
+            </Button>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Search className="h-5 w-5" />
             </Button>
@@ -81,6 +84,9 @@ export function DashboardHeader({
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>{user?.name || 'My Account'}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/">Return to Shopping</Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard/settings">Settings</Link>
                 </DropdownMenuItem>

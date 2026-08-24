@@ -33,7 +33,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignInPage() {
-  const { logIn, signInWithGoogle, user, loading, seller } = useAuth();
+  const { logIn, signInWithGoogle, user, firebaseUser, loading, seller } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [isFormLoading, setIsFormLoading] = useState(false);
@@ -43,13 +43,26 @@ export default function SignInPage() {
     if (loading) return;
 
     if (user) {
-      const tid = setTimeout(() => {
-        const targetPath = seller ? '/dashboard' : '/seller-signup';
-        router.replace(targetPath);
-      }, 250);
-      return () => clearTimeout(tid);
+      let active = true;
+      const routeUser = async () => {
+        let isSuperAdmin = false;
+        try {
+          const token = await firebaseUser?.getIdTokenResult(true);
+          isSuperAdmin = token?.claims.superAdmin === true;
+        } catch (error) {
+          console.warn('Unable to check admin claims after sign in:', error);
+        }
+
+        if (active) {
+          const targetPath = isSuperAdmin ? '/admin' : '/';
+          router.replace(targetPath);
+        }
+      };
+
+      void routeUser();
+      return () => { active = false; };
     }
-  }, [user, seller, loading, router]);
+  }, [user, firebaseUser, seller, loading, router]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
