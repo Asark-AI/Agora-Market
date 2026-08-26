@@ -40,7 +40,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'flash' | 'trending' | 'best' | 'new' | 'popular' | 'rated' | 'shipping' | 'discount'>('all');
   const [condition, setCondition] = useState<ConditionOption>('');
   const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>('');
-  const [ratingFilter, setRatingFilter] = useState<RatingFilterOption>('4+');
+  const [ratingFilter, setRatingFilter] = useState<RatingFilterOption>('');
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -106,6 +106,9 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
         const matchesPrice = !maxPrice || Number.isNaN(max) || price <= max;
         const matchesVerified = !verifiedOnly || seller?.isVerifiedArtisan;
         const matchesRating = !ratingFilter || Number(product.ratingAverage ?? 0) >= Number(ratingFilter[0]);
+        const productRecord = product as StorefrontProduct & { condition?: ConditionOption; shippingPolicy?: string; deliveryOption?: DeliveryOption };
+        const matchesCondition = !condition || productRecord.condition === condition;
+        const matchesDelivery = !deliveryOption || productRecord.deliveryOption === deliveryOption || productRecord.shippingPolicy?.toLowerCase().includes(deliveryOption === 'free' ? 'free' : 'fast');
         const matchesFilter = (() => {
           switch (selectedFilter) {
             case 'flash':
@@ -137,6 +140,8 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
           matchesPrice &&
           matchesVerified &&
           matchesRating &&
+          matchesCondition &&
+          matchesDelivery &&
           matchesFilter
         );
       })
@@ -169,6 +174,8 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
     sortBy,
     verifiedOnly,
     ratingFilter,
+    condition,
+    deliveryOption,
   ]);
 
   useEffect(() => {
@@ -375,25 +382,6 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
           )}
         </section>
       </main>
-
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border/70 bg-background/95 px-4 py-3 shadow-[0_-14px_32px_-24px_rgba(15,23,42,0.35)] backdrop-blur md:hidden">
-        <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <button
-            type="button"
-            className="flex-1 rounded-full border border-border/70 bg-background px-4 py-3 text-sm font-semibold text-foreground transition hover:border-primary/80 hover:text-primary"
-            onClick={() => setIsFilterOpen(true)}
-          >
-            Filter
-          </button>
-          <button
-            type="button"
-            className="flex-1 rounded-full border border-border/70 bg-background px-4 py-3 text-sm font-semibold text-foreground transition hover:border-primary/80 hover:text-primary"
-            onClick={cycleSort}
-          >
-            Sort
-          </button>
-        </div>
-      </div>
 
       <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
         <SheetContent side="bottom" className="rounded-t-[32px] px-5 pb-6 pt-8">

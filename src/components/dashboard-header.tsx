@@ -50,8 +50,8 @@ export function DashboardHeader({
             <Button asChild variant="outline" className="hidden rounded-full sm:inline-flex">
               <Link href="/"><ShoppingBag className="mr-2 size-4" /> Shopping</Link>
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Search className="h-5 w-5" />
+            <Button asChild variant="ghost" size="icon" className="rounded-full" aria-label="Search marketplace">
+              <Link href="/search"><Search className="h-5 w-5" /></Link>
             </Button>
 
             <DropdownMenu>

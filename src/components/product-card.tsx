@@ -146,16 +146,16 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
       </div>
       {showPreview ? (
         // lazy render quick view modal to avoid SSR issues
-        <div aria-hidden={false}>
-          <div id={`quick-view-${product.id}`} className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setShowPreview(false)} />
+        <div role="dialog" aria-modal="true" aria-labelledby={`quick-view-title-${product.id}`}>
+          <div id={`quick-view-${product.id}`} className="fixed inset-0 z-50 flex items-center justify-center" onKeyDown={(event) => { if (event.key === 'Escape') setShowPreview(false); }}>
+            <button type="button" aria-label="Close quick view" className="absolute inset-0 bg-black/50" onClick={() => setShowPreview(false)} />
             <div className="relative z-10 w-[min(900px,95%)] rounded-lg bg-white p-4">
               <div className="flex gap-4">
                 <div className="relative h-64 w-64 flex-shrink-0 bg-muted/70">
                   <NextImage src={getImageUrl(product.images?.[0])} alt={product.name} fill className="object-cover" />
                 </div>
                 <div className="flex flex-1 flex-col gap-3">
-                  <h3 className="text-lg font-semibold">{product.name}</h3>
+                  <h3 id={`quick-view-title-${product.id}`} className="text-lg font-semibold">{product.name}</h3>
                   <div className="flex items-center gap-3">
                     <div className="text-2xl font-bold">GH₵{price.toFixed(2)}</div>
                     {oldPrice ? <div className="text-sm text-muted-foreground line-through">GH₵{oldPrice.toFixed(2)}</div> : null}
@@ -163,9 +163,9 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
                   </div>
                   <div className="text-sm text-muted-foreground">{product.description ?? product.name}</div>
                   <div className="mt-auto flex items-center gap-2">
-                    <button onClick={handleAddToCart} className="rounded-full bg-emerald-500 px-4 py-2 text-white">Add to cart</button>
-                    <button onClick={() => { handleWishlist(new MouseEvent('click') as any); }} className="rounded-full border px-3 py-2">{isWishlisted ? 'Wishlisted' : 'Wishlist'}</button>
-                    <button onClick={() => setShowPreview(false)} className="ml-auto text-sm text-muted-foreground">Close</button>
+                    <button type="button" onClick={handleAddToCart} className="rounded-full bg-emerald-500 px-4 py-2 text-white">Add to cart</button>
+                    <button type="button" onClick={() => { handleWishlist(new MouseEvent('click') as any); }} className="rounded-full border px-3 py-2">{isWishlisted ? 'Wishlisted' : 'Wishlist'}</button>
+                    <button type="button" onClick={() => setShowPreview(false)} className="ml-auto text-sm text-muted-foreground">Close</button>
                   </div>
                 </div>
               </div>

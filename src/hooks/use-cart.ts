@@ -1,9 +1,10 @@
 
 "use client";
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { Product, ServiceProduct } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
+import { indexedDbStorage } from '@/lib/offline/storage';
 
 type CartItem = {
   product: Product | ServiceProduct;
@@ -12,7 +13,7 @@ type CartItem = {
 
 interface CartState {
   items: CartItem[];
-  addToCart: (product: Product | ServiceProduct) => void;
+  addToCart: (product: Product | ServiceProduct, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -22,16 +23,17 @@ export const useCart = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      addToCart: (product) => {
+      addToCart: (product, quantity = 1) => {
+        const amount = Math.max(1, Math.floor(quantity));
         const currentItems = get().items;
         const existingItemIndex = currentItems.findIndex((item) => item.product.id === product.id);
 
         if (existingItemIndex > -1) {
           const updatedItems = [...currentItems];
-          updatedItems[existingItemIndex].quantity += 1;
+          updatedItems[existingItemIndex].quantity += amount;
           set({ items: updatedItems });
         } else {
-          set({ items: [...currentItems, { product, quantity: 1 }] });
+          set({ items: [...currentItems, { product, quantity: amount }] });
         }
 
         toast({ title: 'Added to cart', description: `${product.name} has been added to your cart.` });
@@ -55,7 +57,8 @@ export const useCart = create<CartState>()(
       clearCart: () => set({ items: [] }),
     }),
     {
-      name: 'agora-cart', // localStorage key
+      name: 'agora-cart',
+      storage: createJSONStorage(() => indexedDbStorage),
       partialize: (state) => ({ items: state.items }),
     }
   )

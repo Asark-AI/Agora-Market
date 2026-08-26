@@ -2,7 +2,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingCart, Search, Heart, House, Layers3, Store, UserRound, Package, ChevronDown, ShieldCheck, Award, Sparkles, TrendingUp, Menu, Camera } from 'lucide-react';
+import { ShoppingCart, Search, Heart, House, Layers3, Store, UserRound, Package, ChevronDown, ShieldCheck, Award, Sparkles, TrendingUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useCart } from '@/hooks/use-cart';
 import { useAuth } from '@/hooks/use-auth';
@@ -112,9 +112,6 @@ export function SiteHeader() {
               <Input name="q" placeholder="Search products, stores & brands" className="h-10 w-full rounded-full pl-10 pr-10 text-sm" />
               <Button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-sm">Search</Button>
             </div>
-            <Button variant="ghost" className="rounded-full p-2">
-              <Camera className="h-5 w-5 text-muted-foreground" />
-            </Button>
           </form>
         </div>
 

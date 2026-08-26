@@ -52,7 +52,7 @@ import type {
 } from '@/lib/types';
 import { db, auth, storage } from '@/lib/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { FirestorePermissionError, isNetworkError } from '@/firebase/errors';
 
 export interface AuthState extends PublicAuthState {
   unsubscribeListeners: Unsubscribe[];
@@ -310,6 +310,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 set({ [name]: data });
             },
             (error) => {
+              if (isNetworkError(error)) {
+                errorEmitter.emit('network-error', error as Error);
+                return;
+              }
                 const permissionError = new FirestorePermissionError({path, operation: 'read-list'}, error as Error);
                 errorEmitter.emit('permission-error', permissionError);
             }
@@ -505,6 +509,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('addProduct: product created', docRef.id);
       return { id: docRef.id };
     } catch (serverError: any) {
+      if (isNetworkError(serverError)) errorEmitter.emit('network-error', serverError as Error);
       console.error('Failed to write product to Firestore:', serverError);
       throw new Error(serverError?.message || 'Failed to create product in database.');
     }

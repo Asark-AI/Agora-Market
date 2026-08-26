@@ -3,6 +3,7 @@ import { FirestorePermissionError } from './errors';
 
 type ErrorEvents = {
   'permission-error': (error: FirestorePermissionError) => void;
+  'network-error': (error: Error) => void;
 };
 
 class ErrorEmitter extends EventEmitter {

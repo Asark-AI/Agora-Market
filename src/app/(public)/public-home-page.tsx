@@ -13,8 +13,10 @@ export default async function PublicHomePage() {
   const categories = getCategoryOptions();
   const featuredStores = sellers.slice(0, 6);
 
-  // Merge deals into feed (deals flagged) but primary feed is products
-  const primaryFeed = products.slice(0, 200);
+  const flashDeals = products.filter((product) => product.discountPrice).slice(0, 8);
+  const flashDealIds = new Set(flashDeals.map((product) => product.id));
+  const primaryFeed = products.filter((product) => !flashDealIds.has(product.id)).slice(0, 60);
+  const trendingProducts = primaryFeed.slice(0, 8);
 
   return (
     <PublicShell>
@@ -98,7 +100,7 @@ export default async function PublicHomePage() {
               </div>
               <div className="-mx-4 overflow-x-auto px-4">
                 <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
-                  {primaryFeed.filter(p => p.discountPrice).slice(0, 8).map(p => (
+                  {flashDeals.map(p => (
                     <div key={p.id} className="w-[160px] shrink-0">
                       <ProductCard product={p} />
                     </div>
@@ -128,7 +130,7 @@ export default async function PublicHomePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {products.slice(0, 8).map(p => (
+          {trendingProducts.map(p => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>

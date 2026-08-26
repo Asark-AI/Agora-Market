@@ -13,27 +13,10 @@ const getFirebaseEnvValue = (key: keyof NodeJS.ProcessEnv, fallback: string) => 
   return fallback;
 };
 
-const getBrowserAuthDomain = (fallback: string) => {
-  if (typeof window === 'undefined') {
-    return fallback;
-  }
-
-  const host = window.location.hostname;
-  if (!host) {
-    return fallback;
-  }
-
-  if (host === 'localhost' || host === '127.0.0.1' || host === '[::1]') {
-    return 'localhost';
-  }
-
-  return host;
-};
-
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_API_KEY', 'AIzaSyCgXWI7AkBhlfMjX0VDG4ETp-63jI3dyqE'),
-  authDomain: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', getBrowserAuthDomain('ghana-trade-37f20.firebaseapp.com')),
+  authDomain: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 'ghana-trade-37f20.firebaseapp.com'),
   projectId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'ghana-trade-37f20'),
   storageBucket: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'ghana-trade-37f20.firebasestorage.app'),
   messagingSenderId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '15751349335'),

@@ -10,6 +10,15 @@ export type SecurityRuleContext = {
     requestResourceData?: any;
 };
 
+export function isNetworkError(error: unknown) {
+  const code = typeof error === 'object' && error && 'code' in error ? String((error as { code?: unknown }).code) : '';
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return ['unavailable', 'deadline-exceeded', 'network-request-failed', 'failed-precondition'].includes(code)
+    || message.includes('network')
+    || message.includes('offline')
+    || message.includes('failed to fetch');
+}
+
 export class FirestorePermissionError extends Error {
   path: string;
   operation: FirestoreOperation;

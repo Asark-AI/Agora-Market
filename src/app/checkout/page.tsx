@@ -58,6 +58,29 @@ export default function CheckoutPage() {
     },
   };
 
+    const handlePayment = useFlutterwave(flutterwaveConfig);
+
+    const onPaymentSuccess = async (response: any) => {
+        closePaymentModal();
+        if (response.status !== 'successful' || !sellerId) {
+            toast({ variant: 'destructive', title: 'Payment was not completed', description: 'No order was created.' });
+            return;
+        }
+        setIsLoading(true);
+        try {
+            await addOrderFromCart(sellerId, items, total, String(response.transaction_id || flutterwaveConfig.tx_ref));
+            clearCart();
+            toast({ title: 'Order confirmed', description: 'Your payment was received and your order is being prepared.' });
+            router.push('/profile?tab=orders');
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Order confirmation failed', description: 'Payment may have completed. Please contact support before retrying.' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePaymentClose = () => setIsLoading(false);
+
   if (!isClient) {
     return (
         <div>
@@ -152,10 +175,20 @@ export default function CheckoutPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" size="lg" disabled={isLoading} onClick={() => {
+                                                        <Button className="w-full" size="lg" disabled={isLoading || !user || typeof navigator !== 'undefined' && !navigator.onLine} onClick={() => {
+                                                                if (!user) {
+                                                                    toast({ variant: 'destructive', title: 'Sign in required', description: 'Sign in before completing checkout.' });
+                                                                    router.push('/sign-in');
+                                                                    return;
+                                                                }
+                                                                if (!navigator.onLine) {
+                                                                    toast({ variant: 'destructive', title: 'Internet connection required', description: 'Reconnect to complete checkout and payment.' });
+                                                                    return;
+                                                                }
+                                                                setIsLoading(true);
                                 handlePayment({
                                     callback: onPaymentSuccess,
-                                    onClose: () => console.log('Payment modal closed'),
+                                                                        onClose: handlePaymentClose,
                                 });
                             }}>
                                 {isLoading ? <LiquidLoader /> : 'Proceed to Payment'}

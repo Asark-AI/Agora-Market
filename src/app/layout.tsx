@@ -6,6 +6,7 @@ import { ClientLayoutWrapper } from '@/components/client-layout-wrapper';
 export const metadata: Metadata = {
   title: 'Agora Seller App',
   description: 'Your all-in-one platform for Ghanaian goods and services.',
+  manifest: '/manifest.webmanifest',
   icons: {
     icon: '/favicon.png',
     shortcut: '/favicon.png',

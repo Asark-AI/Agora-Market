@@ -117,13 +117,17 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
               <span className="mx-3 min-w-6 text-center">{quantity}</span>
               <button type="button" onClick={() => setQuantity((value) => value + 1)} className="h-7 w-7 rounded-full bg-muted">+</button>
             </div>
-            <Button size="lg" onClick={() => addToCart(product as any)}>
+            <Button size="lg" onClick={() => addToCart(product as any, quantity)}>
               <ShoppingCart className="mr-2 size-4" /> Add to cart
             </Button>
             <Button size="lg" variant="outline" onClick={() => toggleWishlist(product)}>
               <Heart className={`mr-2 size-4 ${favorite ? 'fill-current text-primary' : ''}`} /> Wishlist
             </Button>
-            <Button size="icon" variant="outline" aria-label="Share product">
+            <Button size="icon" variant="outline" aria-label="Share product" onClick={() => {
+              const shareUrl = window.location.href;
+              if (navigator.share) void navigator.share({ title: product.name, url: shareUrl });
+              else void navigator.clipboard?.writeText(shareUrl);
+            }}>
               <Share2 className="size-4" />
             </Button>
           </div>
