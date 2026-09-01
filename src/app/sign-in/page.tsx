@@ -8,8 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import NextImage from 'next/image';
 import { AppLogo } from '@/components/app-logo';
 
@@ -36,13 +36,22 @@ export default function SignInPage() {
   const { logIn, signInWithGoogle, user, firebaseUser, loading, seller } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const hasRouted = useRef(false);
+
+  useEffect(() => {
+    if (searchParams.has('email') || searchParams.has('password')) {
+      router.replace('/sign-in');
+    }
+  }, [router, searchParams]);
   
   useEffect(() => {
     if (loading) return;
 
-    if (user) {
+    if (user && !hasRouted.current) {
+      hasRouted.current = true;
       let active = true;
       const routeUser = async () => {
         let isSuperAdmin = false;
@@ -135,7 +144,7 @@ export default function SignInPage() {
             </p>
           </div>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+            <form method="post" noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
               <FormField
                 control={form.control}
                 name="email"

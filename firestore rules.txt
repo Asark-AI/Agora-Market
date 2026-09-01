@@ -189,7 +189,7 @@ service cloud.firestore {
       allow update: if (isSellerOwner(uid) || isSellerDocumentOwner(uid))
         && resource.data.sellerId == uid
         && request.resource.data.sellerId == resource.data.sellerId;
-      allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      allow delete: if isSuperAdmin() || isSellerOwner(uid) || isSellerDocumentOwner(uid);
     }
 
     match /categories/{categoryId} {

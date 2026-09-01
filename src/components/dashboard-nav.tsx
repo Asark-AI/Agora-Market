@@ -10,18 +10,15 @@ import {
     Package,
     ShoppingCart,
     Users,
-    Truck,
     BarChart2,
     Settings,
     Wallet,
     MessageSquare,
-    Wrench,
     Store,
-    Sun,
-    Moon,
     X,
     LogOut,
     ShoppingBag,
+    TrendingUp,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -52,7 +49,7 @@ function ThemeToggle() {
                 onClick={() => setTheme('light')}
                 className="flex-1"
             >
-                <Sun className="mr-2 size-4" /> Light
+                Light
             </Button>
              <Button
                 variant={theme === 'dark' ? 'secondary' : 'ghost'}
@@ -60,10 +57,64 @@ function ThemeToggle() {
                 onClick={() => setTheme('dark')}
                 className="flex-1"
             >
-                <Moon className="mr-2 size-4" /> Dark
+                Dark
             </Button>
         </div>
     );
+}
+
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  badge?: string;
+}
+
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+function NavItemWithBadge({ 
+  href, 
+  label, 
+  icon, 
+  badge,
+  isActive,
+  onClick,
+  isMobile = false
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  badge?: string;
+  isActive: boolean;
+  onClick: () => void;
+  isMobile?: boolean;
+}) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        isActive={isActive}
+        tooltip={{ children: label }}
+        onClick={onClick}
+        className={cn(isMobile && 'h-12 rounded-xl px-3')}
+      >
+        <Link href={href as Route} className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            {icon}
+            <span>{label}</span>
+          </span>
+          {badge && (
+            <span className="ml-2 inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+              {badge}
+            </span>
+          )}
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
 }
 
 export function DashboardNav({
@@ -74,78 +125,76 @@ export function DashboardNav({
   onMobileOpenChange: (open: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { seller, logOut } = useAuth();
+  const { seller, logOut, sellerOrders, sellerProducts, sellerMessages, user } = useAuth();
   const { show: showLoader } = usePageLoaderStore();
 
-  const isStore = seller?.businessType === 'store' || seller?.businessType === 'manufacturing';
-  const isService = seller?.businessType === 'services';
-  const isRepair = seller?.businessType === 'repairs';
-  
-  const getOrdersLink = () => {
-    if (isRepair) return '/dashboard/repairs';
-    return '/dashboard/orders';
-  }
+  const unreadMessages = sellerMessages?.filter(m => !m.read && m.senderId !== user?.id).length || 0;
+  const draftProducts = sellerProducts?.filter(p => p.status === 'draft').length || 0;
+  const pendingOrders = sellerOrders?.filter(o => o.status === 'pending').length || 0;
 
-  const getOrdersLabel = () => {
-    if (isRepair) return 'Repair Requests';
-    if (isService) return 'Bookings';
-    return 'Orders';
-  }
-  
-  const menuItems = [
+  const navigationSections: NavSection[] = [
     {
-      href: '/dashboard',
-      label: 'Overview',
-      icon: LayoutDashboard,
-      group: 'main'
+      label: 'SELL',
+      items: [
+        {
+          href: '/dashboard',
+          label: 'Overview',
+          icon: <LayoutDashboard className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/products',
+          label: 'Products',
+          icon: <Package className="h-4 w-4" />,
+          badge: draftProducts > 0 ? `${draftProducts} draft` : undefined,
+        },
+        {
+          href: '/dashboard/orders',
+          label: 'Orders',
+          icon: <ShoppingCart className="h-4 w-4" />,
+          badge: pendingOrders > 0 ? `${pendingOrders}` : undefined,
+        },
+      ],
     },
     {
-      href: '/dashboard/products',
-      label: isStore ? 'Products' : 'Services',
-      icon: isRepair ? Wrench : Package,
-      group: 'main'
+      label: 'GROW',
+      items: [
+        {
+          href: '/dashboard/analytics',
+          label: 'Analytics',
+          icon: <BarChart2 className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/customers',
+          label: 'Customers',
+          icon: <Users className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/messages',
+          label: 'Messages',
+          icon: <MessageSquare className="h-4 w-4" />,
+          badge: unreadMessages > 0 ? `${unreadMessages}` : undefined,
+        },
+      ],
     },
     {
-      href: getOrdersLink(),
-      label: getOrdersLabel(),
-      icon: ShoppingCart,
-      group: 'main'
-    },
-    {
-        href: '/dashboard/analytics',
-        label: 'Analytics',
-        icon: BarChart2,
-        group: 'main'
-    },
-    {
-        href: '/dashboard/messages',
-        label: 'Messages',
-        icon: MessageSquare,
-        group: 'main'
-    },
-    {
-        href: '/dashboard/customers',
-        label: 'Customers',
-        icon: Users,
-        group: 'main'
-    },
-    {
-        href: '/dashboard/storefront',
-        label: 'Business',
-        icon: Store,
-        group: 'settings'
-    },
-    {
-        href: '/dashboard/settings',
-        label: 'Settings',
-        icon: Settings,
-        group: 'settings'
-    },
-    {
-        href: '/dashboard/subscription',
-        label: 'Payments',
-        icon: Wallet,
-        group: 'settings'
+      label: 'MANAGE',
+      items: [
+        {
+          href: '/dashboard/storefront',
+          label: 'Business',
+          icon: <Store className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/subscription',
+          label: 'Payments',
+          icon: <Wallet className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/settings',
+          label: 'Settings',
+          icon: <Settings className="h-4 w-4" />,
+        },
+      ],
     },
   ];
 
@@ -176,75 +225,59 @@ export function DashboardNav({
     onMobileOpenChange(false);
   };
 
-  const renderNavItems = (isMobile = false) => (
+  const renderNavSections = (isMobile = false) => (
     <>
-      {menuItems.filter((item) => item.group === 'main').map((item) => {
-        const isActive = pathname === item.href;
-        const Icon = item.icon;
+      {navigationSections.map((section) => (
+        <SidebarGroup key={section.label}>
+          <SidebarGroupLabel className={cn('text-xs font-semibold uppercase tracking-wider', isMobile && 'px-3 text-xs')}>
+            {section.label}
+          </SidebarGroupLabel>
+          <SidebarMenu>
+            {section.items.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <NavItemWithBadge
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  badge={item.badge}
+                  isActive={isActive}
+                  onClick={handleNavigation}
+                  isMobile={isMobile}
+                />
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
+      ))}
 
-        return (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              isActive={isActive}
-              tooltip={{ children: item.label }}
-              onClick={handleNavigation}
+      <SidebarSeparator className={cn(isMobile && 'my-2')} />
+
+      <SidebarGroup>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton 
+              asChild 
+              onClick={handleNavigation} 
               className={cn(isMobile && 'h-12 rounded-xl px-3')}
             >
-              <Link href={item.href as Route}>
-                <Icon />
-                <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      })}
-      <SidebarSeparator className={cn(isMobile && 'my-2')} />
-      <SidebarGroup>
-        <SidebarGroupLabel className={cn(isMobile && 'px-3')}>Settings</SidebarGroupLabel>
-        <SidebarMenu>
-          {menuItems.filter((item) => item.group === 'settings').map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            const Icon = item.icon;
-
-            return (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  tooltip={{ children: item.label }}
-                  onClick={handleNavigation}
-                  className={cn(isMobile && 'h-12 rounded-xl px-3')}
-                >
-                  <Link href={item.href as Route}>
-                    <Icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            );
-          })}
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip={{ children: 'Shopping' }} onClick={handleNavigation} className={cn(isMobile && 'h-12 rounded-xl px-3')}>
               <Link href="/">
-                <ShoppingBag className="size-4" />
-                <span>Back to Shopping</span>
+                <ShoppingBag className="h-4 w-4" />
+                <span>Switch to Buyer Mode</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              asChild
-              className={cn('h-12 rounded-xl px-3 text-destructive', isMobile && 'h-12 rounded-xl px-3')}
+              className={cn('text-destructive hover:bg-destructive/10 hover:text-destructive', isMobile && 'h-12 rounded-xl px-3')}
               onClick={() => {
                 handleNavigation();
                 void logOut();
               }}
             >
-              <button type="button" className="flex w-full items-center gap-2">
-                <LogOut className="size-4" />
-                <span>Logout</span>
-              </button>
+              <LogOut className="h-4 w-4" />
+              <span>Log Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -256,19 +289,22 @@ export function DashboardNav({
     <div id="dashboard-nav">
       <div className="hidden md:block">
         <Sidebar collapsible="offcanvas" className="md:flex">
-        <SidebarHeader>
-          <div className="flex items-center gap-2">
+          <SidebarHeader>
+            <div className="flex items-center gap-3">
               <AppLogo className="w-8 h-8 text-primary" />
-              <h1 className="text-2xl font-bold text-white">Agora</h1>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>{renderNavItems(false)}</SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter>
+              <div>
+                <h1 className="text-sm font-bold">Agora Seller</h1>
+                <p className="text-xs text-muted-foreground">Center</p>
+              </div>
+            </div>
+          </SidebarHeader>
+          <SidebarContent className="space-y-1">
+            <SidebarMenu>{renderNavSections(false)}</SidebarMenu>
+          </SidebarContent>
+          <SidebarFooter>
             <ThemeToggle />
-        </SidebarFooter>
-      </Sidebar>
+          </SidebarFooter>
+        </Sidebar>
       </div>
 
       {mobileOpen && (
@@ -290,7 +326,7 @@ export function DashboardNav({
                 <AppLogo className="h-8 w-8 text-primary" />
                 <div>
                   <p className="text-sm font-semibold">Agora Seller</p>
-                  <p className="text-xs text-sidebar-foreground/70">Management Hub</p>
+                  <p className="text-xs text-sidebar-foreground/70">Center</p>
                 </div>
               </div>
               <Button
@@ -299,16 +335,13 @@ export function DashboardNav({
                 size="icon"
                 className="h-10 w-10 rounded-full"
                 onClick={() => onMobileOpenChange(false)}
-                aria-label="Close dashboard navigation"
+                aria-label="Close navigation"
               >
                 <X className="size-4" />
               </Button>
             </div>
-            <div className="flex-1 overflow-y-auto px-3 py-3">
-              <SidebarMenu>{renderNavItems(true)}</SidebarMenu>
-            </div>
-            <div className="border-t border-sidebar-border/50 p-3">
-              <ThemeToggle />
+            <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+              <SidebarMenu>{renderNavSections(true)}</SidebarMenu>
             </div>
           </aside>
         </div>

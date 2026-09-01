@@ -9,7 +9,8 @@ import { DashboardNav } from '@/components/dashboard-nav';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { PageLoader } from '@/components/page-loader';
 import Link from 'next/link';
-import { LayoutDashboard, MoreHorizontal, Package, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, MessageSquare, PlusCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const AppTour = dynamic(() => import('@/components/app-tour').then((mod) => mod.AppTour), {
   ssr: false,
@@ -50,7 +51,6 @@ export default function AppDashboardLayout({
       initDashboardListeners();
     }
     
-    // When the user navigates away from the dashboard, clean up the data listeners.
     return () => {
       clearListeners();
     };
@@ -75,6 +75,8 @@ export default function AppDashboardLayout({
       </div>
     );
   }
+
+  const isActive = (href: string) => pathname === href;
   
   return (
     <SidebarProvider>
@@ -92,19 +94,43 @@ export default function AppDashboardLayout({
           </div>
         </div>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-border/70 bg-background/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_30px_-20px_rgba(15,23,42,0.28)] backdrop-blur-xl md:hidden" aria-label="Seller Center navigation">
-        {[
-          { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-          { href: '/dashboard/orders', label: 'Orders', icon: ShoppingCart },
-          { href: '/dashboard/products', label: 'Products', icon: Package },
-          { href: '/dashboard/analytics', label: 'More', icon: MoreHorizontal },
-        ].map(({ href, label, icon: Icon }) => (
-          <Link key={label} href={href} className="flex flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">
-            <Icon className="size-4" />
-            <span>{label}</span>
+
+      {/* Modern Mobile Bottom Navigation */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 md:hidden border-t border-border/70 bg-background/95 backdrop-blur-xl shadow-[0_-10px_30px_-20px_rgba(15,23,42,0.28)]">
+        <div className="px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          {/* Navigation Items */}
+          <div className="grid grid-cols-4 gap-1 mb-2">
+            <Link href="/dashboard" className="flex flex-col items-center justify-center py-3 rounded-lg transition-colors hover:bg-muted" title="Overview">
+              <LayoutDashboard className={`h-5 w-5 mb-1 ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`text-xs font-medium ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}>Home</span>
+            </Link>
+
+            <Link href="/dashboard/products" className="flex flex-col items-center justify-center py-3 rounded-lg transition-colors hover:bg-muted" title="Products">
+              <Package className={`h-5 w-5 mb-1 ${isActive('/dashboard/products') ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`text-xs font-medium ${isActive('/dashboard/products') ? 'text-primary' : 'text-muted-foreground'}`}>Products</span>
+            </Link>
+
+            <Link href="/dashboard/orders" className="flex flex-col items-center justify-center py-3 rounded-lg transition-colors hover:bg-muted" title="Orders">
+              <ShoppingCart className={`h-5 w-5 mb-1 ${isActive('/dashboard/orders') ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`text-xs font-medium ${isActive('/dashboard/orders') ? 'text-primary' : 'text-muted-foreground'}`}>Orders</span>
+            </Link>
+
+            <Link href="/dashboard/messages" className="flex flex-col items-center justify-center py-3 rounded-lg transition-colors hover:bg-muted" title="Messages">
+              <MessageSquare className={`h-5 w-5 mb-1 ${isActive('/dashboard/messages') ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`text-xs font-medium ${isActive('/dashboard/messages') ? 'text-primary' : 'text-muted-foreground'}`}>Messages</span>
+            </Link>
+          </div>
+
+          {/* Floating Action Button - Add Product */}
+          <Link href="/dashboard/add-product" className="block w-full">
+            <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 rounded-lg transition-all active:scale-95">
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
           </Link>
-        ))}
+        </div>
       </nav>
+
       <AppTour />
     </SidebarProvider>
   );
