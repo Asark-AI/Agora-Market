@@ -104,16 +104,17 @@ export function SiteHeader() {
           </div>
         </div>
 
-        {/* Mobile search bar (prominent but compact) */}
-        <div className="mt-3 lg:hidden">
-          <form action="/search" className="flex w-full items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input name="q" placeholder="Search products, stores & brands" className="h-10 w-full rounded-full pl-10 pr-10 text-sm" />
-              <Button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-sm">Search</Button>
-            </div>
-          </form>
-        </div>
+        {pathname === '/' && (
+          <div className="mt-3 lg:hidden">
+            <form action="/search" className="flex w-full items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input name="q" placeholder="Search products, stores & brands" className="h-10 w-full rounded-full pl-10 pr-10 text-sm" />
+                <Button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full px-3 py-1 text-sm">Search</Button>
+              </div>
+            </form>
+          </div>
+        )}
 
         <div className="mt-4 hidden gap-2 lg:flex">
           <DropdownMenu>
