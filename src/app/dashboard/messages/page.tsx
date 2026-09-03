@@ -6,15 +6,14 @@ import {
   Archive,
   Search,
   Send,
-  Trash2,
   Paperclip,
-  User,
   Phone,
   Mail,
   MessageSquare,
   MoreVertical,
   ArrowLeft,
   SquarePen,
+    Star,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
@@ -35,7 +34,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { LiquidLoader } from '@/components/liquid-loader';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 
 export default function MessagesPage() {
     const { user, seller, sellerCustomers, sellerMessages, sendMessage, loading } = useAuth();
@@ -43,6 +41,9 @@ export default function MessagesPage() {
     const [replyText, setReplyText] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilter, setActiveFilter] = useState<'all' | 'unread' | 'starred'>('all');
+    const [starredConversationIds, setStarredConversationIds] = useState<string[]>([]);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     const conversations = useMemo((): Conversation[] => {
@@ -71,6 +72,19 @@ export default function MessagesPage() {
         return conversations.find(c => c.id === selectedConversationId) || null;
     }, [selectedConversationId, conversations]);
 
+    const filteredConversations = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        return conversations.filter((conversation) => {
+            const matchesSearch = !query ||
+                conversation.customerName.toLowerCase().includes(query) ||
+                conversation.lastMessage.text.toLowerCase().includes(query);
+            const matchesFilter = activeFilter === 'all' ||
+                (activeFilter === 'unread' && conversation.unreadCount > 0) ||
+                (activeFilter === 'starred' && starredConversationIds.includes(conversation.id));
+            return matchesSearch && matchesFilter;
+        });
+    }, [activeFilter, conversations, searchQuery, starredConversationIds]);
+
     const handleSendReply = async () => {
         if (!replyText.trim() || !selectedConversation || !seller) return;
         setIsSending(true);
@@ -90,80 +104,65 @@ export default function MessagesPage() {
     }
 
     const ConversationList = (
-        <div className="flex h-full flex-col bg-card border-r">
-            <div className="flex items-center justify-between p-3 border-b">
-                <div className="flex items-center gap-3">
-                    <Avatar>
-                        <AvatarImage src={seller?.logoUrl || `https://placehold.co/40x40/E2E8F0/475569?text=${seller?.name.charAt(0)}`} alt={seller?.name} />
-                        <AvatarFallback>{seller?.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <h2 className="text-xl font-bold">Messages</h2>
-                </div>
-                <div className='flex items-center gap-1'>
-                    <Button variant="ghost" size="icon">
-                        <SquarePen className="h-5 w-5" />
-                    </Button>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                             <Button variant="ghost" size="icon"><MoreVertical className="size-5"/></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem>New Group</DropdownMenuItem>
-                            <DropdownMenuItem>Archived</DropdownMenuItem>
-                            <DropdownMenuItem>Settings</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </div>
-            <div className="p-3 border-b">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search or start new chat" className="pl-10 h-9" />
-                </div>
-            </div>
-            <ScrollArea className="flex-grow">
-                {conversations.length > 0 ? (
-                conversations.map((conv) => (
+        <div className="flex h-full min-h-0 flex-col bg-background">
+            <ScrollArea className="min-h-0 flex-1">
+                {filteredConversations.length > 0 ? (
+                filteredConversations.map((conv) => (
                     <button
                         key={conv.id}
                         className={cn(
-                        'flex w-full items-start gap-3 p-3 text-left text-sm transition-all hover:bg-muted/50 border-b',
-                        selectedConversationId === conv.id && 'bg-muted'
+                        'flex w-full items-start gap-3 border-b border-border/70 px-3 py-3 text-left text-sm transition-colors hover:bg-muted/40',
+                        selectedConversationId === conv.id && 'bg-muted/60'
                         )}
                         onClick={() => setSelectedConversationId(conv.id)}
                     >
-                        <Avatar className="h-11 w-11">
+                        <Avatar className="h-9 w-9 shrink-0">
                             <AvatarImage src={conv.customerAvatar} alt={conv.customerName} />
                             <AvatarFallback>{conv.customerName.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <div className="flex-grow overflow-hidden">
+                        <div className="min-w-0 flex-1">
                             <div className="flex justify-between items-center">
-                                <span className="font-semibold truncate">{conv.customerName}</span>
+                                <span className="truncate font-medium text-foreground">{conv.customerName}</span>
                                 <span className={cn(
-                                    'text-xs shrink-0',
-                                    conv.unreadCount > 0 ? 'text-primary font-medium' : 'text-muted-foreground'
+                                    'ml-2 shrink-0 text-[11px]',
+                                    conv.unreadCount > 0 ? 'font-medium text-foreground' : 'text-muted-foreground'
                                 )}>
-                                    {formatDistanceToNow(new Date(conv.lastMessage.timestamp), { addSuffix: true })}
+                                    {formatDistanceToNow(new Date(conv.lastMessage.timestamp), { addSuffix: false })}
                                 </span>
                             </div>
-                            <div className="flex justify-between items-start mt-1">
-                                <p className="text-sm text-muted-foreground line-clamp-2 flex-grow pr-2">
+                            <div className="mt-1 flex items-center justify-between gap-2">
+                                <p className="line-clamp-1 min-w-0 flex-1 text-xs text-muted-foreground">
                                   {conv.lastMessage.senderId === user?.id ? 'You: ' : ''}{conv.lastMessage.text}
                                 </p>
-                                {conv.unreadCount > 0 && 
-                                    <Badge variant="default" className="h-5 shrink-0">
-                                        {conv.unreadCount}
-                                    </Badge>
-                                }
+                                <span
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={starredConversationIds.includes(conv.id) ? 'Unstar conversation' : 'Star conversation'}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        setStarredConversationIds((current) => current.includes(conv.id) ? current.filter((id) => id !== conv.id) : [...current, conv.id]);
+                                    }}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            setStarredConversationIds((current) => current.includes(conv.id) ? current.filter((id) => id !== conv.id) : [...current, conv.id]);
+                                        }
+                                    }}
+                                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                                >
+                                    <Star className={cn('size-3.5', starredConversationIds.includes(conv.id) && 'fill-current text-foreground')} />
+                                </span>
+                                {conv.unreadCount > 0 && <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-foreground px-1 text-[11px] font-medium text-background">{conv.unreadCount}</span>}
                             </div>
                         </div>
                     </button>
                 ))
                 ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                    <MessageSquare className="size-10 mb-2" />
-                    <p className="font-semibold">No messages yet</p>
-                    <p className="text-xs">When you receive a new message, it will appear here.</p>
+                <div className="flex min-h-[180px] flex-col items-center justify-center px-4 text-center text-muted-foreground">
+                    <MessageSquare className="mb-2 size-6" strokeWidth={1.5} />
+                    <p className="text-sm font-medium">{conversations.length ? 'No conversations found' : 'No messages yet'}</p>
+                    <p className="mt-1 text-xs">{conversations.length ? 'Try a different search or filter.' : 'When you receive a new message, it will appear here.'}</p>
                 </div>
                 )}
             </ScrollArea>
@@ -172,7 +171,44 @@ export default function MessagesPage() {
     
     return (
         <>
-            <div className="h-full max-h-[calc(100vh-4.1rem)] w-full overflow-hidden md:hidden">
+            <div className="flex h-full min-h-0 flex-col gap-3">
+              <div className={cn('flex shrink-0 flex-col gap-3', selectedConversationId && 'hidden md:flex')}>
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold tracking-tight">Messages</h2>
+                    <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Compose message">
+                            <SquarePen className="size-4" />
+                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Message options"><MoreVertical className="size-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem>Archived</DropdownMenuItem>
+                                <DropdownMenuItem>Settings</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+                <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search messages" className="h-10 border-border bg-background pl-9 text-sm shadow-none" />
+                </div>
+                <div className="flex items-center gap-1 border-b border-border/70">
+                    {(['all', 'unread', 'starred'] as const).map((filter) => (
+                        <button
+                            key={filter}
+                            type="button"
+                            onClick={() => setActiveFilter(filter)}
+                            className={cn('border-b-2 px-3 py-2 text-xs font-medium capitalize transition-colors', activeFilter === filter ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}
+                        >
+                            {filter}
+                        </button>
+                    ))}
+                </div>
+              </div>
+
+            <div className="min-h-0 flex-1 overflow-hidden md:hidden">
                  {selectedConversationId ? (
                     <div className="h-full flex flex-col">
                         <ChatViewHeader
@@ -203,7 +239,7 @@ export default function MessagesPage() {
             
             <ResizablePanelGroup
                 direction="horizontal"
-                className="h-full max-h-[calc(100vh-4.1rem)] items-stretch hidden md:flex"
+                className="min-h-0 flex-1 items-stretch hidden md:flex"
             >
                 <ResizablePanel defaultSize={30} minSize={25} maxSize={40}>
                     {ConversationList}
@@ -234,17 +270,16 @@ export default function MessagesPage() {
                                 />
                             </>
                         ) : (
-                            <div className="p-4 text-center text-muted-foreground h-full flex flex-col justify-center items-center">
-                                <div className="border-2 border-dashed rounded-full p-8 border-border">
-                                    <MessageSquare className="size-16" />
-                                </div>
-                                <h2 className="text-2xl font-bold mt-6">Your Messages</h2>
-                                <p className="text-sm max-w-xs mt-2">Select a conversation from the left to start chatting.</p>
+                            <div className="flex h-full flex-col items-center justify-center px-4 text-center text-muted-foreground">
+                                <MessageSquare className="mb-3 size-7" strokeWidth={1.5} />
+                                <p className="text-sm font-medium text-foreground">Select a conversation</p>
+                                <p className="mt-1 max-w-xs text-xs">Choose a conversation from the list to start messaging.</p>
                             </div>
                         )}
                     </div>
                 </ResizablePanel>
             </ResizablePanelGroup>
+            </div>
 
             <Sheet open={isContactInfoOpen} onOpenChange={setIsContactInfoOpen}>
                  <SheetContent className="w-[400px] sm:w-[440px]">
