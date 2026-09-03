@@ -9,8 +9,7 @@ import { DashboardNav } from '@/components/dashboard-nav';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { PageLoader } from '@/components/page-loader';
 import Link from 'next/link';
-import { LayoutDashboard, Package, ShoppingCart, MessageSquare, PlusCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { LayoutDashboard, Package, ShoppingCart, MessageSquare, Plus } from 'lucide-react';
 
 const AppTour = dynamic(() => import('@/components/app-tour').then((mod) => mod.AppTour), {
   ssr: false,
@@ -91,42 +90,35 @@ export default function AppDashboardLayout({
             <main className="p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8">
               <SidebarInset>{children}</SidebarInset>
             </main>
+            {/* Floating Add Product Button (Mobile) */}
+            <Link href="/dashboard/add-product" className="fixed bottom-20 right-4 z-20 md:hidden inline-flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl active:scale-95 transition-all" title="Add product" aria-label="Add product">
+              <Plus className="h-6 w-6" />
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Modern Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation */}
       <nav className="fixed inset-x-0 bottom-0 z-30 md:hidden border-t border-border/70 bg-background/95 backdrop-blur-xl shadow-[0_-10px_30px_-20px_rgba(15,23,42,0.28)]">
-        <div className="px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          {/* Navigation Items */}
-          <div className="grid grid-cols-4 gap-1 mb-2">
-            <Link href="/dashboard" className="flex flex-col items-center justify-center py-3 rounded-lg transition-colors hover:bg-muted" title="Overview">
-              <LayoutDashboard className={`h-5 w-5 mb-1 ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className={`text-xs font-medium ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}>Home</span>
-            </Link>
+        <div className="grid grid-cols-4 gap-1 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <Link href="/dashboard" className="flex flex-col items-center justify-center rounded-xl py-3 transition-colors hover:bg-muted" title="Overview">
+            <LayoutDashboard className={`h-5 w-5 mb-1 ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-[11px] font-medium ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}>Home</span>
+          </Link>
 
-            <Link href="/dashboard/products" className="flex flex-col items-center justify-center py-3 rounded-lg transition-colors hover:bg-muted" title="Products">
-              <Package className={`h-5 w-5 mb-1 ${isActive('/dashboard/products') ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className={`text-xs font-medium ${isActive('/dashboard/products') ? 'text-primary' : 'text-muted-foreground'}`}>Products</span>
-            </Link>
+          <Link href="/dashboard/products" className="flex flex-col items-center justify-center rounded-xl py-3 transition-colors hover:bg-muted" title="Products">
+            <Package className={`h-5 w-5 mb-1 ${isActive('/dashboard/products') ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-[11px] font-medium ${isActive('/dashboard/products') ? 'text-primary' : 'text-muted-foreground'}`}>Products</span>
+          </Link>
 
-            <Link href="/dashboard/orders" className="flex flex-col items-center justify-center py-3 rounded-lg transition-colors hover:bg-muted" title="Orders">
-              <ShoppingCart className={`h-5 w-5 mb-1 ${isActive('/dashboard/orders') ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className={`text-xs font-medium ${isActive('/dashboard/orders') ? 'text-primary' : 'text-muted-foreground'}`}>Orders</span>
-            </Link>
+          <Link href="/dashboard/orders" className="flex flex-col items-center justify-center rounded-xl py-3 transition-colors hover:bg-muted" title="Orders">
+            <ShoppingCart className={`h-5 w-5 mb-1 ${isActive('/dashboard/orders') ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-[11px] font-medium ${isActive('/dashboard/orders') ? 'text-primary' : 'text-muted-foreground'}`}>Orders</span>
+          </Link>
 
-            <Link href="/dashboard/messages" className="flex flex-col items-center justify-center py-3 rounded-lg transition-colors hover:bg-muted" title="Messages">
-              <MessageSquare className={`h-5 w-5 mb-1 ${isActive('/dashboard/messages') ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className={`text-xs font-medium ${isActive('/dashboard/messages') ? 'text-primary' : 'text-muted-foreground'}`}>Messages</span>
-            </Link>
-          </div>
-
-          {/* Floating Action Button - Add Product */}
-          <Link href="/dashboard/add-product" className="block w-full">
-            <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 rounded-lg transition-all active:scale-95">
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
+          <Link href="/dashboard/messages" className="flex flex-col items-center justify-center rounded-xl py-3 transition-colors hover:bg-muted" title="Messages">
+            <MessageSquare className={`h-5 w-5 mb-1 ${isActive('/dashboard/messages') ? 'text-primary' : 'text-muted-foreground'}`} />
+            <span className={`text-[11px] font-medium ${isActive('/dashboard/messages') ? 'text-primary' : 'text-muted-foreground'}`}>Messages</span>
           </Link>
         </div>
       </nav>
