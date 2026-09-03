@@ -1,162 +1,102 @@
-import { getActiveProducts, getActiveSellers, getCategoryOptions, getImageUrl } from '@/lib/storefront';
+import { getActiveProducts, getActiveSellers, getCategoryOptions } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
-import NextImage from 'next/image';
-import { Clock3 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-// Note: render the initial product grid server-side so products appear immediately on first load
+import { ArrowRight, Clock3 } from 'lucide-react';
 
 export default async function PublicHomePage() {
   const [products, sellers] = await Promise.all([getActiveProducts(), getActiveSellers()]);
-
   const categories = getCategoryOptions();
-  const featuredStores = sellers.slice(0, 6);
-
-  const flashDeals = products.filter((product) => product.discountPrice).slice(0, 8);
+  const flashDeals = products.filter((product) => product.discountPrice && product.discountPrice < product.price).slice(0, 8);
   const flashDealIds = new Set(flashDeals.map((product) => product.id));
-  const primaryFeed = products.filter((product) => !flashDealIds.has(product.id)).slice(0, 60);
-  const trendingProducts = primaryFeed.slice(0, 8);
+  const feed = products.filter((product) => !flashDealIds.has(product.id));
+  const forYou = feed.slice(0, 24);
+  const trending = feed.slice(24, 32);
 
   return (
     <PublicShell>
-      {/* Top: categories and trust signals; search lives in the shared mobile header. */}
-      <section className="sticky top-14 z-20 border-b bg-background">
-        <div className="container mx-auto max-w-7xl px-4 py-3">
-          <div className="flex items-center gap-3 overflow-x-auto py-2">
-            <Link href="/products" className="whitespace-nowrap rounded-full border border-border/70 bg-background px-3 py-2 text-sm font-semibold">All</Link>
-            {categories.slice(0, 12).map(c => (
-              <Link key={c.id} href={`/categories?category=${c.id}`} className="whitespace-nowrap rounded-full border border-border/70 bg-white px-3 py-2 text-sm font-medium">{c.name}</Link>
-            ))}
-          </div>
+      <main className="mx-auto max-w-7xl px-4 pb-8">
+        <nav className="-mx-4 flex gap-2 overflow-x-auto border-b border-border/50 bg-background px-4 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Product categories">
+          <Link href="/products" className="shrink-0 rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground">All</Link>
+          {categories.slice(0, 10).map((category) => (
+            <Link key={category.id} href={`/categories?category=${category.id}`} className="shrink-0 rounded-full border border-border/70 bg-background px-4 py-1.5 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary">
+              {category.name}
+            </Link>
+          ))}
+          <Link href="/categories" className="flex shrink-0 items-center gap-1 rounded-full border border-border/70 px-4 py-1.5 text-sm font-medium text-muted-foreground">
+            More <ArrowRight className="size-3.5" />
+          </Link>
+        </nav>
 
-          <div className="mt-2 flex items-center gap-3 overflow-x-auto py-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-2">✓ Free shipping</span>
-            <span className="flex items-center gap-2">✓ Buyer protection</span>
-            <span className="flex items-center gap-2">✓ Verified sellers</span>
-            <span className="flex items-center gap-2">✓ Secure payments</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Secondary nav: marketplace categories & quick tabs (compact) */}
-      <nav className="border-b bg-background/60">
-        <div className="container mx-auto max-w-7xl px-4">
-          <div className="flex items-center gap-3 overflow-x-auto py-2 text-sm">
-            <Link href="/categories" className="font-semibold">Categories</Link>
-            <Link href="/?tab=deals" className="whitespace-nowrap">Deals</Link>
-            <Link href="/?tab=5star" className="whitespace-nowrap">5-Star Rated</Link>
-            <Link href="/?tab=best" className="whitespace-nowrap">Best Sellers</Link>
-            <Link href="/?tab=new" className="whitespace-nowrap">New Arrivals</Link>
-            {categories.slice(0, 12).map(c => (
-              <Link key={c.id} href={`/categories?category=${c.id}`} className="whitespace-nowrap text-muted-foreground">{c.name}</Link>
-            ))}
-          </div>
-        </div>
-      </nav>
-
-      <main className="container mx-auto max-w-7xl px-4 py-4">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_1fr]">
-          {/* Left sidebar */}
-          <aside className="hidden flex-col gap-3 lg:flex">
-            <div className="rounded-lg border border-border/70 bg-white p-3">
-              <h4 className="text-sm font-semibold">Shop by Category</h4>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li><Link href="/categories" className="block">All Categories</Link></li>
-                <li><Link href="/categories?category=electronics" className="block">Electronics</Link></li>
-                <li><Link href="/categories?category=phones" className="block">Phones</Link></li>
-                <li><Link href="/categories?category=computers" className="block">Computers</Link></li>
-                <li><Link href="/categories?category=fashion" className="block">Fashion</Link></li>
-                <li><Link href="/categories?category=home" className="block">Home & Living</Link></li>
-                <li><Link href="/categories?category=cars" className="block">Cars</Link></li>
-                <li><Link href="/categories?category=machinery" className="block">Machinery</Link></li>
-                <li><Link href="/categories?category=sports" className="block">Sports</Link></li>
-                <li><Link href="/categories?category=beauty" className="block">Beauty</Link></li>
-              </ul>
-            </div>
-            <div className="rounded-lg border border-border/70 bg-white p-3">
-              <h4 className="text-sm font-semibold">Filters</h4>
-              <div className="mt-3 text-sm text-muted-foreground">Price, Rating, Seller, Shipping, Location</div>
-            </div>
-          </aside>
-
-          {/* Main content */}
-          <section>
-            {/* Discovery tabs + product grid (mobile-first) */}
-            <div className="mb-3 flex items-center gap-2 overflow-x-auto py-2">
-              {['all','deals','5star','best','new','recommended'].map(t => (
-                <a key={t} href={`/?tab=${t}`} className="whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold bg-background border border-border/70">{t==='5star' ? '⭐ 5-Star' : t==='best'? 'Best-Selling' : t==='new'? 'New Arrivals' : t==='deals'? '🔥 Deals' : t==='recommended' ? 'Recommended' : 'All'}</a>
-              ))}
-            </div>
-
-            {/* Flash deals horizontal (compact) */}
-            <div className="mb-3">
-              <div className="mb-2 flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">🔥 Flash Deals</p>
-                  <h3 className="text-base font-semibold text-foreground">Limited time offers</h3>
-                </div>
-                <Link href="/flash-deals" className="text-sm text-primary">View all →</Link>
+        {flashDeals.length > 0 && (
+          <section className="mt-3 rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50 to-background p-3 sm:p-4" aria-labelledby="flash-deals-title">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-rose-600">Deal drop</p>
+                <h2 id="flash-deals-title" className="mt-0.5 flex items-center gap-1.5 text-lg font-bold text-foreground"><span aria-hidden="true">🔥</span> Flash Deals</h2>
+                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3.5" /> Ends in 02:35:18</p>
               </div>
-              <div className="-mx-4 overflow-x-auto px-4">
-                <div className="flex gap-3" style={{ minWidth: 'max-content' }}>
-                  {flashDeals.map(p => (
-                    <div key={p.id} className="w-[160px] shrink-0">
-                      <ProductCard product={p} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <Link href="/products?filter=deals" className="shrink-0 text-xs font-semibold text-rose-600">View all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
             </div>
-
-            {/* Product feed: mobile 2-column grid */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {primaryFeed.map(p => (
-                <ProductCard key={p.id} product={p} />
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {flashDeals.map((product) => (
+                <div key={product.id} className="w-[156px] shrink-0 sm:w-[184px]">
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           </section>
-        </div>
-      </main>
+        )}
 
-      {/* Continuous sections: Trending / New Arrivals / Best Sellers (use same grid) */}
-      <section className="container mx-auto max-w-7xl px-4 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Trending now</p>
-            <h3 className="text-lg font-semibold text-foreground">Popular with shoppers today</h3>
+        <section className="mt-5" aria-labelledby="for-you-title">
+          <div className="mb-2.5 flex items-end justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Picked for you</p>
+              <h2 id="for-you-title" className="mt-0.5 text-xl font-bold text-foreground">For You</h2>
+            </div>
+            <Link href="/products" className="text-xs font-semibold text-primary">See all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
           </div>
-          <Link href="/products" className="text-sm font-medium text-primary">See all</Link>
-        </div>
+          {forYou.length > 0 ? (
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+              {forYou.map((product) => <ProductCard key={product.id} product={product} />)}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">New products are arriving soon.</div>
+          )}
+        </section>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {trendingProducts.map(p => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
-
-      <section className="container mx-auto max-w-7xl px-4 py-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Verified stores</p>
-            <h3 className="text-lg font-semibold text-foreground">Trusted sellers on Agora</h3>
-          </div>
-          <Link href="/stores" className="text-sm font-medium text-primary">Browse stores</Link>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-          {featuredStores.map(s => (
-            <Link key={s.id} href={`/store/${s.id}`} className="flex items-center gap-3 rounded-lg border border-border/70 bg-white p-3">
-              <div className="h-12 w-12 rounded-md bg-muted/20 flex items-center justify-center font-semibold text-foreground">{s.name?.slice?.(0,1)}</div>
-              <div className="text-sm">
-                <div className="font-semibold">{s.name}</div>
-                <div className="text-xs text-muted-foreground">✓ Verified • {s.productCount || 0} products</div>
+        {trending.length > 0 && (
+          <section className="mt-5" aria-labelledby="trending-title">
+            <div className="mb-2.5 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">Popular now</p>
+                <h2 id="trending-title" className="mt-0.5 text-xl font-bold text-foreground">Trending in Ghana</h2>
               </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+              <Link href="/products" className="text-xs font-semibold text-primary">Explore <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              {trending.map((product) => <ProductCard key={product.id} product={product} />)}
+            </div>
+          </section>
+        )}
+
+        {sellers.length > 0 && (
+          <section className="mt-5 border-t border-border/60 pt-4" aria-labelledby="stores-title">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 id="stores-title" className="text-base font-bold">Popular stores</h2>
+              <Link href="/stores" className="text-xs font-semibold text-primary">Browse stores <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {sellers.slice(0, 6).map((seller) => (
+                <Link key={seller.id} href={`/store/${seller.id}`} className="min-w-[150px] rounded-xl border border-border/70 bg-background p-3 text-sm">
+                  <p className="truncate font-semibold">{seller.name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{seller.productCount ?? 0} products</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
     </PublicShell>
   );
 }
