@@ -19,7 +19,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { PublicShell } from '@/components/public-shell';
-import { ArrowRight, Heart, LayoutDashboard, Store, Star, Eye } from 'lucide-react';
+import { ArrowRight, Bike, Heart, LayoutDashboard, Store, Star, Eye } from 'lucide-react';
 
 function OrderHistory({ orders }: { orders: Order[] }) {
     if (orders.length === 0) {
@@ -171,6 +171,17 @@ export default function ProfilePage() {
                         <Link href={seller ? '/dashboard' : '/seller-signup'}>{seller ? 'Open Seller Center' : 'Start Selling'} <ArrowRight className="ml-2 size-4" /></Link>
                     </Button>
                 </div>
+            </section>
+
+            <section className="mb-8 flex flex-col gap-4 rounded-2xl border border-border/70 bg-background p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div className="flex items-start gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"><Bike className="size-5" /></div>
+                    <div>
+                        <h2 className="font-semibold">Rider Center</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Apply to deliver with Agora or manage your rider availability.</p>
+                    </div>
+                </div>
+                <Button asChild variant="outline" className="shrink-0"><Link href="/rider">Open Rider Center <ArrowRight className="ml-2 size-4" /></Link></Button>
             </section>
 
             <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
