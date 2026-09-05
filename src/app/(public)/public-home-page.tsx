@@ -28,6 +28,11 @@ export default async function PublicHomePage() {
           </Link>
         </nav>
 
+        <Link href="/demo-product" className="mt-3 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 text-sm transition hover:bg-emerald-50">
+          <span><span className="font-semibold text-emerald-900">Try the delivery demo</span><span className="ml-2 text-xs text-emerald-700">Buy a sample product and watch it move</span></span>
+          <ArrowRight className="size-4 shrink-0 text-emerald-700" />
+        </Link>
+
         {flashDeals.length > 0 && (
           <section className="mt-3 rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50 to-background p-3 sm:p-4" aria-labelledby="flash-deals-title">
             <div className="mb-3 flex items-end justify-between gap-3">
