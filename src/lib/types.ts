@@ -339,6 +339,40 @@ export type Order = {
     updatedAt: string;
   };
 
+  export type RiderAssignment = {
+    id: string;
+    deliveryId: string;
+    riderId: string;
+    status: 'OFFERED' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+    offeredAt: string;
+    expiresAt: string;
+  };
+
+  export type DeliveryEvent = {
+    id: string;
+    deliveryId: string;
+    type: string;
+    status: DeliveryStatus;
+    actorId: string;
+    createdAt: string;
+  };
+
+  export type DeliveryAttempt = {
+    id: string;
+    deliveryId: string;
+    attemptNumber: number;
+    riderId: string;
+    result: 'DELIVERED' | 'FAILED';
+    notes?: string;
+    createdAt: string;
+  };
+
+  export type DeliveryProof = {
+    method: 'OTP' | 'PHOTO' | 'SIGNATURE';
+    verifiedAt?: string;
+    reference?: string;
+  };
+
 export type RepairUpdate = {
     id: string;
     date: string;

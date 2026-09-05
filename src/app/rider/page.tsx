@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bike, CheckCircle2, Clock3, LogIn, MapPin, ShieldAlert, UserRound } from 'lucide-react';
+import { Bike, CheckCircle2, Clock3, MapPin, ShieldAlert, UserRound } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import type { CapabilityStatus, RiderProfile } from '@/lib/types';
+import { DemoRiderWorkspace } from '@/components/delivery/demo-rider-workspace';
 
 type RiderApiProfile = Pick<RiderProfile, 'userId' | 'status' | 'riderType' | 'storeId' | 'isOnline' | 'vehicleType' | 'vehicleRegistration' | 'ratingAverage' | 'completedDeliveries'> & {
   phone?: string;
@@ -29,12 +30,19 @@ export default function RiderPage() {
   const { user, firebaseUser, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [isDemo, setIsDemo] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const [profile, setProfile] = useState<RiderApiProfile | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [phone, setPhone] = useState(user?.phone || '');
   const [vehicleType, setVehicleType] = useState('motorcycle');
   const [vehicleRegistration, setVehicleRegistration] = useState('');
+
+  useEffect(() => {
+    setIsDemo(new URLSearchParams(window.location.search).get('demo') === '1');
+    setHasMounted(true);
+  }, []);
 
   const getToken = async () => {
     if (!firebaseUser) throw new Error('Please sign in again.');
@@ -58,12 +66,12 @@ export default function RiderPage() {
   };
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/sign-in');
-  }, [loading, router, user]);
+    if (hasMounted && !isDemo && !loading && !user) router.replace('/sign-in');
+  }, [hasMounted, isDemo, loading, router, user]);
 
   useEffect(() => {
-    if (firebaseUser) void loadProfile();
-  }, [firebaseUser]);
+    if (!isDemo && firebaseUser) void loadProfile();
+  }, [firebaseUser, isDemo]);
 
   const submitApplication = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -106,6 +114,8 @@ export default function RiderPage() {
     }
   };
 
+  if (!hasMounted) return <div className="mx-auto max-w-2xl space-y-4 p-4 sm:p-8"><Skeleton className="h-8 w-48" /><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>;
+  if (isDemo) return <DemoRiderWorkspace />;
   if (loading || pageLoading) {
     return <div className="mx-auto max-w-2xl space-y-4 p-4 sm:p-8"><Skeleton className="h-8 w-48" /><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>;
   }
@@ -166,3 +176,4 @@ export default function RiderPage() {
     </main>
   );
 }
+
