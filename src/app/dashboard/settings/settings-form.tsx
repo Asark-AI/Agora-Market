@@ -23,7 +23,7 @@ const formSchema = z.object({
   name: z.string().min(2, { message: 'Business name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   phone: z.string().min(10, "Please enter a valid phone number."),
-  status: z.enum(['active', 'draft']),
+  status: z.enum(['pending', 'approved', 'active', 'suspended', 'rejected', 'deactivated', 'draft']),
   
   currentPassword: z.string().optional(),
   newPassword: z.string().optional(),

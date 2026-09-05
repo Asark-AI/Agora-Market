@@ -71,6 +71,12 @@ export type ServiceProduct = {
   regionId: string;
   status: 'active' | 'inactive' | 'draft' | 'scheduled';
   publishDate?: Date;
+  price?: number;
+  discountPrice?: number;
+  images?: string[];
+  videos?: string[];
+  stock?: number;
+  createdAt?: Date | string | null;
   
   // Service Specific Fields
   pricingType: 'flat' | 'hourly' | 'tiered';
@@ -98,6 +104,9 @@ export type ServiceProduct = {
   specifications?: Specification[];
   clicks?: number;
   clickHistory?: ProductClick[];
+  ratingAverage?: number;
+  ratingCount?: number;
+  ratingTotal?: number;
 };
 
 export type Product = {
@@ -124,6 +133,7 @@ export type Product = {
   specifications?: Specification[];
   clicks?: number;
   clickHistory?: ProductClick[];
+  createdAt?: Date | string | null;
 };
 
 export type SellerNotifications = {
@@ -146,6 +156,8 @@ export type Seller = {
   email: string;
   phone: string;
   whatsappNumber?: string;
+  productCount?: number;
+  createdAt?: Date | string | null;
   businessType: BusinessType;
   subscriptionPlan: 'basic' | 'premium' | 'enterprise';
   regionId: string;
@@ -167,7 +179,7 @@ export type Seller = {
   googleMapsUrl?: string;
   trustScore?: number;
   followerCount?: number;
-  status: 'active' | 'draft';
+  status: 'pending' | 'approved' | 'active' | 'suspended' | 'rejected' | 'deactivated' | 'draft';
   customization?: {
     layout?: 'grid' | 'list';
     themeColor?: string;
@@ -222,6 +234,35 @@ export type User = {
     email: string;
     phone?: string;
     role: 'Owner' | 'Admin' | 'Manager' | 'Accountant' | 'Staff';
+  capabilities?: UserCapabilities;
+};
+
+export type CapabilityStatus = 'pending' | 'under_review' | 'approved' | 'rejected' | 'suspended' | 'deactivated';
+
+export type UserCapabilities = {
+  buyer?: boolean;
+  seller?: boolean;
+  rider?: boolean;
+  admin?: boolean;
+};
+
+export type SellerProfile = Seller & {
+  approvalStatus?: CapabilityStatus;
+};
+
+export type RiderType = 'AGORA' | 'STORE';
+
+export type RiderProfile = {
+  id: string;
+  userId: string;
+  riderType: RiderType;
+  storeId?: string;
+  status: CapabilityStatus;
+  isOnline: boolean;
+  vehicleType?: 'motorcycle' | 'car' | 'van' | 'bicycle' | 'other';
+  vehicleRegistration?: string;
+  ratingAverage?: number;
+  completedDeliveries?: number;
 };
 
 export type OrderStatus = 
@@ -253,7 +294,50 @@ export type Order = {
     items: OrderItem[];
     paymentMethod?: 'cash' | 'mobile_money' | 'card' | 'other' | 'flutterwave';
     transactionId?: string;
+    createdAt?: Date | string | null;
+    shipmentIds?: string[];
 };
+
+  export type DeliveryProvider = 'AGORA' | 'STORE' | 'PARTNER' | 'PICKUP';
+
+  export type DeliveryStatus =
+    | 'CREATED'
+    | 'ASSIGNED'
+    | 'ACCEPTED'
+    | 'PICKUP_STARTED'
+    | 'PICKED_UP'
+    | 'IN_TRANSIT'
+    | 'OUT_FOR_DELIVERY'
+    | 'ARRIVED'
+    | 'DELIVERED'
+    | 'FAILED'
+    | 'CANCELLED'
+    | 'RETURN_REQUESTED'
+    | 'RETURNED';
+
+  export type Shipment = {
+    id: string;
+    orderId: string;
+    sellerId: string;
+    itemIds: string[];
+    status: DeliveryStatus;
+    deliveryId?: string;
+  };
+
+  export type Delivery = {
+    id: string;
+    orderId: string;
+    shipmentId: string;
+    buyerId: string;
+    sellerId: string;
+    provider: DeliveryProvider;
+    status: DeliveryStatus;
+    riderId?: string;
+    deliveryFee: number;
+    pricingVersion: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 
 export type RepairUpdate = {
     id: string;
@@ -285,7 +369,7 @@ export type RepairRequest = {
     updates?: RepairUpdate[];
     invoiceUrl?: string;
     quote?: number;
-    createdAt: any;
+    createdAt?: Date | string | null;
 };
 
 export type Customer = {
@@ -354,7 +438,9 @@ export type Message = {
     text: string;
     timestamp: string; // ISO Date String
     senderId: string; // user.id or seller.id
+    userId: string;
     read: boolean;
+    createdAt?: Date | string;
 };
 
 export type Conversation = {
@@ -426,7 +512,7 @@ export interface AuthState {
   // Data methods
   setSeller: (seller: Seller | null) => void;
   addSeller: (sellerData: Omit<Seller, 'id'>, logoFile?: File, bannerFile?: File) => Promise<Seller>;
-  addProduct: (product: Omit<Product, 'id' | 'sellerId' | 'userId' | 'views' | 'favorites' | 'images' | 'videos'>, imageFiles?: FileList, videoFiles?: FileList) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id' | 'sellerId' | 'userId' | 'views' | 'favorites' | 'images' | 'videos'>, imageFiles?: FileList, videoFiles?: FileList) => Promise<{ id: string }>;
   updateProduct: (productId: string, updates: Partial<Product>) => Promise<void>;
   updateSeller: (sellerId: string, updates: Partial<Seller>) => Promise<void>;
   updateSellerProfile: (sellerId: string, updates: Partial<Seller>, logoFile?: File, bannerFile?: File) => Promise<void>;
@@ -439,7 +525,7 @@ export interface AuthState {
   addOrderFromCart: (sellerId: string, items: CartItem[], total: number, transactionId: string) => Promise<void>;
   addPurchaseOrder: (po: Omit<PurchaseOrder, 'id'>) => void;
   followSeller: (sellerId: string) => Promise<boolean>;
-  rateProduct: (sellerId: string, productId: string, rating: number, review?: string) => Promise<void>;
+  rateProduct: (sellerId: string, productId: string, rating: number, review?: string) => Promise<{ ratingAverage: number; ratingCount: number; ratingTotal: number }>;
   sendMessage: (customerId: string, text: string) => Promise<void>;
   addStockAdjustment: (adjustment: Omit<StockAdjustment, 'id' | 'date' | 'userId'>) => Promise<void>;
   addPayoutMethod: (method: Omit<PayoutMethod, 'id' | 'isDefault'>) => Promise<void>;
