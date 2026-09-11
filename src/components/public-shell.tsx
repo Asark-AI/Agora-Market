@@ -21,11 +21,26 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { items } = useCart();
   const accountHref = user ? '/profile' : '/sign-in';
+  const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const cartSubtotal = items.reduce((sum, item) => {
+    const product = item.product as { price: number; discountPrice?: number };
+    return sum + (product.discountPrice ?? product.price) * item.quantity;
+  }, 0);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <SiteHeader />
       <main className="pb-24 sm:pb-16 md:pb-10">{children}</main>
+      {cartItemCount > 0 && !pathname.startsWith('/cart') && !pathname.startsWith('/checkout') && (
+        <Link
+          href="/cart"
+          className="fixed bottom-[4.75rem] right-4 z-40 flex items-center gap-3 border border-border bg-foreground px-3 py-2.5 text-background shadow-lg transition-transform hover:scale-[1.02] md:bottom-5 md:right-5"
+          aria-label={`View cart with ${cartItemCount} items totaling GH₵${cartSubtotal.toFixed(2)}`}
+        >
+          <span className="relative flex size-8 items-center justify-center bg-background/15"><ShoppingCart className="size-4" /><span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{cartItemCount}</span></span>
+          <span className="flex flex-col leading-tight"><span className="text-[11px] text-background/70">Cart</span><span className="text-sm font-semibold">GH₵{cartSubtotal.toFixed(2)}</span></span>
+        </Link>
+      )}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           {mobileNavItems.map(({ href, label, icon: Icon }, index) => {
