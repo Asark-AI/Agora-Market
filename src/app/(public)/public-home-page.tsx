@@ -29,17 +29,17 @@ export default async function PublicHomePage() {
           </Link>
         </nav>
 
-        <Link href="/demo-product" className="mt-3 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 text-sm transition hover:bg-emerald-50">
-          <span><span className="font-semibold text-emerald-900">Try the delivery demo</span><span className="ml-2 text-xs text-emerald-700">Buy a sample product and watch it move</span></span>
-          <ArrowRight className="size-4 shrink-0 text-emerald-700" />
+        <Link href="/demo-product" className="mt-3 flex items-center justify-between border-y border-border px-1 py-2.5 text-sm transition hover:text-primary">
+          <span><span className="font-medium text-foreground">Delivery demo</span><span className="ml-2 text-xs text-muted-foreground">Buy a sample product and track it</span></span>
+          <ArrowRight className="size-4 shrink-0" />
         </Link>
 
         {flashDeals.length > 0 && (
-          <section className="mt-3 rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50 to-background p-3 sm:p-4" aria-labelledby="flash-deals-title">
+          <section className="mt-3 border-y border-border bg-background py-3 sm:py-4" aria-labelledby="flash-deals-title">
             <div className="mb-3 flex items-end justify-between gap-3">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-rose-600">Deal drop</p>
-                <h2 id="flash-deals-title" className="mt-0.5 flex items-center gap-1.5 text-lg font-bold text-foreground"><span aria-hidden="true">🔥</span> Flash Deals</h2>
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-rose-600">Limited-time prices</p>
+                <h2 id="flash-deals-title" className="mt-0.5 text-lg font-bold text-foreground">Flash Deals</h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">Limited-time prices while stock lasts.</p>
               </div>
               <Link href="/flash-deals" className="shrink-0 text-xs font-semibold text-rose-600">View all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>

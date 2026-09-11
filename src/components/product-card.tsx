@@ -42,7 +42,7 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
   };
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card transition-shadow duration-150 hover:shadow-sm active:scale-[0.995]">
+    <article className="group relative flex h-full flex-col overflow-hidden border border-border/70 bg-card transition-shadow duration-150 hover:shadow-sm active:scale-[0.995]">
       <div className="relative aspect-square overflow-hidden bg-white">
         <Link href={`/product/${buildProductSlug(product)}`} className="block h-full w-full" aria-label={`View ${product.name}`}>
           <NextImage
@@ -68,7 +68,7 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
           type="button"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           onClick={handleWishlist}
-          className={`absolute right-2 top-2 z-10 inline-flex items-center justify-center rounded-full bg-white/90 p-1 text-sm transition ${isWishlisted ? 'text-primary' : 'text-foreground hover:bg-white'}`}
+          className={`absolute right-2 top-2 z-10 inline-flex items-center justify-center bg-white/90 p-1 text-sm transition ${isWishlisted ? 'text-primary' : 'text-foreground hover:bg-white'}`}
         >
           <Heart className={`h-3.5 w-3.5 ${isWishlisted ? 'fill-current' : ''}`} />
         </button>

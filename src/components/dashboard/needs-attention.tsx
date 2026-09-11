@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import type { Order, Product } from '@/lib/types';
+import { AlertCircle, CheckCircle2, MessageSquare, Package, FileText, AlertTriangle } from 'lucide-react';
+import type { Order, Product, ServiceProduct } from '@/lib/types';
 
 interface AttentionItem {
   id: string;
@@ -18,7 +18,7 @@ interface AttentionItem {
 interface NeedsAttentionProps {
   orders: Order[];
   messages: { read: boolean; senderId: string; userId: string }[];
-  products: Product[];
+  products: Array<Product | ServiceProduct>;
   userId: string;
 }
 
@@ -32,7 +32,7 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
       type: 'order',
       text: `${pendingOrders.length} order${pendingOrders.length > 1 ? 's' : ''} waiting for processing`,
       href: '/dashboard/orders',
-      icon: '📦',
+      icon: <Package className="size-4 text-amber-700" />,
       priority: 'high',
     });
   }
@@ -44,7 +44,7 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
       type: 'message',
       text: `${unreadMessages.length} unread message${unreadMessages.length > 1 ? 's' : ''}`,
       href: '/dashboard/messages',
-      icon: '💬',
+      icon: <MessageSquare className="size-4 text-sky-700" />,
       priority: 'high',
     });
   }
@@ -57,7 +57,7 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
       type: 'stock',
       text: `${lowStockProducts.length} product${lowStockProducts.length > 1 ? 's' : ''} running low`,
       href: '/dashboard/products',
-      icon: '⚠️',
+      icon: <AlertTriangle className="size-4 text-orange-700" />,
       priority: 'medium',
     });
   }
@@ -69,7 +69,7 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
       type: 'draft',
       text: `${draftProducts.length} draft${draftProducts.length > 1 ? 's' : ''} waiting to be published`,
       href: '/dashboard/products',
-      icon: '📝',
+      icon: <FileText className="size-4 text-muted-foreground" />,
       priority: 'medium',
     });
   }
@@ -98,7 +98,7 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
               item.priority === 'high' ? 'border-orange-200 bg-orange-50/50' : 'border-border'
             }`}>
               <div className="flex items-center gap-3">
-                <span className="text-lg">{item.icon}</span>
+                <span className="flex size-8 items-center justify-center bg-muted">{item.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium line-clamp-1">{item.text}</p>
                 </div>
