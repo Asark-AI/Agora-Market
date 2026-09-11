@@ -10,13 +10,14 @@ interface ProductPageProps {
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await getProductBySlug(params.slug);
+  const products = await getActiveProducts();
+  const product = await getProductBySlug(params.slug, products);
 
   if (!product) {
     notFound();
   }
 
-  const relatedProducts = await getRelatedProducts(product);
+  const relatedProducts = await getRelatedProducts(product, products);
 
   return (
     <PublicShell>

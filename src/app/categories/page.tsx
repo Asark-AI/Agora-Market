@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default async function CategoriesPage({ searchParams }: { searchParams: { category?: string } }) {
-  const [products, categories] = await Promise.all([getActiveProducts(), Promise.resolve(getCategoryOptions())]);
+  const categories = getCategoryOptions();
+  const products = await getActiveProducts();
   const selectedCategory = searchParams.category;
   const filteredProducts = selectedCategory ? products.filter((product) => product.categoryId === selectedCategory) : products;
 

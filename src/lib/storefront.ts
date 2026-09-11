@@ -16,8 +16,9 @@ function sanitizeForClient<T>(value: T): T {
   }
 
   if (value && typeof value === 'object') {
-    if (typeof (value as { toJSON?: () => unknown }).toJSON === 'function') {
-      return sanitizeForClient((value as { toJSON: () => unknown }).toJSON() as T);
+    const maybeJsonValue = value as unknown as { toJSON?: () => unknown };
+    if (typeof maybeJsonValue.toJSON === 'function') {
+      return sanitizeForClient(maybeJsonValue.toJSON() as T);
     }
 
     if (Array.isArray(value)) {
@@ -89,31 +90,30 @@ export async function getActiveSellers(): Promise<Seller[]> {
   }) as Seller);
 }
 
-export async function getActiveProducts(): Promise<StorefrontProduct[]> {
+export async function getActiveProducts(activeSellers?: Seller[]): Promise<StorefrontProduct[]> {
   const firestore = await getFirestoreModule();
   if (!db || !firestore) return [];
 
-  const sellers = await getActiveSellers();
-  const products: StorefrontProduct[] = [];
-
+  const firestoreDb = db;
+  const sellers = activeSellers ?? await getActiveSellers();
   const { collection, getDocs, query, where } = firestore;
-  for (const seller of sellers) {
-    const sellerProductsSnapshot = await getDocs(query(collection(db, 'sellers', seller.id, 'products'), where('status', '==', 'active')));
-    const sellerProducts = sellerProductsSnapshot.docs.map((doc) => ({
+  const productsBySeller = await Promise.all(sellers.map(async (seller) => {
+    const sellerProductsSnapshot = await getDocs(query(collection(firestoreDb, 'sellers', seller.id, 'products'), where('status', '==', 'active')));
+    return sellerProductsSnapshot.docs.map((doc) => ({
       id: doc.id,
       ...(sanitizeForClient(doc.data() as Omit<Product, 'id'>) as Omit<Product, 'id'>),
       seller,
       sellerName: seller.name,
     })) as StorefrontProduct[];
+  }));
 
-    products.push(...sellerProducts);
-  }
+  const products = productsBySeller.flat();
 
   return products.sort((a, b) => (b.views || 0) - (a.views || 0));
 }
 
-export async function getProductBySlug(slug: string): Promise<StorefrontProduct | null> {
-  const products = await getActiveProducts();
+export async function getProductBySlug(slug: string, activeProducts?: StorefrontProduct[]): Promise<StorefrontProduct | null> {
+  const products = activeProducts ?? await getActiveProducts();
   return (
     products.find((product) => {
       const generatedSlug = buildProductSlug(product);
@@ -137,8 +137,8 @@ export async function getProductsByCategory(categoryId: string): Promise<Storefr
   return products.filter((product) => product.categoryId === categoryId);
 }
 
-export async function getRelatedProducts(product: StorefrontProduct): Promise<StorefrontProduct[]> {
-  const products = await getActiveProducts();
+export async function getRelatedProducts(product: StorefrontProduct, activeProducts?: StorefrontProduct[]): Promise<StorefrontProduct[]> {
+  const products = activeProducts ?? await getActiveProducts();
   return products
     .filter((item) => item.id !== product.id && (item.categoryId === product.categoryId || item.sellerId === product.sellerId))
     .slice(0, 6);

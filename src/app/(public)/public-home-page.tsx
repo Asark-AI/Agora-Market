@@ -2,10 +2,11 @@ import { getActiveProducts, getActiveSellers, getCategoryOptions } from '@/lib/s
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
-import { ArrowRight, Clock3 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export default async function PublicHomePage() {
-  const [products, sellers] = await Promise.all([getActiveProducts(), getActiveSellers()]);
+  const sellers = await getActiveSellers();
+  const products = await getActiveProducts(sellers);
   const categories = getCategoryOptions();
   const flashDeals = products.filter((product) => product.discountPrice && product.discountPrice < product.price).slice(0, 8);
   const flashDealIds = new Set(flashDeals.map((product) => product.id));
@@ -39,9 +40,9 @@ export default async function PublicHomePage() {
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-rose-600">Deal drop</p>
                 <h2 id="flash-deals-title" className="mt-0.5 flex items-center gap-1.5 text-lg font-bold text-foreground"><span aria-hidden="true">🔥</span> Flash Deals</h2>
-                <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><Clock3 className="size-3.5" /> Ends in 02:35:18</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Limited-time prices while stock lasts.</p>
               </div>
-              <Link href="/products?filter=deals" className="shrink-0 text-xs font-semibold text-rose-600">View all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
+              <Link href="/flash-deals" className="shrink-0 text-xs font-semibold text-rose-600">View all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
             </div>
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {flashDeals.map((product) => (
@@ -63,7 +64,7 @@ export default async function PublicHomePage() {
           </div>
           {forYou.length > 0 ? (
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-              {forYou.map((product) => <ProductCard key={product.id} product={product} />)}
+              {forYou.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)}
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">New products are arriving soon.</div>

@@ -9,7 +9,7 @@ import { useWishlist } from '@/hooks/use-wishlist';
 import type { StorefrontProduct } from '@/lib/storefront';
 import { buildProductSlug, getImageUrl } from '@/lib/storefront';
 
-export function ProductCard({ product }: { product: StorefrontProduct }) {
+export function ProductCard({ product, dealMode = false, priority = false }: { product: StorefrontProduct; dealMode?: boolean; priority?: boolean }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isFavorite } = useWishlist();
   const favorite = isFavorite(product.id);
@@ -50,7 +50,8 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
             alt={product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw"
-            loading="lazy"
+            priority={priority}
+            loading={priority ? undefined : 'lazy'}
             className="object-contain p-2 transition duration-300 group-hover:scale-105"
           />
         </Link>
@@ -60,6 +61,8 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
             <span className="rounded-md bg-rose-600 px-1.5 py-1 text-[11px] font-bold text-white">-{discountPercent}%</span>
           ) : null}
         </div>
+
+        {dealMode && oldPrice ? <span className="absolute bottom-2 left-2 rounded-sm bg-rose-50 px-1.5 py-1 text-[9px] font-bold uppercase tracking-wide text-rose-700">Flash deal</span> : null}
 
         <button
           type="button"
@@ -79,13 +82,13 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
           <div className="text-[18px] font-bold leading-5 text-foreground">GH₵{price.toFixed(2)}</div>
           {oldPrice ? <div className="text-[11px] text-muted-foreground line-through">GH₵{oldPrice.toFixed(2)}</div> : null}
         </div>
-        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        {!dealMode ? <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <span className="inline-flex items-center gap-0.5"><Star className="size-3 fill-amber-400 text-amber-400" />{(product.ratingAverage ?? 4.5).toFixed(1)}</span>
           <span>·</span>
           <span>{soldCount} sold</span>
-        </div>
+        </div> : null}
         <div className="mt-auto flex items-center justify-between gap-1 pt-1.5 text-[10px] text-muted-foreground">
-          <span className="truncate">{isVerifiedSeller ? '✓ Verified' : product.stock > 0 ? 'Free shipping' : 'Out of stock'}</span>
+          <span className="truncate">{dealMode ? (product.stock > 0 ? 'In stock' : 'Out of stock') : isVerifiedSeller ? '✓ Verified' : product.stock > 0 ? 'Free shipping' : 'Out of stock'}</span>
           <div className="flex-shrink-0">
             <button
               type="button"

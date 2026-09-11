@@ -3,7 +3,8 @@ import { PublicShell } from '@/components/public-shell';
 import { MarketplaceProductsBrowser } from '@/components/marketplace-products-browser';
 
 export default async function ProductsPage() {
-  const [products, sellers] = await Promise.all([getActiveProducts(), getActiveSellers()]);
+  const sellers = await getActiveSellers();
+  const products = await getActiveProducts(sellers);
   const categories = getCategoryOptions();
 
   return (
