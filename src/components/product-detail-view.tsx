@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NextImage from 'next/image';
@@ -13,6 +13,8 @@ import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
 import type { StorefrontProduct } from '@/lib/storefront';
 import { buildProductSlug, getCategoryLabel, getImageUrl } from '@/lib/storefront';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export function ProductDetailView({ product, relatedProducts }: { product: StorefrontProduct; relatedProducts: StorefrontProduct[] }) {
   const { addToCart } = useCart();
@@ -31,6 +33,35 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const router = useRouter();
   const { user, rateProduct } = useAuth();
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [checkingPurchase, setCheckingPurchase] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!user || !db) {
+      setHasPurchased(false);
+      return () => { active = false; };
+    }
+
+    setCheckingPurchase(true);
+    const ordersQuery = query(collection(db, 'orders'), where('buyerId', '==', user.id));
+    void getDocs(ordersQuery)
+      .then((snapshot) => {
+        if (!active) return;
+        setHasPurchased(snapshot.docs.some((orderDoc) => {
+          const order = orderDoc.data() as { sellerId?: string; items?: Array<{ productId?: string }> };
+          return order.sellerId === product.sellerId && order.items?.some((item) => item.productId === product.id);
+        }));
+      })
+      .catch(() => {
+        if (active) setHasPurchased(false);
+      })
+      .finally(() => {
+        if (active) setCheckingPurchase(false);
+      });
+
+    return () => { active = false; };
+  }, [product.id, product.sellerId, user]);
 
   const descriptionText = useMemo(() => {
     if (typeof product.description === 'string') {
@@ -189,12 +220,12 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
             </CardContent>
           </Card>
 
-          <Card>
+          {hasPurchased && !checkingPurchase ? <Card>
             <CardHeader>
               <CardTitle>Rate this product</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">Reviews are available to buyers after they purchase this product.</p>
+              <p className="text-sm text-muted-foreground">Share your experience with other buyers.</p>
               <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((value) => (
                   <button
@@ -221,7 +252,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
                 </Button>
               </div>
             </CardContent>
-          </Card>
+          </Card> : null}
         </div>
       </div>
 
