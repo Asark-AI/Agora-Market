@@ -33,10 +33,7 @@ export default async function StoresPage() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {sellers.map((seller) => (
-            <Card key={seller.id} className="overflow-hidden transition hover:-translate-y-1 hover:shadow-md">
-                <div className="relative h-36 bg-muted">
-                <NextImage src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 50vw" />
-              </div>
+            <Card key={seller.id} className="border-border transition hover:border-primary/50">
               <CardContent className="p-5">
                 <div className="flex items-center gap-3">
                   <div className="relative h-12 w-12 overflow-hidden rounded-full bg-muted">

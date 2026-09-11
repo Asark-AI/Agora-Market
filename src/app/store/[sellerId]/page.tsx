@@ -21,7 +21,7 @@ export default async function StorefrontPage({ params }: StorePageProps) {
     notFound();
   }
 
-  const products = (await getActiveProducts()).filter((product) => product.sellerId === seller.id);
+  const products = (await getActiveProducts([seller])).filter((product) => product.sellerId === seller.id);
 
   const rating = ((seller.trustScore || 80) / 20).toFixed(1);
   const location = seller.pickupLocation || seller.regionId || 'Ghana';
@@ -30,10 +30,7 @@ export default async function StorefrontPage({ params }: StorePageProps) {
     <PublicShell>
       <div className="border-b bg-muted/40">
         <div className="container mx-auto max-w-7xl px-4 py-12">
-          <div className="relative overflow-hidden rounded-3xl border bg-background">
-              <div className="relative h-56 bg-muted">
-              <NextImage src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" />
-            </div>
+          <div className="border border-border bg-background">
             <div className="p-6 md:p-8">
               <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div className="flex items-center gap-4">

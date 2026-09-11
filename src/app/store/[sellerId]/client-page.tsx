@@ -169,12 +169,9 @@ function ManufacturingStorefront({ seller, products }: { seller: Seller; product
   return (
     <>
       <div className="bg-background">
-        <header className="relative">
-                        <div className="h-48 md:h-64 bg-muted">
-                        <NextImage src={seller.storefrontBannerUrl || 'https://placehold.co/1200x300.png'} alt={`${seller.name} banner`} fill className="object-cover" data-ai-hint="store banner industrial" />
-                    </div>
-           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-background p-2 rounded-full">
-             <div className="relative size-24 md:size-32 rounded-full border-4 border-background overflow-hidden bg-muted flex items-center justify-center">
+                <header className="border-b border-border bg-background">
+                     <div className="flex justify-center px-4 pt-8">
+                         <div className="relative size-24 overflow-hidden rounded-full border border-border bg-muted flex items-center justify-center">
                  {seller.logoUrl ? (
                      <NextImage src={seller.logoUrl} alt={`${seller.name} logo`} fill className="object-cover" data-ai-hint="store logo" />
                  ) : (
@@ -184,7 +181,7 @@ function ManufacturingStorefront({ seller, products }: { seller: Seller; product
           </div>
         </header>
 
-         <main className="container mx-auto max-w-5xl px-4 pt-24 pb-12 text-center">
+         <main className="container mx-auto max-w-5xl px-4 py-8 text-center">
             <h1 className="text-4xl font-bold font-headline">{seller.name}</h1>
             <div className="mt-3 flex items-center justify-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2"><Award className="size-4" /> Verified Manufacturer</div>
@@ -342,7 +339,6 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
     
     const sellerName = isEditorPreview ? customizations.name : currentSeller.name;
     const description = currentSeller.description || `Welcome to ${sellerName}'s store on Agora Seller App.`;
-    const bannerUrl = isEditorPreview ? customizations.banner : currentSeller.storefrontBannerUrl;
     const logoUrl = isEditorPreview ? customizations.logo : currentSeller.logoUrl;
     
     const isProductBased = currentSeller.businessType === 'store';
@@ -383,18 +379,9 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
         <>
         <SiteHeader />
         <div className={cn("bg-background", fontClass, isEditorPreview && "font-sans")}>
-            <header className="bg-secondary/30">
-                <div className="relative h-48 md:h-64 bg-muted">
-                        <NextImage 
-                            src={bannerUrl || 'https://placehold.co/1200x300.png'} 
-                            alt={`${sellerName} banner`} 
-                            fill 
-                            className="object-cover" 
-                            data-ai-hint="store banner"
-                        />
-                    </div>
+            <header className="border-b border-border bg-secondary/30">
                 <div className="container mx-auto max-w-7xl px-4">
-                    <div className="flex flex-col sm:flex-row items-center gap-6 -mt-16 relative z-10">
+                    <div className="flex flex-col items-center gap-6 py-8 sm:flex-row">
                         <div className="relative size-32 rounded-full border-4 border-background overflow-hidden bg-muted flex items-center justify-center shrink-0">
                             {logoUrl ? (
                                 <NextImage src={logoUrl} alt={`${sellerName} logo`} fill className="object-cover" data-ai-hint="store logo" />

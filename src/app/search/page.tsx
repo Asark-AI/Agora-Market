@@ -8,7 +8,8 @@ import Link from 'next/link';
 import NextImage from 'next/image';
 
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
-  const [products, sellers] = await Promise.all([getActiveProducts(), getActiveSellers()]);
+  const sellers = await getActiveSellers();
+  const products = await getActiveProducts(sellers);
   const categories = getCategoryOptions();
   const query = searchParams.q?.trim().toLowerCase() || '';
 
@@ -71,10 +72,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
             </div>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {filteredStores.slice(0, 6).map((seller) => (
-                <Card key={seller.id} className="overflow-hidden transition hover:-translate-y-1 hover:shadow-md">
-                    <div className="relative h-32 bg-muted">
-                    <NextImage src={getImageUrl(seller.storefrontBannerUrl)} alt={seller.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-                  </div>
+                <Card key={seller.id} className="border-border transition hover:border-primary/50">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">{seller.name.slice(0, 1)}</div>
