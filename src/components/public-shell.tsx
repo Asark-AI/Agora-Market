@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
-import { Button } from '@/components/ui/button';
-import { ArrowRight, Instagram, Facebook, MessageCircle, House, Search as SearchIcon, ShoppingCart, Package, UserRound } from 'lucide-react';
+import { House, Search as SearchIcon, ShoppingCart, Package, UserRound } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
 
@@ -43,44 +42,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
-      <footer className="border-t bg-background">
-        <div className="container mx-auto max-w-7xl px-4 py-8 sm:py-10">
-          <div className="grid gap-8 md:grid-cols-3">
-            <div>
-              <h3 className="font-semibold">Agora Marketplace</h3>
-              <p className="mt-3 text-sm text-muted-foreground">
-                Discover curated products from trusted local and regional sellers.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold">Quick Links</h3>
-              <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground">
-                <Link href="/categories" className="hover:text-foreground">Categories</Link>
-                <Link href="/products" className="hover:text-foreground">Products</Link>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold">Stay Connected</h3>
-              <div className="mt-3 flex gap-3">
-                <Button size="icon" variant="outline" asChild>
-                  <Link href="/" aria-label="Facebook"><Facebook className="size-4" /></Link>
-                </Button>
-                <Button size="icon" variant="outline" asChild>
-                  <Link href="/" aria-label="Instagram"><Instagram className="size-4" /></Link>
-                </Button>
-                <Button size="icon" variant="outline" asChild>
-                  <Link href="/" aria-label="WhatsApp"><MessageCircle className="size-4" /></Link>
-                </Button>
-              </div>
-              <Button variant="link" className="mt-3 px-0" asChild>
-                <Link href="/sign-up">
-                  Join as a seller <ArrowRight className="ml-2 size-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
