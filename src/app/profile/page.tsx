@@ -10,16 +10,14 @@ import { db } from '@/lib/firebase';
 import type { Order, RepairRequest } from '@/lib/types';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, ShoppingCart, Wrench } from 'lucide-react';
+import { LogOut, ShoppingCart, Wrench, Bell, LockKeyhole, HelpCircle, Package, Clock3, Heart, Bike, Store, Star, Eye, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { PublicShell } from '@/components/public-shell';
-import { ArrowRight, Bike, Heart, LayoutDashboard, Store, Star, Eye } from 'lucide-react';
 
 function OrderHistory({ orders }: { orders: Order[] }) {
     if (orders.length === 0) {
@@ -33,19 +31,25 @@ function OrderHistory({ orders }: { orders: Order[] }) {
         )
     }
     return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             {orders.map(order => (
-                <Card key={order.id}>
-                    <CardHeader className="flex flex-row justify-between items-center">
+                <Card key={order.id} className="border-border">
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-border/70 px-4 py-3">
                         <div>
-                            <CardTitle className="text-base">Order #{order.id.slice(0, 8).toUpperCase()}</CardTitle>
-                            <CardDescription>Date: {format(new Date(order.date), 'dd MMM, yyyy')}</CardDescription>
+                            <CardTitle className="text-sm">Order #{order.id.slice(0, 8).toUpperCase()}</CardTitle>
+                            <CardDescription>{format(new Date(order.date), 'dd MMM, yyyy')}</CardDescription>
                         </div>
                         <Badge variant="secondary">{order.status}</Badge>
                     </CardHeader>
-                    <CardContent>
-                        <p>Total: <span className="font-semibold">₵{order.total.toFixed(2)}</span></p>
-                        <p>{order.items.length} item(s)</p>
+                    <CardContent className="flex items-center justify-between gap-4 px-4 py-4">
+                        <div>
+                            <p className="text-sm font-medium">{order.items.length} {order.items.length === 1 ? 'item' : 'items'}</p>
+                            <p className="mt-1 text-sm font-semibold">GH₵{order.total.toFixed(2)}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button asChild size="sm" variant="outline"><Link href={`/profile?tab=orders&order=${order.id}`}>Details</Link></Button>
+                            <Button asChild size="sm"><Link href={`/profile?tab=orders&order=${order.id}`}>Track</Link></Button>
+                        </div>
                     </CardContent>
                 </Card>
             ))}
@@ -89,6 +93,7 @@ export default function ProfilePage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [repairs, setRepairs] = useState<RepairRequest[]>([]);
     const [loadingData, setLoadingData] = useState(true);
+    const [orderFilter, setOrderFilter] = useState('All');
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -124,6 +129,16 @@ export default function ProfilePage() {
     }, [user, authLoading, router]);
     
     const isLoading = authLoading || loadingData;
+    const ordersTab = searchParams.get('tab') === 'orders';
+    const repairsTab = searchParams.get('tab') === 'repairs';
+    const visibleOrders = orders.filter((order) => {
+        if (orderFilter === 'All') return true;
+        if (orderFilter === 'To Pay') return order.status === 'pending' && !order.transactionId;
+        if (orderFilter === 'Processing') return order.status === 'pending' || order.status === 'fulfilled';
+        if (orderFilter === 'Shipped') return order.status === 'shipped';
+        if (orderFilter === 'To Receive') return order.status === 'delivered';
+        return order.status === 'completed' || order.status === 'fulfilled';
+    });
 
     if (isLoading || !user) {
         return (
@@ -143,6 +158,24 @@ export default function ProfilePage() {
         return (
             <PublicShell>
                 <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
+            {ordersTab ? (
+                <div className="space-y-5">
+                    <div className="flex items-center justify-between gap-3 border-b border-border pb-4">
+                        <div><p className="text-sm text-muted-foreground">Agora / Account</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Orders</h1></div>
+                        <Button asChild variant="outline" size="icon" aria-label="Search orders"><Link href="/search"><ShoppingCart className="size-4" /></Link></Button>
+                    </div>
+                    <div className="-mx-4 flex gap-5 overflow-x-auto border-b border-border px-4 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {['All', 'To Pay', 'Processing', 'Shipped', 'To Receive', 'Completed'].map((status) => <button key={status} type="button" onClick={() => setOrderFilter(status)} className={`shrink-0 border-b-2 px-1 pb-3 font-medium ${status === orderFilter ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground'}`}>{status}</button>)}
+                    </div>
+                    <OrderHistory orders={visibleOrders} />
+                </div>
+            ) : repairsTab ? (
+                <div className="space-y-5">
+                    <div className="border-b border-border pb-4"><p className="text-sm text-muted-foreground">Agora / Account</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Repair History</h1></div>
+                    <RepairHistory repairs={repairs} />
+                </div>
+            ) : (
+                <>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                 <div className="flex items-center gap-6">
                     <Avatar className="size-24">
@@ -160,7 +193,7 @@ export default function ProfilePage() {
                 </Button>
             </div>
 
-            <section className="mb-8 overflow-hidden rounded-[28px] border border-primary/15 bg-primary/[0.06] p-5 sm:p-6">
+            <section className="mb-8 border-b border-border pb-6">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Store className="size-4" /> {seller ? 'Your store is ready' : 'One account, two capabilities'}</div>
@@ -173,7 +206,7 @@ export default function ProfilePage() {
                 </div>
             </section>
 
-            <section className="mb-8 flex flex-col gap-4 rounded-2xl border border-border/70 bg-background p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            <section className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-start gap-3">
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"><Bike className="size-5" /></div>
                     <div>
@@ -184,31 +217,41 @@ export default function ProfilePage() {
                 <Button asChild variant="outline" className="shrink-0"><Link href="/rider">Open Rider Center <ArrowRight className="ml-2 size-4" /></Link></Button>
             </section>
 
-            <div className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mb-8 grid gap-2 sm:grid-cols-2">
                 {[
                     { label: 'My Orders', href: '/profile?tab=orders', icon: ShoppingCart },
                     { label: 'Wishlist', href: '/wishlist', icon: Heart },
-                    { label: 'Recently Viewed', href: '/products', icon: Eye },
-                    { label: 'My Reviews', href: '/profile?tab=orders', icon: Star },
+                    { label: 'Recently Viewed', href: '/products', icon: Clock3 },
+                    { label: 'My Reviews', href: '/profile?tab=reviews', icon: Star },
                 ].map(({ label, href, icon: Icon }) => (
-                    <Link key={label} href={href} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background px-4 py-4 text-sm font-semibold transition hover:border-primary/50 hover:bg-primary/[0.03]">
-                        <Icon className="size-4 text-primary" /> {label}
+                    <Link key={label} href={href} className="flex items-center justify-between border-b border-border px-1 py-3 text-sm font-medium transition hover:text-primary">
+                        <span className="flex items-center gap-3"><Icon className="size-4 text-muted-foreground" /> {label}</span><ArrowRight className="size-4 text-muted-foreground" />
                     </Link>
                 ))}
             </div>
-            
-            <Tabs defaultValue={searchParams.get('tab') === 'repairs' ? 'repairs' : 'orders'}>
-                <TabsList>
-                    <TabsTrigger value="orders"><ShoppingCart className="mr-2 size-4" /> Order History</TabsTrigger>
-                    <TabsTrigger value="repairs"><Wrench className="mr-2 size-4" /> Repair History</TabsTrigger>
-                </TabsList>
-                <TabsContent value="orders">
-                    <OrderHistory orders={orders} />
-                </TabsContent>
-                <TabsContent value="repairs">
-                    <RepairHistory repairs={repairs} />
-                </TabsContent>
-            </Tabs>
+            <section className="space-y-1 border-t border-border pt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Services</p>
+                <Link href="/profile?tab=repairs" className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Wrench className="size-4 text-muted-foreground" /> Repair History</span><ArrowRight className="size-4 text-muted-foreground" /></Link>
+            </section>
+            <section className="mt-6 space-y-1 border-t border-border pt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Sell on Agora</p>
+                <Link href={seller ? '/dashboard' : '/seller-signup'} className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Store className="size-4 text-muted-foreground" /> {seller ? 'Open Seller Center' : 'Become a Seller'}</span><ArrowRight className="size-4 text-muted-foreground" /></Link>
+            </section>
+            <section className="mt-6 space-y-1 border-t border-border pt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Deliver with Agora</p>
+                <Link href="/rider" className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Bike className="size-4 text-muted-foreground" /> Rider Center</span><ArrowRight className="size-4 text-muted-foreground" /></Link>
+            </section>
+            <section className="mt-6 space-y-1 border-t border-border pt-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Settings</p>
+                {([
+                    ['Settings', '/dashboard/settings', LockKeyhole],
+                    ['Notifications', '/profile', Bell],
+                    ['Help & Support', '/about', HelpCircle],
+                ] as const).map(([label, href, Icon]) => <Link key={label} href={href} className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Icon className="size-4 text-muted-foreground" /> {label}</span><ArrowRight className="size-4 text-muted-foreground" /></Link>)}
+                <button type="button" onClick={logOut} className="flex w-full items-center gap-3 py-3 text-left text-sm font-medium text-destructive"><LogOut className="size-4" /> Log Out</button>
+            </section>
+                </>
+            )}
                 </div>
             </PublicShell>
     )
