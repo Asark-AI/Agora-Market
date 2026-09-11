@@ -86,22 +86,6 @@ export default async function PublicHomePage() {
           </section>
         )}
 
-        {sellers.length > 0 && (
-          <section className="mt-5 border-t border-border/60 pt-4" aria-labelledby="stores-title">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 id="stores-title" className="text-base font-bold">Popular stores</h2>
-              <Link href="/stores" className="text-xs font-semibold text-primary">Browse stores <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {sellers.slice(0, 6).map((seller) => (
-                <Link key={seller.id} href={`/store/${seller.id}`} className="min-w-[150px] rounded-xl border border-border/70 bg-background p-3 text-sm">
-                  <p className="truncate font-semibold">{seller.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{seller.productCount ?? 0} products</p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
       </main>
     </PublicShell>
   );

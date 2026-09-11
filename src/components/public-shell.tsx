@@ -57,7 +57,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               <div className="mt-3 flex flex-col gap-2 text-sm text-muted-foreground">
                 <Link href="/categories" className="hover:text-foreground">Categories</Link>
                 <Link href="/products" className="hover:text-foreground">Products</Link>
-                <Link href="/stores" className="hover:text-foreground">Stores</Link>
               </div>
             </div>
             <div>

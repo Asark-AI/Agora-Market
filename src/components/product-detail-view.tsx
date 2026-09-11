@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
 import type { StorefrontProduct } from '@/lib/storefront';
-import { buildProductSlug, buildSellerSlug, getCategoryLabel, getImageUrl } from '@/lib/storefront';
+import { buildProductSlug, getCategoryLabel, getImageUrl } from '@/lib/storefront';
 
 export function ProductDetailView({ product, relatedProducts }: { product: StorefrontProduct; relatedProducts: StorefrontProduct[] }) {
   const { addToCart } = useCart();
@@ -144,9 +144,9 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">Sold by</p>
-                <Link href={`/store/${buildSellerSlug({ id: product.sellerId, name: product.sellerName || 'Seller' })}`} className="text-primary hover:underline">
+                <span className="text-foreground">
                   {product.sellerName || 'Verified Seller'}
-                </Link>
+                </span>
               </div>
               <div className="text-sm text-muted-foreground">
                 <div className="flex items-center gap-1"><BadgeCheck className="size-4 text-primary" /> 4.9 seller rating</div>
@@ -154,9 +154,6 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button asChild variant="outline" size="sm">
-                <Link href={`/store/${buildSellerSlug({ id: product.sellerId, name: product.sellerName || 'Seller' })}`}><Store className="mr-2 size-4" /> Visit store</Link>
-              </Button>
               <Button asChild variant="outline" size="sm">
                 <Link href="/sign-in"><MessageCircle className="mr-2 size-4" /> Message seller</Link>
               </Button>
