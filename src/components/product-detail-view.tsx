@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NextImage from 'next/image';
-import { Check, Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, MessageCircle, ArrowRight } from 'lucide-react';
+import { Check, Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -154,9 +154,6 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button asChild variant="outline" size="sm">
-                <Link href="/sign-in"><MessageCircle className="mr-2 size-4" /> Message seller</Link>
-              </Button>
             </div>
           </div>
         </div>
@@ -197,7 +194,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
               <CardTitle>Rate this product</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">Share a star rating and optional buyer review to help others choose wisely.</p>
+              <p className="text-sm text-muted-foreground">Reviews are available to buyers after they purchase this product.</p>
               <div className="flex items-center gap-2">
                 {[1, 2, 3, 4, 5].map((value) => (
                   <button
@@ -218,7 +215,7 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
                 className="min-h-[120px]"
               />
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-sm text-muted-foreground">{ratingSubmitted ? 'Thanks for rating this product!' : 'You can rate once per product.'}</span>
+                <span className="text-sm text-muted-foreground">{ratingSubmitted ? 'Thanks for rating this product!' : 'Purchase this product to leave a review.'}</span>
                 <Button onClick={handleSubmitRating} disabled={submittingRating || selectedRating === 0}>
                   {submittingRating ? 'Submitting...' : 'Submit rating'}
                 </Button>

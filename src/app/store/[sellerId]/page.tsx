@@ -55,9 +55,6 @@ export default async function StorefrontPage({ params }: StorePageProps) {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 items-center">
-                  <Button asChild>
-                    <a href={`mailto:${seller.email || ''}`} className="inline-flex items-center gap-2"><MessageCircle className="size-4" /> Message seller</a>
-                  </Button>
                   <Button variant="outline" asChild>
                     <Link href="/search">Browse products</Link>
                   </Button>

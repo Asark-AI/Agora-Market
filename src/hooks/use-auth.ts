@@ -61,7 +61,7 @@ export interface AuthState extends PublicAuthState {
   clearListeners: () => void;
   clearAllData: () => void;
   init: () => void;
-  refreshAuthProfile: () => Promise<void>;
+  refreshAuthProfile: (firebaseUser?: FirebaseUser | null) => Promise<void>;
   initDashboardListeners: () => void;
   addCustomer: (customerData: { name: string, email: string, phone: string }) => Promise<Customer>;
 }
@@ -806,6 +806,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const firestore = ensureFirestore();
+    const buyerOrders = await getDocs(query(collection(firestore, 'orders'), where('buyerId', '==', user.id)));
+    const hasPurchased = buyerOrders.docs.some((orderDoc) => {
+      const order = orderDoc.data() as { sellerId?: string; items?: Array<{ productId?: string }> };
+      return order.sellerId === sellerId && order.items?.some((item) => item.productId === productId);
+    });
+    if (!hasPurchased) {
+      throw new Error('You can review this product after purchasing it.');
+    }
+
     const productRef = doc(firestore, 'sellers', sellerId, 'products', productId);
     const reviewRef = doc(firestore, 'sellers', sellerId, 'products', productId, 'reviews', user.id);
 
