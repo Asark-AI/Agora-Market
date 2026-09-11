@@ -99,16 +99,3 @@ rider:       com.agora.rider
 
 The profiles should control app name, icon, splash, permissions, deep links, and push configuration. GPS/background location permissions belong only to the rider profile.
 
-## External rider provider integration
-
-The legacy `rider/` folder contains a separate Bolt Driver API client. It is not imported into the browser, Firebase client state, or the default Agora Rider Center. The server-only provider boundary is `src/lib/server/rider-provider.ts`, with status exposed through the authenticated `/api/rider/provider` route.
-
-Agora remains the default provider. Bolt is opt-in and requires authorized server-side configuration:
-
-```text
-BOLT_DRIVER_API_ENABLED=true
-BOLT_DRIVER_API_BASE_URL=...
-BOLT_DRIVER_API_TOKEN=...
-```
-
-Never place Bolt credentials in `NEXT_PUBLIC_*` variables, Firestore documents, client bundles, or logs. The existing `rider/` SDK should only be wired behind this boundary after its dependency and API authorization have been reviewed.
