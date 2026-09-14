@@ -10,17 +10,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import NextImage from 'next/image';
 import { AppLogo } from '@/components/app-logo';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { LiquidLoader } from '@/components/liquid-loader';
@@ -125,28 +117,16 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-        <div className="hidden bg-muted lg:block">
-        <NextImage
-          src="https://picsum.photos/seed/3/1200/1800"
-          alt="Artisans at work in a vibrant market"
-          width="1200"
-          height="1800"
-          className="h-full w-full object-cover"
-          data-ai-hint="artisans market"
-        />
-      </div>
-      <div className="flex items-center justify-center py-12">
-        <div className="mx-auto grid w-[350px] gap-6">
-          <div className="grid gap-4 text-center">
-            <div className="mx-auto h-16 w-16 rounded-full bg-muted/80 p-3">
-              <AppLogo className="h-full w-full text-primary" />
-            </div>
-            <h1 className="text-3xl font-bold font-headline">Welcome Back</h1>
-            <p className="text-balance text-muted-foreground">
-              Sign in to shop, manage your account, or access Seller Center.
-            </p>
-          </div>
+    <main className="flex min-h-screen items-start justify-center bg-background px-4 py-10 sm:items-center sm:py-16">
+      <div className="w-full max-w-[400px]">
+        <div className="mb-8 flex items-center gap-3">
+          <AppLogo className="size-9 text-primary" />
+          <span className="text-sm font-semibold tracking-[0.18em]">AGORA</span>
+        </div>
+        <div className="mb-7">
+          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Sign in to shop or manage your account.</p>
+        </div>
           <Form {...form}>
             <form method="post" noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
               <FormField
@@ -194,14 +174,13 @@ export default function SignInPage() {
               </Button>
             </form>
           </Form>
-          <div className="mt-4 text-center text-sm">
+          <div className="mt-6 border-t border-border pt-5 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
-            <Link href="/sign-up" className="underline">
+            <Link href="/sign-up" className="font-medium text-foreground underline underline-offset-4">
               Sign up
             </Link>
           </div>
         </div>
-      </div>
-    </div>
+    </main>
   );
 }

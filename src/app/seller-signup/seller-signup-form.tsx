@@ -8,14 +8,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -398,9 +391,9 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-2xl space-y-7">
       <nav aria-label="Progress">
-        <ol role="list" className="flex items-center">
+        <ol role="list" className="flex items-center border-b border-border pb-4">
           {steps.map((step, stepIdx) => (
             <li key={step.name} className={cn('relative flex-1', { 'pr-8 sm:pr-20': stepIdx !== steps.length - 1 })}>
               {stepIdx < currentStep ? (
@@ -411,7 +404,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                   <button
                     type="button"
                     onClick={() => setCurrentStep(stepIdx)}
-                    className="relative flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="relative flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
                   >
                     <Check className="h-5 w-5" aria-hidden="true" />
                     <span className="sr-only">{step.name}</span>
@@ -422,7 +415,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                   <div className="absolute inset-0 flex items-center" aria-hidden="true">
                     <div className="h-0.5 w-full bg-gray-200" />
                   </div>
-                  <div className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary bg-background" aria-current="step">
+                  <div className="relative flex h-7 w-7 items-center justify-center rounded-full border-2 border-primary bg-background" aria-current="step">
                     <span className="h-2.5 w-2.5 rounded-full bg-primary" aria-hidden="true" />
                   </div>
                 </>
@@ -431,7 +424,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                   <div className="absolute inset-0 flex items-center" aria-hidden="true">
                     <div className="h-0.5 w-full bg-gray-200" />
                   </div>
-                  <div className="group relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 bg-background hover:border-gray-400">
+                  <div className="group relative flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 bg-background hover:border-gray-400">
                     <span className="h-2.5 w-2.5 rounded-full bg-transparent group-hover:bg-gray-300" aria-hidden="true" />
                   </div>
                 </>
@@ -441,15 +434,16 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
         </ol>
       </nav>
 
-      <Card>
+      <Card className="rounded-md border-border shadow-none">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardHeader>
-              <CardTitle className="font-headline text-2xl">{stepDetails[currentStep].title}</CardTitle>
+            <CardHeader className="border-b border-border px-5 py-5 sm:px-7">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Seller registration · {currentStep + 1} of {totalSteps}</p>
+              <CardTitle className="font-headline text-xl">{stepDetails[currentStep].title}</CardTitle>
               <CardDescription>{stepDetails[currentStep].description}</CardDescription>
             </CardHeader>
 
-            <CardContent className="space-y-6 min-h-[400px]">
+            <CardContent className="min-h-[400px] space-y-6 px-5 py-6 sm:px-7">
               {currentStep === 0 && (
                 <FormField
                   control={form.control}
@@ -666,7 +660,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
               )}
             </CardContent>
 
-            <CardFooter className="flex justify-between">
+            <CardFooter className="flex justify-between border-t border-border px-5 py-4 sm:px-7">
               {currentStep > 0 && (
                 <Button type="button" variant="outline" onClick={prevStep} disabled={isLoading}>
                   Back
