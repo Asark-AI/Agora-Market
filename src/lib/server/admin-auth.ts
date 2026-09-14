@@ -38,24 +38,17 @@ async function hasAdminRole(uid: string): Promise<boolean> {
 }
 
 export async function requireSuperAdmin(): Promise<AdminIdentity> {
-  try {
-    const decodedToken = await requireAuthenticatedUser();
-    const isAdministrativeUser = decodedToken.superAdmin === true || (await hasAdminRole(decodedToken.uid));
-    if (!isAdministrativeUser) redirect('/');
+  const decodedToken = await verifySession();
+  if (!decodedToken) redirect('/sign-in?next=%2Fadmin');
+  const isAdministrativeUser = decodedToken.superAdmin === true || (await hasAdminRole(decodedToken.uid));
+  if (!isAdministrativeUser) redirect('/');
 
-    return {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      name: decodedToken.name,
-      isSuperAdmin: true,
-    };
-  } catch (error) {
-    // Keep admin failures fail-closed without exposing a production Server Component error.
-    if (error && typeof error === 'object' && 'digest' in error && String((error as { digest?: unknown }).digest).startsWith('NEXT_REDIRECT')) {
-      throw error;
-    }
-    redirect('/sign-in?next=%2Fadmin');
-  }
+  return {
+    uid: decodedToken.uid,
+    email: decodedToken.email,
+    name: decodedToken.name,
+    isSuperAdmin: true,
+  };
 }
 
 export async function requireSuperAdminToken(idToken: string): Promise<AdminIdentity> {
