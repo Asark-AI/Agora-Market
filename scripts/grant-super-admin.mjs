@@ -96,8 +96,9 @@ async function ensureAdminApp() {
 }
 
 async function main() {
+  let options = { reset: false };
   try {
-    const options = parseArgs(process.argv.slice(2));
+    options = parseArgs(process.argv.slice(2));
     if (options.help || (!options.email && !options.uid)) {
       printHelp();
       process.exit(options.help ? 0 : 1);
