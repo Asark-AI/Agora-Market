@@ -84,12 +84,17 @@ export async function getActiveSellers(): Promise<Seller[]> {
   const firestore = await getFirestoreModule();
   if (!db || !firestore) return [];
 
-  const { collection, getDocs, query, where } = firestore;
-  const sellersSnapshot = await getDocs(query(collection(db, 'sellers'), where('status', '==', 'active')));
-  return sellersSnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...(sanitizeForClient(doc.data() as Omit<Seller, 'id'>) as Omit<Seller, 'id'>),
-  }) as Seller);
+  try {
+    const { collection, getDocs, query, where } = firestore;
+    const sellersSnapshot = await getDocs(query(collection(db, 'sellers'), where('status', '==', 'active')));
+    return sellersSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(sanitizeForClient(doc.data() as Omit<Seller, 'id'>) as Omit<Seller, 'id'>),
+    }) as Seller);
+  } catch (error) {
+    console.warn('Unable to load active sellers:', error);
+    return [];
+  }
 }
 
 export async function getActiveProducts(activeSellers?: Seller[]): Promise<StorefrontProduct[]> {
@@ -97,32 +102,18 @@ export async function getActiveProducts(activeSellers?: Seller[]): Promise<Store
   if (!db || !firestore) return [];
 
   const firestoreDb = db;
-  const { collection, collectionGroup, documentId, getDocs, limit, orderBy, query, where } = firestore;
-  const productsSnapshot = await getDocs(
-    query(
-      collectionGroup(firestoreDb, 'products'),
-      where('status', '==', 'active'),
-      orderBy('views', 'desc'),
-      limit(PUBLIC_PRODUCT_LIMIT)
-    )
-  );
-
-  let sellersById = new Map((activeSellers ?? []).map((seller) => [seller.id, seller]));
-  if (!activeSellers) {
-    const sellerIds = [...new Set(productsSnapshot.docs.map((document) => (document.data() as { sellerId?: string }).sellerId).filter(Boolean))] as string[];
-    const sellerSnapshots = await Promise.all(
-      Array.from({ length: Math.ceil(sellerIds.length / 30) }, (_, index) => {
-        const ids = sellerIds.slice(index * 30, index * 30 + 30);
-        return ids.length
-          ? getDocs(query(collection(firestoreDb, 'sellers'), where(documentId(), 'in', ids), where('status', '==', 'active')))
-          : null;
-      }).filter(Boolean) as Promise<Awaited<ReturnType<typeof getDocs>>>[]
-    );
-    sellersById = new Map(sellerSnapshots.flatMap((snapshot) => snapshot.docs.map((document) => [
-      document.id,
-      { id: document.id, ...(sanitizeForClient(document.data()) as Omit<Seller, 'id'>) } as Seller,
-    ])));
+  const { collectionGroup, getDocs, limit, query, where } = firestore;
+  let productsSnapshot;
+  try {
+    // Keep this query to a single-field filter so it works without a deployed composite index.
+    productsSnapshot = await getDocs(query(collectionGroup(firestoreDb, 'products'), where('status', '==', 'active'), limit(PUBLIC_PRODUCT_LIMIT)));
+  } catch (error) {
+    console.warn('Unable to load active products:', error);
+    return [];
   }
+
+  const sellers = activeSellers ?? await getActiveSellers();
+  const sellersById = new Map(sellers.map((seller) => [seller.id, seller]));
 
   const products = productsSnapshot.docs.map((document) => {
     const product = sanitizeForClient(document.data() as Omit<Product, 'id'>) as Omit<Product, 'id'>;
