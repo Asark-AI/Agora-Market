@@ -30,8 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 
 import { LiquidLoader } from '@/components/liquid-loader';
-import { Store, Factory, Check } from 'lucide-react';
-import NextImage from 'next/image';
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { regions, mobileGroupedCategories } from '@/lib/data';
 import type { Seller, User, BusinessType } from '@/lib/types';
@@ -321,10 +320,10 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
   };
 
   const stepDetails = [
-    { title: 'Choose Your Business Type', description: "First, tell us what kind of business you're running." },
-    { title: 'Business Details', description: "Let's get the specifics. What is your business called and what do you do?" },
-    { title: 'Profile & Location', description: "Tell us more about your business and where you're located." },
-    { title: 'Subscription Plan', description: 'Finally, choose a plan that fits your needs.' },
+    { title: 'Seller type', description: 'Choose the type of business you will operate on Agora.' },
+    { title: 'Store information', description: 'Add the name and categories customers will see.' },
+    { title: 'Business location', description: 'Add the information needed for pickup and delivery.' },
+    { title: 'Subscription plan', description: 'Choose a plan for your seller account.' },
   ];
 
   const renderCategoryCheckboxes = () => {
@@ -347,8 +346,8 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
           return (
             <FormItem>
               <div className="mb-4">
-                <FormLabel className="text-base">What do you do?</FormLabel>
-                <FormDescription>Select all categories that apply to your business.</FormDescription>
+                  <FormLabel className="text-base">Store categories</FormLabel>
+                  <FormDescription>Select the categories that best describe your products.</FormDescription>
               </div>
 
               <div className="space-y-6">
@@ -385,9 +384,9 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
     );
   };
 
-  const businessTypes: { id: BusinessType; name: string; description: string; icon: React.ElementType }[] = [
-    { id: 'store', name: 'Retail Stores', description: 'Shop finished goods directly.', icon: Store },
-    { id: 'manufacturing', name: 'Manufacturers', description: 'For bulk & custom orders.', icon: Factory },
+  const businessTypes: { id: BusinessType; name: string; description: string }[] = [
+    { id: 'store', name: 'Retail store', description: 'Sell finished goods directly to buyers.' },
+    { id: 'manufacturing', name: 'Manufacturer', description: 'Sell products made or supplied by your business.' },
   ];
 
   return (
@@ -452,21 +451,17 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                     <FormItem>
                       <FormControl>
                         <RadioGroup value={field.value} onValueChange={field.onChange} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {businessTypes.map((type) => {
-                            const Icon = type.icon;
-                            return (
+                          {businessTypes.map((type) => (
                               <Label
                                 key={type.id}
                                 htmlFor={type.id}
                                 className="flex flex-col items-center justify-between rounded-lg border-2 p-4 cursor-pointer peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
                               >
                                 <RadioGroupItem value={type.id} id={type.id} className="sr-only" />
-                                <Icon className="mb-3 size-8 text-muted-foreground" />
-                                <span className="font-bold">{type.name}</span>
-                                <span className="text-sm text-muted-foreground text-center mt-1">{type.description}</span>
+                                <span className="font-medium">{type.name}</span>
+                                <span className="mt-1 text-left text-sm text-muted-foreground">{type.description}</span>
                               </Label>
-                            );
-                          })}
+                          ))}
                         </RadioGroup>
                       </FormControl>
                       <FormMessage className="pt-2 text-center" />
@@ -501,9 +496,9 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                     name="bio"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Store Bio</FormLabel>
+                        <FormLabel>Store description</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Tell us about your business, your products, and your passion." {...field} rows={4} />
+                          <Textarea placeholder="Briefly describe what your store sells." {...field} rows={4} maxLength={160} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -517,7 +512,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                       name="logo"
                       render={() => (
                         <FormItem>
-                          <FormLabel>Business Logo (Optional)</FormLabel>
+                          <FormLabel>Business logo <span className="font-normal text-muted-foreground">Optional</span></FormLabel>
                           <FormControl>
                             <div className="flex flex-col gap-2">
                               <input
@@ -527,33 +522,16 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                                 onChange={(e) => validateAndSetFile('logo', e.target.files)}
                                 className="hidden"
                               />
-                              <label htmlFor="logo-input" className="inline-block w-full">
-                                <div className="border rounded px-3 py-2 text-sm text-muted-foreground flex items-center justify-between">
-                                  <span>{logoPreview ? 'Change file' : 'Choose a file…'}</span>
-                                  <span className="text-xs text-muted-foreground">{logoPreview ? 'Selected' : 'No file'}</span>
+                              <label htmlFor="logo-input" className="inline-flex min-h-16 w-full cursor-pointer items-center gap-3 border border-dashed border-input px-3 py-3 text-sm transition-colors hover:border-foreground">
+                                {logoPreview ? <img src={logoPreview} alt="Logo preview" className="size-12 rounded-sm object-cover" /> : <span className="flex size-12 items-center justify-center border border-border text-lg text-muted-foreground">+</span>}
+                                <div>
+                                  <span className="block font-medium text-foreground">{logoPreview ? 'Change logo' : 'Upload logo'}</span>
+                                  <span className="text-xs text-muted-foreground">PNG, JPG or WEBP · Max 5 MB</span>
                                 </div>
                               </label>
 
-                              {logoPreview ? (
-                                <div className="relative w-36 h-36 border rounded overflow-hidden">
-                                  <img src={logoPreview} alt="Logo preview" className="object-cover w-full h-full" />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeFile('logo')}
-                                    className="absolute top-1 right-1 bg-white/80 rounded px-2 py-1 text-xs"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="relative w-36 h-36 rounded overflow-hidden border bg-secondary">
-                                  <NextImage
-                                    src="/agora-logo.png"
-                                    alt="Agora logo placeholder"
-                                    fill
-                                    className="object-contain p-4"
-                                  />
-                                </div>
+                              {logoPreview && (
+                                <button type="button" onClick={() => removeFile('logo')} className="w-fit text-xs text-muted-foreground underline underline-offset-4">Remove logo</button>
                               )}
                             </div>
                           </FormControl>
@@ -569,9 +547,9 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Store Address</FormLabel>
+                        <FormLabel>Pickup address</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., 123 Adinkra Lane, Kumasi" {...field} />
+                          <Input placeholder="Street, landmark or area" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -587,7 +565,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                         <FormControl>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select your business region" />
+                                <SelectValue placeholder="Select region" />
                             </SelectTrigger>
                             <SelectContent>
                               {regions.map((region) => (
@@ -612,43 +590,37 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                     name="subscriptionPlan"
                     render={({ field }) => (
                       <FormItem className="space-y-3">
-                        <FormLabel>Choose your Subscription Plan</FormLabel>
+                        <FormLabel>Subscription plan</FormLabel>
                         <FormControl>
                           <RadioGroup value={field.value} onValueChange={field.onChange} className="grid gap-4">
-                            <Label htmlFor="basic-plan" className="flex flex-col rounded-lg border p-4 cursor-pointer [&:has(:checked)]:border-primary">
+                            <Label htmlFor="basic-plan" className="flex cursor-pointer items-center gap-3 border border-border px-4 py-3 [&:has(:checked)]:border-primary">
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-4">
                                   <RadioGroupItem value="basic" id="basic-plan" />
-                                  <span className="font-bold text-lg">Basic (Free)</span>
+                                  <span className="font-medium">Basic (Free)</span>
                                 </div>
                               </div>
-                              <div className="mt-2 pl-[34px] text-sm text-muted-foreground">
-                                <p className="mb-2">Ideal for new sellers testing the platform.</p>
-                              </div>
+                              <span className="ml-auto text-sm text-muted-foreground">For new sellers</span>
                             </Label>
 
-                            <Label htmlFor="premium-plan" className="flex flex-col rounded-lg border p-4 cursor-pointer [&:has(:checked)]:border-primary">
+                            <Label htmlFor="premium-plan" className="flex cursor-pointer items-center gap-3 border border-border px-4 py-3 [&:has(:checked)]:border-primary">
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-4">
                                   <RadioGroupItem value="premium" id="premium-plan" />
-                                  <span className="font-bold text-lg">Premium</span>
+                                  <span className="font-medium">Premium</span>
                                 </div>
                               </div>
-                              <div className="mt-2 pl-[34px] text-sm text-muted-foreground">
-                                <p className="mb-2">For growing sellers who want more tools.</p>
-                              </div>
+                              <span className="ml-auto text-sm text-muted-foreground">For growing sellers</span>
                             </Label>
 
-                            <Label htmlFor="enterprise-plan" className="flex flex-col rounded-lg border p-4 cursor-pointer [&:has(:checked)]:border-primary">
+                            <Label htmlFor="enterprise-plan" className="flex cursor-pointer items-center gap-3 border border-border px-4 py-3 [&:has(:checked)]:border-primary">
                               <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-4">
                                   <RadioGroupItem value="enterprise" id="enterprise-plan" />
-                                  <span className="font-bold text-lg">Enterprise</span>
+                                  <span className="font-medium">Enterprise</span>
                                 </div>
                               </div>
-                              <div className="mt-2 pl-[34px] text-sm text-muted-foreground">
-                                <p className="mb-2">For large brands, exporters, and wholesalers.</p>
-                              </div>
+                              <span className="ml-auto text-sm text-muted-foreground">For larger businesses</span>
                             </Label>
                           </RadioGroup>
                         </FormControl>
@@ -676,10 +648,10 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                   {isLoading ? (
                     <>
                       <LiquidLoader className="mr-2" />
-                      Creating Business...
+                      Submitting application...
                     </>
                   ) : (
-                    'Create Business & Continue'
+                    'Submit application'
                   )}
                 </Button>
               )}
