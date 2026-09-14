@@ -329,10 +329,6 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
         );
     }
     
-    if (currentSeller.businessType === 'repairs') {
-        return <RepairStorefront seller={currentSeller} />;
-    }
-    
     if (currentSeller.businessType === 'manufacturing') {
         return <ManufacturingStorefront seller={currentSeller} products={currentProducts} />;
     }

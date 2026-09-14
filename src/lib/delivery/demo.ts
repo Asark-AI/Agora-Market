@@ -1,4 +1,4 @@
-import type { DeliveryAttempt, DeliveryEvent, DeliveryProof, DeliveryStatus, Order, RiderAssignment, Shipment } from '@/lib/types';
+import type { DeliveryAttempt, DeliveryEvent, DeliveryProof, DeliveryStatus, Order, PickupLocation, RiderAssignment, Shipment } from '@/lib/types';
 
 export type DemoDeliveryState = {
   order: Order;
@@ -16,6 +16,7 @@ export type DemoDeliveryState = {
     pricingVersion: string;
     createdAt: string;
     updatedAt: string;
+    pickup?: PickupLocation;
   };
   assignment: RiderAssignment;
   events: DeliveryEvent[];
@@ -40,10 +41,12 @@ export const createDemoDeliveryState = (): DemoDeliveryState => {
     paymentMethod: 'flutterwave',
     shipmentIds: ['SHP-DEMO-10482'],
   };
+  const pickup: PickupLocation = { sellerName: 'Agora Seller', address: 'Oxford Street, Osu, Accra', regionId: 'Greater Accra', mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Oxford+Street+Osu+Accra', contactPhone: '024 000 0000' };
+  order.pickup = pickup;
   return {
     order,
     shipment: { id: 'SHP-DEMO-10482', orderId: order.id, sellerId: 'demo-seller', itemIds: ['demo-product'], status: 'CREATED', deliveryId: 'DL-DEMO-10482' },
-    delivery: { id: 'DL-DEMO-10482', orderId: order.id, shipmentId: 'SHP-DEMO-10482', buyerId: order.buyerId, sellerId: 'demo-seller', provider: 'AGORA', status: 'ASSIGNED', riderId: 'demo-rider', deliveryFee: 20, pricingVersion: 'demo-v1', createdAt: now, updatedAt: now },
+      delivery: { id: 'DL-DEMO-10482', orderId: order.id, shipmentId: 'SHP-DEMO-10482', buyerId: order.buyerId, sellerId: 'demo-seller', provider: 'AGORA', status: 'ASSIGNED', riderId: 'demo-rider', deliveryFee: 20, pricingVersion: 'demo-v1', createdAt: now, updatedAt: now, pickup },
     assignment: { id: 'ASN-DEMO-10482', deliveryId: 'DL-DEMO-10482', riderId: 'demo-rider', status: 'OFFERED', offeredAt: now, expiresAt: new Date(Date.now() + 180000).toISOString() },
     events: [{ id: 'EVT-DEMO-CREATED', deliveryId: 'DL-DEMO-10482', type: 'delivery.created', status: 'CREATED', actorId: 'demo-system', createdAt: now }],
     attempts: [],

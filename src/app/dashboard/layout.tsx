@@ -40,7 +40,7 @@ export default function AppDashboardLayout({
       return;
     }
 
-    if (!seller) {
+    if (!seller || !['approved', 'active'].includes(seller.status)) {
       router.replace('/seller-signup');
     }
   }, [user, seller, loading, router]);

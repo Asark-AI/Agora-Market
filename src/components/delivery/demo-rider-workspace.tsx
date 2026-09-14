@@ -33,6 +33,10 @@ export function DemoRiderWorkspace() {
     setOtpError('');
     updateDemoState(advanceDemoDelivery({ ...demoState, proof: { method: 'OTP', verifiedAt: new Date().toISOString(), reference: DEMO_OTP } }, 'DELIVERED'));
   };
+  const openPickupPoint = () => {
+    const mapsUrl = demoState.delivery.pickup?.mapsUrl || 'https://www.google.com/maps/search/?api=1&query=Agora+Seller+Osu+Accra';
+    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <main className="min-h-screen bg-white px-4 pb-24 pt-5 text-slate-950 sm:px-8 sm:pt-8">

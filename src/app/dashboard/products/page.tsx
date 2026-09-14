@@ -24,8 +24,8 @@ export default function ProductsPage() {
         const isStore = seller.businessType === 'store' || seller.businessType === 'manufacturing';
         return {
             isStore,
-            itemType: isStore ? 'Product' : 'Service',
-            itemTypePlural: isStore ? 'Products' : 'Services',
+            itemType: 'Product',
+            itemTypePlural: 'Products',
         };
     }, [seller]);
     

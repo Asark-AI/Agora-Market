@@ -17,8 +17,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/use-auth';
 import { LiquidLoader } from '@/components/liquid-loader';
 import { PlusCircle, Trash2, Sparkles, Calendar as CalendarIcon, DollarSign } from 'lucide-react';
-import Link from 'next/link';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AiDescriptionModal } from './ai-description-modal';
 import { Progress } from './ui/progress';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
@@ -30,88 +28,61 @@ import { format } from 'date-fns';
 import { Label } from './ui/label';
 
 const MAX_IMAGE_SIZE_MB = 5;
-const MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_MB * 1024 * 1024;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 const MAX_VIDEO_SIZE_MB = 10;
-const MAX_VIDEO_SIZE = MAX_VIDEO_SIZE_MB * 1024 * 1024;
 const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
 
-// Zod Schema for Product Form
 const productSpecificationSchema = z.object({
-  name: z.string().min(1, 'Specification name cannot be empty.'),
-  value: z.string().min(1, 'Specification value cannot be empty.'),
+    name: z.string().min(1, 'Specification name cannot be empty.'),
+    value: z.string().min(1, 'Specification value cannot be empty.'),
 });
 
 const fullProductFormSchema = z.object({
-  name: z.string().min(3, 'Product name must be at least 3 characters.'),
-  categoryId: z.string({ required_error: 'Please select a category.' }),
-  description: z.string().min(20, 'Please provide a description of at least 20 characters.'),
-  price: z.string().refine(value => !isNaN(parseFloat(value)) && parseFloat(value) > 0, {
-    message: 'Price must be a positive number.',
-  }),
-  costPrice: z.string().optional().or(z.literal('')),
-  discountPrice: z.string().optional().or(z.literal('')),
-  stock: z.string().refine(value => !isNaN(parseInt(value, 10)) && parseInt(value, 10) >= 0, {
-    message: 'Stock must be a non-negative integer.',
-  }),
-  barcode: z.string().optional(),
-  images: z.custom<FileList>().refine(files => files && files.length > 0, 'At least one image is required.'),
-  videos: z.custom<FileList>().optional(),
-  specifications: z.array(productSpecificationSchema).optional(),
-  publishAction: z.enum(['draft', 'publish']),
+    name: z.string().min(3, 'Product name must be at least 3 characters.'),
+    categoryId: z.string({ required_error: 'Please select a category.' }),
+    description: z.string().min(20, 'Please provide a description of at least 20 characters.'),
+    price: z.string().refine(value => !isNaN(parseFloat(value)) && parseFloat(value) > 0, { message: 'Price must be a positive number.' }),
+    costPrice: z.string().optional().or(z.literal('')),
+    discountPrice: z.string().optional().or(z.literal('')),
+    stock: z.string().refine(value => !isNaN(parseInt(value, 10)) && parseInt(value, 10) >= 0, { message: 'Stock must be a non-negative integer.' }),
+    barcode: z.string().optional(),
+    images: z.custom<FileList>().refine(files => files && files.length > 0, 'At least one image is required.'),
+    videos: z.custom<FileList>().optional(),
+    specifications: z.array(productSpecificationSchema).optional(),
+    publishAction: z.enum(['draft', 'publish']),
 });
 
 type ProductFormValues = z.infer<typeof fullProductFormSchema>;
 
-// Zod Schema for Service Form
 const pricingPackageSchema = z.object({
-    name: z.string().min(2, 'Package name is required.'),
-    price: z.coerce.number().positive('Price must be positive.'),
-    features: z.string().min(10, 'Please list at least one feature.')
+    name: z.string().min(2),
+    price: z.coerce.number().positive(),
+    features: z.string().min(10),
 });
 
 const fullServiceFormSchema = z.object({
-  name: z.string().min(3, 'Service title must be at least 3 characters.'),
-  categoryId: z.string({ required_error: 'Please select a category.' }),
-  description: z.string().min(20, 'Please provide a description of at least 20 characters.'),
-  pricingType: z.enum(['flat', 'hourly', 'tiered']),
-  flatFee: z.coerce.number().positive('Flat fee must be a positive number.').optional(),
-  hourlyRate: z.coerce.number().positive('Hourly rate must be a positive number.').optional(),
-  packages: z.array(pricingPackageSchema).optional(),
-  discount: z.string().optional(),
-  deliveryMethods: z.array(z.string()).min(1, 'Please select at least one delivery method.'),
-  onlineDetails: z.string().optional(),
-  inPersonDetails: z.string().optional(),
-  duration: z.string().min(2, 'Please specify a duration.'),
-  buyerRequirements: z.string().min(10, 'Please specify requirements.'),
-  coverImage: z.custom<FileList>().refine(files => files && files.length === 1, 'A cover image is required.'),
-  galleryImages: z.custom<FileList>().optional(),
-  videoUrl: z.string().url('Please enter a valid URL.').or(z.literal('')).optional(),
-  cancellationPolicy: z.enum(['flexible', 'moderate', 'strict']),
-  refundTerms: z.string().optional(),
-  publishAction: z.enum(['draft', 'publish', 'schedule']),
-  publishDate: z.date().optional(),
-}).superRefine((data, ctx) => {
-    if (data.pricingType === 'flat' && !data.flatFee) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please define a price for the selected pricing type.", path: ["flatFee"] });
-    }
-    if (data.pricingType === 'hourly' && !data.hourlyRate) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please define a price for the selected pricing type.", path: ["hourlyRate"] });
-    }
-    if (data.pricingType === 'tiered' && (!data.packages || data.packages.length === 0)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please add at least one pricing package.", path: ["packages"] });
-    }
-    if (data.deliveryMethods.includes('online') && !data.onlineDetails) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please provide details for online delivery.", path: ["onlineDetails"] });
-    }
-    if (data.deliveryMethods.includes('in-person') && !data.inPersonDetails) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please provide details for in-person delivery.", path: ["inPersonDetails"] });
-    }
-    if (data.publishAction === 'schedule' && !data.publishDate) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Please select a date to schedule publishing.", path: ["publishDate"] });
-    }
+    name: z.string().min(3),
+    categoryId: z.string(),
+    description: z.string().min(20),
+    pricingType: z.enum(['flat', 'hourly', 'tiered']),
+    flatFee: z.coerce.number().positive().optional(),
+    hourlyRate: z.coerce.number().positive().optional(),
+    packages: z.array(pricingPackageSchema).optional(),
+    discount: z.string().optional(),
+    deliveryMethods: z.array(z.string()).min(1),
+    onlineDetails: z.string().optional(),
+    inPersonDetails: z.string().optional(),
+    duration: z.string().min(2),
+    buyerRequirements: z.string().min(10),
+    coverImage: z.custom<FileList>(),
+    galleryImages: z.custom<FileList>().optional(),
+    videoUrl: z.string().optional(),
+    cancellationPolicy: z.enum(['flexible', 'moderate', 'strict']),
+    refundTerms: z.string().optional(),
+    publishAction: z.enum(['draft', 'publish', 'schedule']),
+    publishDate: z.date().optional(),
 });
-    
+
 type ServiceFormValues = z.infer<typeof fullServiceFormSchema>;
 
 function AddProductFormContent() {
@@ -121,30 +92,16 @@ function AddProductFormContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-    
+
     const form = useForm<ProductFormValues>({
         resolver: zodResolver(fullProductFormSchema),
         defaultValues: {
-            name: '',
-            categoryId: '',
-            description: '',
-            price: '',
-            costPrice: '',
-            discountPrice: '',
-            stock: '',
-            barcode: '',
-            images: undefined,
-            videos: undefined,
-            specifications: [],
-            publishAction: 'publish',
+            name: '', categoryId: '', description: '', price: '', costPrice: '', discountPrice: '', stock: '', barcode: '',
+            images: undefined, videos: undefined, specifications: [], publishAction: 'publish',
         },
     });
 
-    const { fields: specFields, append: appendSpec, remove: removeSpec } = useFieldArray({
-        control: form.control,
-        name: "specifications"
-    });
-
+    const { fields: specFields, append: appendSpec, remove: removeSpec } = useFieldArray({ control: form.control, name: 'specifications' });
     const totalSteps = 5;
     const stepFields: (keyof ProductFormValues)[][] = [
         ['name', 'categoryId', 'description'],
@@ -153,76 +110,40 @@ function AddProductFormContent() {
         ['specifications'],
         ['publishAction'],
     ];
-
     const handleNextStep = async () => {
-        const fieldsToValidate = stepFields[currentStep];
-        const isValid = await form.trigger(fieldsToValidate as any);
-
-        if (isValid) {
-            setCurrentStep(prev => Math.min(prev + 1, totalSteps - 1));
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Incomplete Step",
-                description: "Please fill all required fields before proceeding."
-            });
-        }
+        if (await form.trigger(stepFields[currentStep] as any)) setCurrentStep((step) => Math.min(step + 1, totalSteps - 1));
+        else toast({ variant: 'destructive', title: 'Incomplete Step', description: 'Please fill all required fields before proceeding.' });
     };
-
-    const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0));
-
+    const prevStep = () => setCurrentStep((step) => Math.max(step - 1, 0));
     const onSubmit: SubmitHandler<ProductFormValues> = async (data) => {
         if (!seller) return;
-        console.log('FORM_ONSUBMIT start', { name: data.name, publishAction: data.publishAction });
         setIsLoading(true);
-        
         try {
-            const priceNum = parseFloat(data.price);
-            const costPriceNum = data.costPrice ? parseFloat(data.costPrice) : undefined;
-            const stockNum = parseInt(data.stock, 10);
-            const discountPriceNum = data.discountPrice ? parseFloat(data.discountPrice) : undefined;
-            
-            const finalDiscountPrice = (discountPriceNum && discountPriceNum > 0) ? discountPriceNum : undefined;
-
             await addProduct({
                 name: data.name,
                 description: data.description,
-                price: priceNum,
-                costPrice: costPriceNum,
-                discountPrice: finalDiscountPrice,
+                price: parseFloat(data.price),
+                costPrice: data.costPrice ? parseFloat(data.costPrice) : undefined,
+                discountPrice: data.discountPrice ? parseFloat(data.discountPrice) : undefined,
                 categoryId: data.categoryId,
                 regionId: seller.regionId,
-                stock: stockNum,
+                stock: parseInt(data.stock, 10),
                 barcode: data.barcode,
                 specifications: data.specifications,
-                status: data.publishAction === 'publish' ? 'active' : 'draft'
+                status: data.publishAction === 'publish' ? 'active' : 'draft',
             }, data.images, data.videos);
-
-            toast({ title: "Product Added!", description: `${data.name} has been added to your store.` });
+            toast({ title: 'Product Added!', description: `${data.name} has been added to your store.` });
             router.push('/dashboard/products');
-
         } catch (error) {
-                console.error("Error adding product:", error);
-                const message = error instanceof Error ? error.message : String(error);
-                toast({ variant: 'destructive', title: "Error adding product", description: message });
+            toast({ variant: 'destructive', title: 'Error adding product', description: error instanceof Error ? error.message : String(error) });
         } finally {
             setIsLoading(false);
         }
     };
-    
     if (!seller) return null;
-    const relevantCategories = categories.filter(c => c.businessType === seller.businessType || c.businessType === 'store');
-    
-    const stepTitles = [
-        "Product Details",
-        "Pricing & Inventory",
-        "Upload Media",
-        "Specifications",
-        "Publish Options"
-    ];
-
+    const relevantCategories = categories.filter((category) => category.businessType === seller.businessType || category.businessType === 'store');
+    const stepTitles = ['Product Details', 'Pricing & Inventory', 'Upload Media', 'Specifications', 'Publish Options'];
     const stepComponents = [
-        // Step 1: Product Details
         <>
             <Controller
                 name="name"
@@ -601,7 +522,7 @@ function AddServiceFormContent() {
                             <FormControl>
                                 <Checkbox
                                     checked={field.value?.includes(item)}
-                                    onCheckedChange={(checked) => {
+                                    onCheckedChange={(checked: boolean) => {
                                         const currentValues = field.value || [];
                                         return checked
                                             ? field.onChange([...currentValues, item])
@@ -679,9 +600,6 @@ function AddServiceFormContent() {
 }
 
 
-export function AddProductForm({ isStore, itemType }: { isStore: boolean, itemType: string }) {
-  if (isStore) {
+export function AddProductForm() {
     return <AddProductFormContent />;
-  }
-  return <AddServiceFormContent />;
 }

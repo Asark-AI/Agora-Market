@@ -54,6 +54,10 @@ export default function SignInPage() {
       hasRouted.current = true;
       let active = true;
       const routeUser = async () => {
+        if (firebaseUser && !firebaseUser.emailVerified && firebaseUser.providerData.some((provider) => provider.providerId === 'password')) {
+          router.replace('/verify-email');
+          return;
+        }
         let isSuperAdmin = user?.role === 'Admin';
         let secureSessionReady = false;
         try {
@@ -140,7 +144,7 @@ export default function SignInPage() {
             </div>
             <h1 className="text-3xl font-bold font-headline">Welcome Back</h1>
             <p className="text-balance text-muted-foreground">
-              Enter your credentials to access your seller dashboard.
+              Sign in to shop, manage your account, or access Seller Center.
             </p>
           </div>
           <Form {...form}>

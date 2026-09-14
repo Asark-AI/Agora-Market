@@ -1,10 +1,12 @@
-import { getActiveProducts, getActiveSellers, getCategoryOptions } from '@/lib/storefront';
+import { getActiveProducts, getCategoryOptions } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { MarketplaceProductsBrowser } from '@/components/marketplace-products-browser';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductsPage() {
-  const sellers = await getActiveSellers();
-  const products = await getActiveProducts(sellers);
+  const products = await getActiveProducts();
+  const sellers = products.flatMap((product) => product.seller ? [product.seller] : []).filter((seller, index, all) => all.findIndex((entry) => entry.id === seller.id) === index);
   const categories = getCategoryOptions();
 
   return (

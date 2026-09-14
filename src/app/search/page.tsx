@@ -1,13 +1,14 @@
-import { getActiveProducts, getActiveSellers, getCategoryOptions } from '@/lib/storefront';
+import { getActiveProducts, getCategoryOptions } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function SearchPage({ searchParams }: { searchParams: { q?: string } }) {
-  const sellers = await getActiveSellers();
-  const products = await getActiveProducts(sellers);
+  const products = await getActiveProducts();
   const categories = getCategoryOptions();
   const query = searchParams.q?.trim().toLowerCase() || '';
 

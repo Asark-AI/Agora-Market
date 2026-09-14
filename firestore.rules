@@ -76,11 +76,16 @@ service cloud.firestore {
                   || isSuperAdmin();
 
       allow create: if isOwner(uid)
-        && request.resource.data.id == uid;
+        && request.resource.data.id == uid
+        && request.resource.data.roles.buyer == true
+        && request.resource.data.roles.seller == false
+        && request.resource.data.roles.rider == false;
       allow update: if isOwner(uid)
         && unchanged("id")
         && (!("admin" in request.resource.data) || request.resource.data.admin != true)
-        && (!("superAdmin" in request.resource.data) || request.resource.data.superAdmin != true);
+        && (!("superAdmin" in request.resource.data) || request.resource.data.superAdmin != true)
+        && (!('roles' in request.resource.data) || request.resource.data.roles.seller == resource.data.roles.seller)
+        && (!('roles' in request.resource.data) || request.resource.data.roles.rider == resource.data.roles.rider);
       allow delete: if isOwner(uid)
                     || isSuperAdmin();
     }
@@ -99,10 +104,12 @@ service cloud.firestore {
     match /sellers/{uid} {
       allow read: if true;
       allow create: if isSignedIn()
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
       allow update: if isSignedIn()
         && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == resource.data.userId;
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.status == resource.data.status;
       allow delete: if isSignedIn()
         && resource.data.userId == request.auth.uid;
 
@@ -204,7 +211,9 @@ service cloud.firestore {
     */
     match /customers/{customerId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending';
       allow update: if isSignedIn();
       allow delete: if isSuperAdmin();
     }

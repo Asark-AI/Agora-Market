@@ -36,7 +36,7 @@ export type RecentSales = {
 
 export type Widget = StatCard | SalesChart | RecentSales;
 
-export type BusinessType = 'store' | 'services' | 'manufacturing' | 'repairs';
+export type BusinessType = 'store' | 'manufacturing';
 
 export type BusinessConfig = {
   [key in BusinessType]: {
@@ -166,9 +166,7 @@ export type Seller = {
   notifications: Partial<SellerNotifications>;
   description?: string;
   productCategoryIds?: string[];
-  serviceCategoryIds?: string[];
   manufacturingCategoryIds?: string[];
-  repairCategoryIds?: string[];
   logoUrl?: string;
   storefrontBannerUrl?: string;
   isVerifiedArtisan?: boolean;
@@ -205,7 +203,6 @@ export type Seller = {
       ratings?: boolean;
       contact?: boolean;
       contactMethods?: ('email' | 'phone' | 'whatsapp' | 'sms')[];
-      repairs?: boolean;
       customOrders?: boolean;
       wishlist?: boolean;
       socialShare?: boolean;
@@ -234,6 +231,12 @@ export type User = {
     email: string;
     phone?: string;
     role: 'Owner' | 'Admin' | 'Manager' | 'Accountant' | 'Staff';
+    firstName?: string;
+    lastName?: string;
+    emailVerified?: boolean;
+    phoneVerified?: boolean;
+    accountStatus?: 'active' | 'disabled' | 'pending';
+    roles?: UserCapabilities;
   capabilities?: UserCapabilities;
 };
 
@@ -306,6 +309,7 @@ export type Order = {
     payoutStatus?: PayoutStatus;
     buyerProtectionStatus?: BuyerProtectionStatus;
     disputeStatus?: DisputeStatus;
+    pickup?: PickupLocation;
 };
 
   export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'REVERSED';
@@ -359,7 +363,7 @@ export type Order = {
     sellerId: string;
     orderId: string;
     amountMinor: number;
-    currency: 'GHS';
+    pickup?: PickupLocation;
     status: PayoutStatus;
     recipientCode?: string;
     transferCode?: string;
@@ -408,6 +412,19 @@ export type Order = {
     itemIds: string[];
     status: DeliveryStatus;
     deliveryId?: string;
+    pickup?: PickupLocation;
+  };
+
+  export type PickupLocation = {
+    sellerName: string;
+    address: string;
+    regionId?: string;
+    city?: string;
+    area?: string;
+    mapsUrl?: string;
+    latitude?: number;
+    longitude?: number;
+    contactPhone?: string;
   };
 
   export type Delivery = {
@@ -421,6 +438,7 @@ export type Order = {
     riderId?: string;
     deliveryFee: number;
     pricingVersion: string;
+    pickup?: PickupLocation;
     createdAt: string;
     updatedAt: string;
   };
@@ -627,15 +645,18 @@ export interface AuthState {
   signUp: (email: string, pass: string, name: string) => Promise<FirebaseUser>;
   logIn: (email: string, pass: string) => Promise<FirebaseUser>;
   signInWithGoogle: () => Promise<FirebaseUser>;
+  resendVerificationEmail: () => Promise<void>;
+  refreshEmailVerification: () => Promise<boolean>;
+  sendPasswordReset: (email: string) => Promise<void>;
   logOut: () => Promise<void>;
   
   // Data methods
   setSeller: (seller: Seller | null) => void;
-  addSeller: (sellerData: Omit<Seller, 'id'>, logoFile?: File, bannerFile?: File) => Promise<Seller>;
+  addSeller: (sellerData: Omit<Seller, 'id'>, logoFile?: File) => Promise<Seller>;
   addProduct: (product: Omit<Product, 'id' | 'sellerId' | 'userId' | 'views' | 'favorites' | 'images' | 'videos'>, imageFiles?: FileList, videoFiles?: FileList) => Promise<{ id: string }>;
   updateProduct: (productId: string, updates: Partial<Product>) => Promise<void>;
   updateSeller: (sellerId: string, updates: Partial<Seller>) => Promise<void>;
-  updateSellerProfile: (sellerId: string, updates: Partial<Seller>, logoFile?: File, bannerFile?: File) => Promise<void>;
+  updateSellerProfile: (sellerId: string, updates: Partial<Seller>, logoFile?: File) => Promise<void>;
   addSupplier: (supplier: NewSupplier) => Promise<void>;
   deleteSeller: (sellerId: string) => Promise<void>;
   addRepairRequest: (sellerId: string, userId: string, requestData: any, photoFiles?: FileList) => Promise<void>;

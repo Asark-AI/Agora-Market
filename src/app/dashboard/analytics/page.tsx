@@ -133,30 +133,26 @@ const AnalyticsSkeleton = () => (
 
 
 export default function AnalyticsPage() {
-    const { seller, sellerOrders, sellerProducts, sellerCustomers, sellerRepairRequests, loading } = useAuth();
+    const { seller, sellerOrders, sellerProducts, sellerCustomers, loading } = useAuth();
     const [revenuePeriod, setRevenuePeriod] = useState<'7d' | '30d' | '3m' | '12m'>('30d');
 
     const pageConfig = useMemo(() => {
         if (!seller) return null;
         const isStore = seller.businessType === 'store' || seller.businessType === 'manufacturing';
-        const isRepair = seller.businessType === 'repairs';
-        const isService = seller.businessType === 'services';
 
         return {
             isStore,
-            isRepair,
-            isService,
             kpiTitles: {
                 revenue: 'Total Revenue',
-                orders: isStore ? 'Total Orders' : (isRepair ? 'Total Jobs' : 'Total Bookings'),
+                orders: 'Total Orders',
                 customers: 'Customers',
                 completionRate: 'Completion Rate',
-                aov: isStore ? 'Avg. Order Value' : (isRepair ? 'Avg. Job Value' : 'Avg. Booking Value'),
+                aov: 'Avg. Order Value',
             },
             charts: {
                 revenueTitle: 'Revenue',
-                ordersTitle: isStore ? 'Orders Overview' : (isRepair ? 'Jobs Overview' : 'Bookings Overview'),
-                productTitle: isStore ? 'Product Performance' : (isRepair ? 'Top Repair Types' : 'Top Services'),
+                ordersTitle: 'Orders Overview',
+                productTitle: 'Product Performance',
             }
         };
     }, [seller]);
@@ -171,7 +167,7 @@ export default function AnalyticsPage() {
         let onlineOrdersCount = 0;
         let walkInOrdersCount = 0;
         
-        if (pageConfig.isStore || pageConfig.isService) {
+        if (pageConfig.isStore) {
             completedOrders = sellerOrders.filter(o => o.status === 'fulfilled' || o.status === 'shipped' || o.status === 'completed').length;
             revenue = sellerOrders.reduce((sum, order) => (order.status === 'fulfilled' || order.status === 'shipped' || order.status === 'completed') ? sum + order.total : sum, 0);
             totalOrders = sellerOrders.length;
@@ -179,10 +175,6 @@ export default function AnalyticsPage() {
                 walkInOrdersCount = sellerOrders.filter(o => o.paymentMethod && o.paymentMethod !== 'flutterwave').length;
                 onlineOrdersCount = totalOrders - walkInOrdersCount;
             }
-        } else if (pageConfig.isRepair) {
-            completedOrders = sellerRepairRequests.filter(r => r.status === 'completed').length;
-            revenue = sellerRepairRequests.reduce((sum, req) => (req.status === 'completed' && req.quote) ? sum + req.quote : sum, 0);
-            totalOrders = sellerRepairRequests.length;
         }
 
         const completionRate = totalOrders > 0 ? (completedOrders / totalOrders) * 100 : 0;
@@ -241,7 +233,7 @@ export default function AnalyticsPage() {
             alerts: [{ title: "Revenue Milestone", text: `Congratulations! You've crossed ₵${(Math.floor(revenue/1000)*1000).toLocaleString()} in total revenue.`, icon: TrendingUp, color: "text-green-500", bgColor: "bg-green-500/10" }],
         }
         
-    }, [seller, sellerOrders, sellerProducts, sellerCustomers, sellerRepairRequests, pageConfig, revenuePeriod]);
+    }, [seller, sellerOrders, sellerProducts, sellerCustomers, pageConfig, revenuePeriod]);
     
     if (loading || !pageConfig || !analyticsData) {
         return <AnalyticsSkeleton />;
@@ -269,9 +261,9 @@ export default function AnalyticsPage() {
                         <p className="text-xs text-muted-foreground">{analyticsData.kpiData.totalOrders.online} online vs {analyticsData.kpiData.totalOrders.walkIn} walk-in</p>
                     </CardContent>
                   </Card>
-                ) : (
-                  <KpiCard title={pageConfig.kpiTitles.orders} value={analyticsData.kpiData.totalOrders.value.toLocaleString()} change={8.2} icon={pageConfig.isRepair ? Wrench : Briefcase } />
-                )}
+                                ) : (
+                                    <KpiCard title={pageConfig.kpiTitles.orders} value={analyticsData.kpiData.totalOrders.value.toLocaleString()} change={8.2} icon={ShoppingCart} />
+                                )}
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

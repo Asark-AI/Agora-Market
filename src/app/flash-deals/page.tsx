@@ -2,6 +2,8 @@ import { getActiveProducts, getCategoryOptions } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { FlashDealsBrowser } from '@/components/flash-deals-browser';
 
+export const dynamic = 'force-dynamic';
+
 export default async function FlashDealsPage() {
   const categories = getCategoryOptions();
   const products = await getActiveProducts();

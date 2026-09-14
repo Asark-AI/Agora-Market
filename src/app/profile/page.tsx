@@ -7,13 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useSearchParams } from 'next/navigation';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Order, RepairRequest } from '@/lib/types';
+import type { Order } from '@/lib/types';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, ShoppingCart, Wrench, Bell, LockKeyhole, HelpCircle, Package, Clock3, Heart, Bike, Store, Star, Eye, ArrowRight } from 'lucide-react';
+import { LogOut, ShoppingCart, Bell, LockKeyhole, HelpCircle, Package, Clock3, Heart, Bike, Store, Star, Eye, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -57,41 +57,12 @@ function OrderHistory({ orders }: { orders: Order[] }) {
     )
 }
 
-function RepairHistory({ repairs }: { repairs: RepairRequest[] }) {
-    if (repairs.length === 0) {
-        return (
-            <div className="text-center py-12">
-                <p className="text-muted-foreground">You have no repair requests.</p>
-            </div>
-        )
-    }
-    return (
-        <div className="space-y-4">
-            {repairs.map(repair => (
-                <Card key={repair.id}>
-                     <CardHeader className="flex flex-row justify-between items-center">
-                        <div>
-                            <CardTitle className="text-base">Job #{repair.ticketNumber}</CardTitle>
-                            <CardDescription>Device: {repair.brandModel}</CardDescription>
-                        </div>
-                        <Badge variant="secondary">{repair.status}</Badge>
-                    </CardHeader>
-                    <CardContent>
-                       <p className="text-sm text-muted-foreground">{repair.issueSummary}</p>
-                    </CardContent>
-                </Card>
-            ))}
-        </div>
-    )
-}
-
 export default function ProfilePage() {
     const { user, seller, logOut, loading: authLoading } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
     
     const [orders, setOrders] = useState<Order[]>([]);
-    const [repairs, setRepairs] = useState<RepairRequest[]>([]);
     const [loadingData, setLoadingData] = useState(true);
     const [orderFilter, setOrderFilter] = useState('All');
 
@@ -104,7 +75,6 @@ export default function ProfilePage() {
                 try {
                     if (!db) {
                         setOrders([]);
-                        setRepairs([]);
                         return;
                     }
 
@@ -113,10 +83,6 @@ export default function ProfilePage() {
                     const ordersSnapshot = await getDocs(ordersQuery);
                     setOrders(ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order)));
                     
-                    // Fetch Repairs
-                    const repairsQuery = query(collection(db, 'repairRequests'), where('buyerId', '==', user.id), orderBy('createdAt', 'desc'));
-                    const repairsSnapshot = await getDocs(repairsQuery);
-                    setRepairs(repairsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RepairRequest)));
                 } catch (error) {
                     console.error("Failed to fetch user data:", error);
                     // Handle error appropriately, maybe show a toast
@@ -130,7 +96,6 @@ export default function ProfilePage() {
     
     const isLoading = authLoading || loadingData;
     const ordersTab = searchParams.get('tab') === 'orders';
-    const repairsTab = searchParams.get('tab') === 'repairs';
     const visibleOrders = orders.filter((order) => {
         if (orderFilter === 'All') return true;
         if (orderFilter === 'To Pay') return order.status === 'pending' && !order.transactionId;
@@ -168,11 +133,6 @@ export default function ProfilePage() {
                         {['All', 'To Pay', 'Processing', 'Shipped', 'To Receive', 'Completed'].map((status) => <button key={status} type="button" onClick={() => setOrderFilter(status)} className={`shrink-0 border-b-2 px-1 pb-3 font-medium ${status === orderFilter ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground'}`}>{status}</button>)}
                     </div>
                     <OrderHistory orders={visibleOrders} />
-                </div>
-            ) : repairsTab ? (
-                <div className="space-y-5">
-                    <div className="border-b border-border pb-4"><p className="text-sm text-muted-foreground">Agora / Account</p><h1 className="mt-1 text-2xl font-semibold tracking-tight">Repair History</h1></div>
-                    <RepairHistory repairs={repairs} />
                 </div>
             ) : (
                 <>
@@ -229,10 +189,6 @@ export default function ProfilePage() {
                     </Link>
                 ))}
             </div>
-            <section className="space-y-1 border-t border-border pt-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Services</p>
-                <Link href="/profile?tab=repairs" className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Wrench className="size-4 text-muted-foreground" /> Repair History</span><ArrowRight className="size-4 text-muted-foreground" /></Link>
-            </section>
             <section className="mt-6 space-y-1 border-t border-border pt-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Sell on Agora</p>
                 <Link href={seller ? '/dashboard' : '/seller-signup'} className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Store className="size-4 text-muted-foreground" /> {seller ? 'Open Seller Center' : 'Become a Seller'}</span><ArrowRight className="size-4 text-muted-foreground" /></Link>

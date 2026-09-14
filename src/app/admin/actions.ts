@@ -88,6 +88,24 @@ async function moderateDocument(idToken: string, targetType: ModerationTarget, t
     if (target.customClaims?.superAdmin === true) throw new Error('Privileged Super Admin accounts cannot be modified.');
     await getAdminAuth().updateUser(targetId, { disabled: nextStatus === 'suspended' });
   }
+  if (targetType === 'seller' && nextStatus === 'approved') {
+    const sellerData = snapshot.data() || {};
+    const ownerId = String(sellerData.userId || '');
+    if (!ownerId) throw new Error('Seller owner is missing.');
+    await getAdminAuth().setCustomUserClaims(ownerId, { seller: true });
+    await db.collection('users').doc(ownerId).set({
+      roles: { buyer: true, seller: true },
+      updatedAt: new Date(),
+    }, { merge: true });
+    await db.collection('notifications').add({
+      userId: ownerId,
+      type: 'SELLER_APPROVED',
+      title: 'Your Agora seller account is approved',
+      message: 'Your store is ready. You can now access Seller Center.',
+      createdAt: new Date(),
+      read: false,
+    });
+  }
   await ref.update({ status: nextStatus, moderationReason: cleanReason, moderatedBy: admin.uid, moderatedAt: new Date() });
   await writeAuditLog({ admin, action: `${nextStatus === 'approved' ? 'APPROVE' : nextStatus === 'rejected' ? 'REJECT' : nextStatus === 'suspended' ? 'SUSPEND' : nextStatus === 'archived' ? 'ARCHIVE' : 'RESTORE'}_${targetType.toUpperCase()}` as never, targetType, targetId, reason: cleanReason, success: true, metadata: { from: currentStatus, to: nextStatus, sellerId } });
 }

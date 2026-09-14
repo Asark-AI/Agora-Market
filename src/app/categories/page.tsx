@@ -4,6 +4,8 @@ import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 
+export const dynamic = 'force-dynamic';
+
 export default async function CategoriesPage({ searchParams }: { searchParams: { category?: string } }) {
   const categories = getCategoryOptions();
   const products = await getActiveProducts();

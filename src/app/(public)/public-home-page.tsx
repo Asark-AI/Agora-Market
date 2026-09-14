@@ -1,12 +1,13 @@
-import { getActiveProducts, getActiveSellers, getCategoryOptions } from '@/lib/storefront';
+import { getActiveProducts, getCategoryOptions } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function PublicHomePage() {
-  const sellers = await getActiveSellers();
-  const products = await getActiveProducts(sellers);
+  const products = await getActiveProducts();
   const categories = getCategoryOptions();
   const flashDeals = products.filter((product) => product.discountPrice && product.discountPrice < product.price).slice(0, 8);
   const flashDealIds = new Set(flashDeals.map((product) => product.id));

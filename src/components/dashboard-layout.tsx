@@ -28,7 +28,7 @@ export default function AppDashboardLayout({
   useEffect(() => {
     if (loading) return;
 
-    if (!seller) {
+    if (!seller || !['approved', 'active'].includes(seller.status)) {
       router.replace('/seller-signup');
     }
   }, [seller, loading, router]);

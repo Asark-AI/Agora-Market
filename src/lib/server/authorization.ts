@@ -25,7 +25,7 @@ export async function requireSellerOwner(identity: DecodedIdToken, sellerId: str
   }
 
   const status = seller.data()?.status;
-  if (status === 'suspended' || status === 'rejected' || status === 'deactivated') {
+  if (!['approved', 'active'].includes(String(status))) {
     throw new AuthorizationError('This seller account is not active.');
   }
 

@@ -26,6 +26,9 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  reload,
   signOut,
   type User as FirebaseUser,
   GoogleAuthProvider,
@@ -90,6 +93,31 @@ const uploadFile = async (file: File, path: string, timeoutMs = 20000): Promise<
   return Promise.race([uploadPromise, timeout]);
 };
 
+const prepareProductImage = async (file: File): Promise<File> => {
+  if (!file.type.startsWith('image/') || typeof document === 'undefined') return file;
+
+  const bitmap = await createImageBitmap(file);
+  const maxDimension = 1600;
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const width = Math.max(1, Math.round(bitmap.width * scale));
+  const height = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return file;
+
+  context.drawImage(bitmap, 0, 0, width, height);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.82));
+  if (!blob) return file;
+
+  return new File([blob], `${file.name.replace(/\.[^.]+$/, '')}.webp`, {
+    type: 'image/webp',
+    lastModified: file.lastModified,
+  });
+};
+
 const ensureFirestore = (): Firestore => {
   if (!db) {
     throw new Error('Firestore is unavailable.');
@@ -107,7 +135,33 @@ const createFallbackUser = (firebaseUser: FirebaseUser | null): User | null => {
     name: firebaseUser.displayName || 'Signed In User',
     email: firebaseUser.email || '',
     role: 'Owner',
+    emailVerified: firebaseUser.emailVerified,
+    roles: { buyer: true, seller: false, rider: false, admin: false },
+    accountStatus: 'active',
   };
+};
+
+const getAuthErrorMessage = (error: unknown) => {
+  const code = (error as { code?: string })?.code;
+  switch (code) {
+    case 'auth/invalid-credential':
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-login-credentials':
+      return 'The email or password is incorrect.';
+    case 'auth/email-already-in-use':
+      return 'This email is already registered. Try signing in instead.';
+    case 'auth/weak-password':
+      return 'Choose a stronger password with at least 8 characters, a number, and a symbol.';
+    case 'auth/invalid-email':
+      return 'Enter a valid email address.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Contact Agora support.';
+    case 'auth/network-request-failed':
+      return 'We could not connect to Agora. Check your connection and try again.';
+    default:
+      return 'Authentication failed. Please try again.';
+  }
 };
 
 const syncServerSession = async (firebaseUser: FirebaseUser) => {
@@ -239,6 +293,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           name: authUser.displayName || 'New User',
           email: authUser.email || '',
           role: 'Owner',
+          emailVerified: authUser.emailVerified,
+          roles: { buyer: true, seller: false, rider: false, admin: false },
+          accountStatus: 'active',
         };
         await setDoc(userRef, userData);
       }
@@ -335,9 +392,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { user } = userCredential;
 
-    const newUser: User = { id: user.uid, name, email, role: 'Owner' };
+    const nameParts = name.trim().split(/\s+/);
+    const newUser: User = {
+      id: user.uid,
+      name,
+      firstName: nameParts[0] || name,
+      lastName: nameParts.slice(1).join(' '),
+      email,
+      role: 'Owner',
+      emailVerified: user.emailVerified,
+      roles: { buyer: true, seller: false, rider: false, admin: false },
+      accountStatus: 'active',
+    };
     set({ user: newUser, firebaseUser: user, loading: false, initialized: true });
     await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
+    await sendEmailVerification(user);
     await get().refreshAuthProfile(user);
     try {
       await syncServerSession(user);
@@ -377,7 +446,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (invalidCredentialCodes.includes(error?.code) || invalidCredentialMessage) {
         throw new Error('The email or password is incorrect.');
       }
-      throw error;
+      throw new Error(getAuthErrorMessage(error));
+    }
+  },
+
+  resendVerificationEmail: async () => {
+    if (!auth?.currentUser) throw new Error('Please sign in to verify your email.');
+    if (auth.currentUser.emailVerified) return;
+    await sendEmailVerification(auth.currentUser);
+  },
+
+  refreshEmailVerification: async () => {
+    if (!auth?.currentUser) return false;
+    await reload(auth.currentUser);
+    set({ firebaseUser: auth.currentUser });
+    await get().refreshAuthProfile(auth.currentUser);
+    return auth.currentUser.emailVerified;
+  },
+
+  sendPasswordReset: async (email) => {
+    if (!auth) throw new Error('Authentication is unavailable.');
+    try {
+      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+    } catch (error) {
+      throw new Error((error as { code?: string })?.code === 'auth/invalid-email' ? 'Enter a valid email address.' : 'We could not send the reset email. Please try again.');
     }
   },
 
@@ -430,7 +522,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setSeller: (seller) => set({ seller }),
 
-  addSeller: async (sellerData, logoFile, bannerFile) => {
+  addSeller: async (sellerData, logoFile) => {
     const user = get().user;
     if (!user) throw new Error('User not authenticated');
 
@@ -439,15 +531,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (logoFile) {
         finalSellerData.logoUrl = await uploadFile(logoFile, `sellers/${user.id}/logo-${Date.now()}`);
     }
-    if (bannerFile) {
-        finalSellerData.storefrontBannerUrl = await uploadFile(bannerFile, `sellers/${user.id}/banner-${Date.now()}`);
-    }
     
     if (!db) {
         throw new Error('Firestore is unavailable.');
     }
 
     const docRef = await addDoc(collection(ensureFirestore(), 'sellers'), finalSellerData);
+    await addDoc(collection(ensureFirestore(), 'sellerApplications'), {
+      userId: user.id,
+      sellerId: docRef.id,
+      storeName: finalSellerData.name,
+      businessType: finalSellerData.businessType,
+      status: 'pending',
+      submittedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
     const newSeller = { id: docRef.id, ...finalSellerData };
     set({ seller: newSeller as Seller });
     await get().refreshAuthProfile(auth?.currentUser ?? null);
@@ -469,7 +567,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       let idx = 0;
       for (const file of Array.from(imageFiles)) {
         console.log(`addProduct: uploading image ${idx} ${file.name}`);
-        const url = await uploadFile(file, `sellers/${seller.id}/products/${Date.now()}-${file.name}`);
+        const optimizedFile = await prepareProductImage(file);
+        const url = await uploadFile(optimizedFile, `sellers/${seller.id}/products/${Date.now()}-${optimizedFile.name}`);
         console.log(`addProduct: uploaded image ${idx} -> ${url}`);
         imageUrls.push(url);
         idx++;
@@ -542,7 +641,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  updateSellerProfile: async (sellerId, updates, logoFile, bannerFile) => {
+  updateSellerProfile: async (sellerId, updates, logoFile) => {
     const user = get().user;
     if (!user) throw new Error('User not authenticated');
     
@@ -550,9 +649,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (logoFile) {
         finalUpdates.logoUrl = await uploadFile(logoFile, `sellers/${user.id}/logo-${Date.now()}`);
-    }
-    if (bannerFile) {
-        finalUpdates.storefrontBannerUrl = await uploadFile(bannerFile, `sellers/${user.id}/banner-${Date.now()}`);
     }
 
     const sellerRef = doc(ensureFirestore(), 'sellers', sellerId);
@@ -618,6 +714,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const user = get().user;
     if (!user) throw new Error('User not authenticated');
 
+    const sellerSnapshot = await getDoc(doc(ensureFirestore(), 'sellers', sellerId));
+    const sellerData = sellerSnapshot.exists() ? sellerSnapshot.data() as Seller : null;
+    const pickup = sellerData ? {
+      sellerName: sellerData.name,
+      address: sellerData.pickupLocation || sellerData.regionId || 'Pickup address pending',
+      regionId: sellerData.regionId,
+      mapsUrl: sellerData.googleMapsUrl,
+      contactPhone: sellerData.phone,
+    } : undefined;
+
     const customerRef = doc(ensureFirestore(), 'sellers', sellerId, 'customers', user.id);
     const customerSnap = await getDoc(customerRef);
     if (!customerSnap.exists()) {
@@ -652,7 +758,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             price: (item.product as Product).discountPrice ?? (item.product as Product).price
         })),
         paymentMethod: 'flutterwave',
-        transactionId: transactionId
+          transactionId: transactionId,
+          pickup,
     };
     
     await addDoc(collection(ensureFirestore(), 'sellers', sellerId, 'orders'), orderData);

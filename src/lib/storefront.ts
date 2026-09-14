@@ -7,6 +7,8 @@ export type StorefrontProduct = Product & {
   sellerName?: string;
 };
 
+const PUBLIC_PRODUCT_LIMIT = 120;
+
 const DEFAULT_PRODUCT_IMAGE = 'https://placehold.co/600x600.png';
 const DEFAULT_BANNER = 'https://picsum.photos/seed/store/1200/400';
 
@@ -95,19 +97,43 @@ export async function getActiveProducts(activeSellers?: Seller[]): Promise<Store
   if (!db || !firestore) return [];
 
   const firestoreDb = db;
-  const sellers = activeSellers ?? await getActiveSellers();
-  const { collection, getDocs, query, where } = firestore;
-  const productsBySeller = await Promise.all(sellers.map(async (seller) => {
-    const sellerProductsSnapshot = await getDocs(query(collection(firestoreDb, 'sellers', seller.id, 'products'), where('status', '==', 'active')));
-    return sellerProductsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...(sanitizeForClient(doc.data() as Omit<Product, 'id'>) as Omit<Product, 'id'>),
-      seller,
-      sellerName: seller.name,
-    })) as StorefrontProduct[];
-  }));
+  const { collection, collectionGroup, documentId, getDocs, limit, orderBy, query, where } = firestore;
+  const productsSnapshot = await getDocs(
+    query(
+      collectionGroup(firestoreDb, 'products'),
+      where('status', '==', 'active'),
+      orderBy('views', 'desc'),
+      limit(PUBLIC_PRODUCT_LIMIT)
+    )
+  );
 
-  const products = productsBySeller.flat();
+  let sellersById = new Map((activeSellers ?? []).map((seller) => [seller.id, seller]));
+  if (!activeSellers) {
+    const sellerIds = [...new Set(productsSnapshot.docs.map((document) => (document.data() as { sellerId?: string }).sellerId).filter(Boolean))] as string[];
+    const sellerSnapshots = await Promise.all(
+      Array.from({ length: Math.ceil(sellerIds.length / 30) }, (_, index) => {
+        const ids = sellerIds.slice(index * 30, index * 30 + 30);
+        return ids.length
+          ? getDocs(query(collection(firestoreDb, 'sellers'), where(documentId(), 'in', ids), where('status', '==', 'active')))
+          : null;
+      }).filter(Boolean) as Promise<Awaited<ReturnType<typeof getDocs>>>[]
+    );
+    sellersById = new Map(sellerSnapshots.flatMap((snapshot) => snapshot.docs.map((document) => [
+      document.id,
+      { id: document.id, ...(sanitizeForClient(document.data()) as Omit<Seller, 'id'>) } as Seller,
+    ])));
+  }
+
+  const products = productsSnapshot.docs.map((document) => {
+    const product = sanitizeForClient(document.data() as Omit<Product, 'id'>) as Omit<Product, 'id'>;
+    const seller = sellersById.get(product.sellerId);
+    return {
+      id: document.id,
+      ...product,
+      seller,
+      sellerName: seller?.name,
+    } as StorefrontProduct;
+  });
 
   return products.sort((a, b) => (b.views || 0) - (a.views || 0));
 }

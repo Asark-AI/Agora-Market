@@ -167,93 +167,6 @@ export const mobileGroupedCategories = [
             }
         ]
     },
-    // REPAIR SERVICES
-    {
-        sectionTitle: 'Repair Service Categories',
-        businessType: 'repairs' as const,
-        categories: [
-            {
-                groupTitle: 'Repair Services',
-                links: [
-                    { name: 'Phone & Tablet Repair', id: 'repair-phones' },
-                    { name: 'Computer & Laptop Repair', id: 'repair-computers' },
-                    { name: 'TV & Audio Repair', id: 'repair-tvaudio' },
-                    { name: 'Game Console Repair', id: 'repair-consoles' },
-                    { name: 'Fridge & Freezer Repair', id: 'repair-fridges' },
-                    { name: 'Washing Machine Repair', id: 'repair-washing-machines' },
-                    { name: 'AC & Fan Repair', id: 'repair-ac' },
-                    { name: 'Stove & Oven Repair', id: 'repair-ovens' },
-                    { name: 'Car Mechanic Services', id: 'repair-cars' },
-                    { name: 'Motorcycle Repair', id: 'repair-motorcycles' },
-                    { name: 'Auto Electrical Services', id: 'repair-auto-electrical' },
-                ]
-            }
-        ]
-    },
-    // GENERAL SERVICES
-    {
-        sectionTitle: 'Service Categories',
-        businessType: 'services' as const,
-        categories: [
-             {
-                groupTitle: 'Property Services',
-                links: [
-                    { name: 'Houses & Apartments for Rent', id: 'property-rent-house' },
-                    { name: 'Houses & Apartments for Sale', id: 'property-sale-house' },
-                    { name: 'Land & Plots for Rent', id: 'property-rent-land' },
-                    { name: 'Land & Plots for Sale', id: 'property-sale-land' },
-                    { name: 'Commercial Property for Rent', id: 'property-rent-commercial' },
-                    { name: 'Commercial Property for Sale', id: 'property-sale-commercial' },
-                    { name: 'Short Let / Airbnb', id: 'property-short-let' },
-                    { name: 'Event Centers & Venues', id: 'property-event-venues' },
-                    { name: 'Co-working Spaces', id: 'property-coworking' },
-                    { name: 'Hotels & Lodges', id: 'property-hotels' },
-                ]
-            },
-            {
-                groupTitle: 'Business & Professional',
-                links: [
-                    { name: 'Automotive Services', id: 'services-automotive' },
-                    { name: 'Building & Trade', id: 'services-building-trade' },
-                    { name: 'Cleaning Services', id: 'services-cleaning' },
-                    { name: 'Computer & IT', id: 'services-it' },
-                    { name: 'Legal & Financial', id: 'services-legal-financial' },
-                    { name: 'Printing & Branding', id: 'services-printing' },
-                    { name: 'Security Services', id: 'services-security' },
-                ]
-            },
-            {
-                groupTitle: 'Events & Creative',
-                links: [
-                    { name: 'DJ & Entertainment', id: 'services-dj-entertainment' },
-                    { name: 'Event Planning & Catering', id: 'services-event-planning' },
-                    { name: 'Photography & Video', id: 'services-photography' },
-                ]
-            },
-             {
-                groupTitle: 'Health & Wellness',
-                links: [
-                     { name: 'Health & Wellness Services', id: 'services-health-wellness' },
-                ]
-            },
-            {
-                groupTitle: 'Logistics & Training',
-                links: [
-                    { name: 'Courier & Delivery', id: 'services-courier-delivery' },
-                    { name: 'Educational & Training', id: 'services-educational' },
-                     { name: 'Vehicle Leasing & Rentals', id: 'services-vehicle-rental' },
-                     { name: 'Tours & Travel Packages', id: 'services-tours' },
-                ]
-            },
-            {
-                groupTitle: 'Other Services',
-                links: [
-                    { name: 'Manufacturing Services', id: 'services-manufacturing', businessType: 'manufacturing' },
-                    { name: 'Repair Services', id: 'services-repair', businessType: 'repairs' },
-                ]
-            }
-        ]
-    },
     // MANUFACTURING
     {
         sectionTitle: 'Manufacturing Categories',
@@ -280,21 +193,10 @@ export const mobileGroupedCategories = [
 export const categories = mobileGroupedCategories.flatMap(section =>
     section.categories.flatMap(group =>
         group.links.map(link => {
-            let itemType: 'product' | 'service';
-            
-            // Explicit businessType on link wins
-            if ('businessType' in link && link.businessType) {
-                itemType = (link.businessType === 'store' || link.businessType === 'manufacturing') ? 'product' : 'service';
-            }
-            // Fallback to section-level businessType
-            else {
-                itemType = (section.businessType === 'store' || section.businessType === 'manufacturing') ? 'product' : 'service';
-            }
-            
             return {
                 id: link.id,
                 name: link.name,
-                type: itemType,
+                type: 'product' as const,
                 parent: group.groupTitle,
                 businessType: ('businessType' in link && link.businessType) ? link.businessType : section.businessType
             }

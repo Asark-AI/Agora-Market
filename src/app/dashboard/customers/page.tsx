@@ -61,13 +61,13 @@ export default function CustomersPage() {
     
     const pageConfig = useMemo(() => {
         if (!seller) return null;
-        const isRepairShop = seller.businessType === 'repairs';
+        const isRepairShop = false;
         return {
             isRepairShop,
-            ordersLink: (isRepairShop ? '/dashboard/repairs' : '/dashboard/orders') as Route,
-            ordersLabel: isRepairShop ? 'View Repair Requests' : 'View Orders',
-            orderIcon: isRepairShop ? <Wrench className="mr-2 h-4 w-4" /> : <ShoppingBag className="mr-2 h-4 w-4" />,
-            dateLabel: isRepairShop ? 'Last Service' : 'Last Order',
+            ordersLink: '/dashboard/orders' as Route,
+            ordersLabel: 'View Orders',
+            orderIcon: <ShoppingBag className="mr-2 h-4 w-4" />,
+            dateLabel: 'Last Order',
             countLabel: isRepairShop ? 'Jobs' : 'Orders',
             pageDescription: isRepairShop ? "A list of your clients." : "A list of customers who have purchased from your store.",
         };

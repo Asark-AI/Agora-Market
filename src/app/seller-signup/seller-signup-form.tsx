@@ -37,7 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 
 import { LiquidLoader } from '@/components/liquid-loader';
-import { Store, Wrench, Briefcase, Factory, Check } from 'lucide-react';
+import { Store, Factory, Check } from 'lucide-react';
 import NextImage from 'next/image';
 import { cn } from '@/lib/utils';
 import { regions, mobileGroupedCategories } from '@/lib/data';
@@ -62,12 +62,11 @@ const fileSchema = z
 
 const formSchema = z.object({
   businessName: z.string().min(2, { message: 'Business name must be at least 2 characters.' }),
-  businessType: z.enum(['store', 'manufacturing', 'repairs', 'services'], {
+  businessType: z.enum(['store', 'manufacturing'], {
     required_error: 'Please select a business type.',
   }),
   categoryIds: z.array(z.string()).min(1, 'Please select at least one category.'),
   logo: fileSchema,
-  banner: fileSchema,
   bio: z.string().min(20, { message: 'Please provide a bio of at least 20 characters.' }),
   address: z.string().min(10, { message: 'Please provide a valid store address.' }),
   regionId: z.string({ required_error: 'Please select a region.' }),
@@ -86,20 +85,12 @@ const formSchema = z.object({
 // Use zod-inferred type but override file fields to FileList | undefined for stronger TS typing
 type FormValues = z.infer<typeof formSchema> & {
   logo?: FileList | null;
-  banner?: FileList | null;
   idUpload?: FileList | null;
 };
 
 interface SellerSignupFormProps {
   user: User;
 }
-
-const businessTypeIcons = {
-  store: Store,
-  manufacturing: Factory,
-  repairs: Wrench,
-  services: Briefcase,
-};
 
 const steps = [
   { id: 'business-type', name: 'Business Type' },
@@ -125,7 +116,6 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
       pickupInfo: '',
       googleMapsUrl: '',
       logo: undefined,
-      banner: undefined,
       idUpload: undefined,
       categoryIds: [],
       subscriptionPlan: 'basic',
@@ -139,7 +129,6 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
 
   // Previews
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
 
   // Filter categories by business type
   const filteredCategoryGroups = useMemo(() => {
@@ -159,9 +148,8 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
   useEffect(() => {
     return () => {
       if (logoPreview) URL.revokeObjectURL(logoPreview);
-      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
     };
-  }, [logoPreview, bannerPreview]);
+  }, [logoPreview]);
 
   const totalSteps = steps.length;
 
@@ -199,14 +187,10 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
 
     if (!files || files.length === 0) {
       form.setValue(name as any, undefined);
-      // remove preview if clearing logo/banner
+      // remove preview if clearing the logo
       if (name === 'logo' && logoPreview) {
         URL.revokeObjectURL(logoPreview);
         setLogoPreview(null);
-      }
-      if (name === 'banner' && bannerPreview) {
-        URL.revokeObjectURL(bannerPreview);
-        setBannerPreview(null);
       }
       return;
     }
@@ -229,10 +213,6 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
       if (logoPreview) URL.revokeObjectURL(logoPreview);
       const url = URL.createObjectURL(file);
       setLogoPreview(url);
-    } else if (name === 'banner') {
-      if (bannerPreview) URL.revokeObjectURL(bannerPreview);
-      const url = URL.createObjectURL(file);
-      setBannerPreview(url);
     } else if (name === 'idUpload') {
       // no preview for ID by default — but could be added similarly
     }
@@ -245,10 +225,6 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
     if (name === 'logo' && logoPreview) {
       URL.revokeObjectURL(logoPreview);
       setLogoPreview(null);
-    }
-    if (name === 'banner' && bannerPreview) {
-      URL.revokeObjectURL(bannerPreview);
-      setBannerPreview(null);
     }
   };
 
@@ -295,9 +271,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
       description: data.bio,
       regionId: data.regionId,
       productCategoryIds: data.businessType === 'store' ? data.categoryIds : [],
-      repairCategoryIds: data.businessType === 'repairs' ? data.categoryIds : [],
       manufacturingCategoryIds: data.businessType === 'manufacturing' ? data.categoryIds : [],
-      serviceCategoryIds: data.businessType === 'services' ? data.categoryIds : [],
       isVerifiedArtisan: false,
       shipsGlobally: false,
       deliveryOptions: ['buyer-pickup', 'seller-delivery'],
@@ -307,7 +281,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
       trustScore: 60,
       followerCount: 0,
       subscriptionPlan: data.subscriptionPlan,
-      status: 'active',
+      status: 'pending',
       customization: {
         layout: 'grid',
         features: {
@@ -315,7 +289,6 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
           ratings: true,
           contact: true,
           contactMethods: ['email'],
-          repairs: data.businessType === 'repairs',
           customOrders: data.businessType === 'manufacturing',
         },
         widgets: { sizeChart: data.categoryIds.some((id) => id.startsWith('fashion')) },
@@ -324,7 +297,7 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
         emailOnOrder: true,
         emailOnMessage: true,
         smsOnOrder: false,
-        emailOnRepairUpdate: true,
+        emailOnRepairUpdate: false,
         smsOnRepairUpdate: false,
       },
       aiAssistantConfig: {
@@ -340,13 +313,12 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
     try {
       // Note: addSeller should handle file uploads. We pass the first file (if any).
       const logoFile = data.logo?.[0] ?? undefined;
-      const bannerFile = data.banner?.[0] ?? undefined;
-      await addSeller(newSellerDataBase, logoFile, bannerFile);
+      await addSeller(newSellerDataBase, logoFile);
       toast({
-        title: 'Store Created!',
-        description: 'You have successfully created your seller account. Redirecting...',
+        title: 'Application submitted',
+        description: 'Your seller application is under review. We will notify you when it is approved.',
       });
-      router.push('/dashboard');
+      router.push('/seller/application-status');
     } catch (error) {
       console.error('Failed to create seller:', error);
       toast({ variant: 'destructive', title: 'Creation Failed', description: 'Could not create your seller profile.' });
@@ -423,8 +395,6 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
   const businessTypes: { id: BusinessType; name: string; description: string; icon: React.ElementType }[] = [
     { id: 'store', name: 'Retail Stores', description: 'Shop finished goods directly.', icon: Store },
     { id: 'manufacturing', name: 'Manufacturers', description: 'For bulk & custom orders.', icon: Factory },
-    { id: 'repairs', name: 'Repair Shops', description: 'Get your items fixed by experts.', icon: Wrench },
-    { id: 'services', name: 'Service Providers', description: 'Hire skilled professionals.', icon: Briefcase },
   ];
 
   return (
@@ -598,49 +568,6 @@ export function SellerSignupForm({ user }: SellerSignupFormProps) {
                       )}
                     />
 
-                    {/* Banner field with preview */}
-                    <FormField
-                      control={form.control}
-                      name="banner"
-                      render={() => (
-                        <FormItem>
-                          <FormLabel>Storefront Banner (Optional)</FormLabel>
-                          <FormControl>
-                            <div className="flex flex-col gap-2">
-                              <input
-                                id="banner-input"
-                                type="file"
-                                accept={ACCEPTED_IMAGE_TYPES.join(',')}
-                                onChange={(e) => validateAndSetFile('banner', e.target.files)}
-                                className="hidden"
-                              />
-                              <label htmlFor="banner-input" className="inline-block w-full">
-                                <div className="border rounded px-3 py-2 text-sm text-muted-foreground flex items-center justify-between">
-                                  <span>{bannerPreview ? 'Change file' : 'Choose a file…'}</span>
-                                  <span className="text-xs text-muted-foreground">{bannerPreview ? 'Selected' : 'No file'}</span>
-                                </div>
-                              </label>
-
-                              {bannerPreview ? (
-                                <div className="relative w-full h-28 border rounded overflow-hidden">
-                                  <img src={bannerPreview} alt="Banner preview" className="object-cover w-full h-full" />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeFile('banner')}
-                                    className="absolute top-1 right-1 bg-white/80 rounded px-2 py-1 text-xs"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="text-xs text-muted-foreground">Accepted: .jpg, .png, .webp — max 5MB</div>
-                              )}
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
 
                   <FormField

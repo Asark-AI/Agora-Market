@@ -8,8 +8,7 @@ import { db } from '@/lib/firebase';
 
 const RecordProductClickInputSchema = z.object({
   sellerId: z.string().describe('The document ID of the seller.'),
-  itemId: z.string().describe('The document ID of the product or service.'),
-  itemType: z.enum(['product', 'service']).describe('The type of item being clicked.'),
+  itemId: z.string().describe('The document ID of the product.'),
   userId: z.string().describe('The ID of the user who clicked.'),
 });
 
@@ -37,9 +36,8 @@ const recordProductClickFlow = ai.defineFlow(
         return { success: false };
       }
 
-      const { sellerId, itemId, itemType, userId } = input;
-      const collectionName = itemType === 'service' ? 'services' : 'products';
-      const itemRef = doc(db, 'sellers', sellerId, collectionName, itemId);
+      const { sellerId, itemId, userId } = input;
+      const itemRef = doc(db, 'sellers', sellerId, 'products', itemId);
 
       const docSnap = await getDoc(itemRef);
 

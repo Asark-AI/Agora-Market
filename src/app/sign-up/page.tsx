@@ -39,8 +39,8 @@ const formSchema = z.object({
     .string()
     .min(8, { message: 'Password must be at least 8 characters.' })
     .regex(
-      /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-      'Password must include upper and lower case letters and a number.'
+      /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/,
+      'Password must include upper and lower case letters, a number, and a symbol.'
     ),
 });
 
@@ -151,7 +151,7 @@ export default function SignUpPage() {
         title: 'Account Created!',
         description: 'You have been logged in.',
       });
-      router.replace('/seller-signup');
+      router.replace('/verify-email');
     } catch (error: unknown) {
       const errMsg = getErrorMessage(error);
       const code = (error as any)?.code;
@@ -184,7 +184,7 @@ export default function SignUpPage() {
           <div className="grid gap-2 text-center">
             <h1 className="text-3xl font-bold font-headline">Create an Account</h1>
             <p className="text-balance text-muted-foreground">
-              Enter your information to get started on your seller journey.
+              Join Agora and start shopping.
             </p>
           </div>
 

@@ -20,7 +20,7 @@ export default function SellerSignupPage() {
     }
 
     if (seller) {
-      router.replace('/dashboard');
+      router.replace(['approved', 'active'].includes(seller.status) ? '/dashboard' : '/seller/application-status');
     }
   }, [user, seller, loading, router]);
 
