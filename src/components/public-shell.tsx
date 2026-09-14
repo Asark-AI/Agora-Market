@@ -70,7 +70,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
           onPointerUp={handleCartPointerUp}
           onPointerCancel={handleCartPointerUp}
           style={{ transform: `translate3d(${cartPosition.x}px, ${cartPosition.y}px, 0)` }}
-          className="fixed bottom-[4.75rem] right-4 z-40 flex cursor-grab touch-none select-none items-center gap-3 rounded-full border border-border bg-foreground px-3 py-2.5 text-background shadow-lg transition-shadow hover:shadow-xl active:cursor-grabbing md:bottom-5 md:right-5"
+          className="fixed bottom-[4.75rem] right-4 z-40 flex cursor-grab touch-none select-none items-center gap-3 rounded-xl border border-foreground bg-foreground px-3 py-2.5 text-background shadow-[0_12px_30px_-16px_rgba(0,0,0,0.5)] transition-shadow hover:shadow-xl active:cursor-grabbing md:bottom-5 md:right-5"
           aria-label={`View cart with ${cartItemCount} items totaling GH₵${cartSubtotal.toFixed(2)}`}
         >
           <span className="relative flex size-8 items-center justify-center bg-background/15"><ShoppingCart className="size-4" /><span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">{cartItemCount}</span></span>

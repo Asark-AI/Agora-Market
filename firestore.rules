@@ -722,6 +722,33 @@ service cloud.firestore {
             delete: if isSuperAdmin();
     }
 
+    match /deliveries/{deliveryId} {
+      allow read: if isSignedIn() && (
+        resource.data.buyerId == request.auth.uid
+        || resource.data.riderId == request.auth.uid
+        || isAdmin()
+        || isSuperAdmin()
+      );
+      allow create: if false;
+      allow update: if isSignedIn() && (
+        isAdmin() || isSuperAdmin()
+        || (resource.data.riderId == request.auth.uid
+          && request.resource.data.buyerId == resource.data.buyerId
+          && request.resource.data.sellerId == resource.data.sellerId
+          && request.resource.data.orderId == resource.data.orderId)
+      );
+      allow delete: if isSuperAdmin();
+
+      match /events/{eventId} {
+        allow read: if isSignedIn() && (
+          get(/databases/$(database)/documents/deliveries/$(deliveryId)).data.buyerId == request.auth.uid
+          || get(/databases/$(database)/documents/deliveries/$(deliveryId)).data.riderId == request.auth.uid
+          || isAdmin() || isSuperAdmin()
+        );
+        allow write: if false;
+      }
+    }
+
     /*
     ==========================================
     REPORTS

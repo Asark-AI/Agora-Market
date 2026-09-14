@@ -42,8 +42,8 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
   };
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden border border-border/70 bg-card transition-shadow duration-150 hover:shadow-sm active:scale-[0.995]">
-      <div className="relative aspect-square overflow-hidden bg-white">
+    <article className="group relative flex h-full flex-col overflow-hidden border border-border/80 bg-card transition-colors duration-150 hover:border-foreground/30 active:scale-[0.995]">
+      <div className="relative aspect-square overflow-hidden bg-[#f5f3ef]">
         <Link href={`/product/${buildProductSlug(product)}`} className="block h-full w-full" aria-label={`View ${product.name}`}>
           <NextImage
             src={getImageUrl(product.images?.[0])}
@@ -52,7 +52,7 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw"
             priority={priority}
             loading={priority ? undefined : 'lazy'}
-            className="object-contain p-2 transition duration-300 group-hover:scale-105"
+            className="object-contain p-3 transition duration-300 group-hover:scale-105"
           />
         </Link>
 
@@ -68,7 +68,7 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
           type="button"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           onClick={handleWishlist}
-          className={`absolute right-2 top-2 z-10 inline-flex items-center justify-center bg-white/90 p-1 text-sm transition ${isWishlisted ? 'text-primary' : 'text-foreground hover:bg-white'}`}
+            className={`absolute right-2 top-2 z-10 inline-flex size-8 items-center justify-center rounded-full bg-white/90 text-sm transition ${isWishlisted ? 'text-primary' : 'text-foreground hover:bg-white'}`}
         >
           <Heart className={`h-3.5 w-3.5 ${isWishlisted ? 'fill-current' : ''}`} />
         </button>

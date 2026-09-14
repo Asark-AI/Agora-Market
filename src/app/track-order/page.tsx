@@ -5,6 +5,7 @@ import { Check, Circle, Clock3, MapPin, Package, RefreshCw, ShieldCheck, Truck }
 import { DemoMap } from '@/components/delivery/demo-map';
 import { DEMO_OTP, readDemoDeliveryState, resetDemoDeliveryState, type DemoDeliveryState } from '@/lib/delivery/demo';
 import type { DeliveryStatus } from '@/lib/types';
+import { LiveDeliveryTracking } from '@/components/delivery/live-delivery-tracking';
 
 const timeline: { status: DeliveryStatus; label: string }[] = [
   { status: 'CREATED', label: 'Order placed' },
@@ -14,7 +15,9 @@ const timeline: { status: DeliveryStatus; label: string }[] = [
   { status: 'DELIVERED', label: 'Delivered' },
 ];
 
-export default function TrackOrderDemoPage() {
+export default function TrackOrderDemoPage({ searchParams }: { searchParams: { deliveryId?: string } }) {
+  const deliveryId = searchParams.deliveryId;
+  if (deliveryId) return <LiveDeliveryTracking deliveryId={deliveryId} />;
   const [state, setState] = useState<DemoDeliveryState | null>(null);
   const [mounted, setMounted] = useState(false);
 
