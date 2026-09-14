@@ -150,7 +150,7 @@ export default function SignUpPage() {
         title: 'Account Created!',
         description: 'You have been logged in.',
       });
-      router.replace('/verify-email');
+      router.replace('/');
     } catch (error: unknown) {
       const errMsg = getErrorMessage(error);
       const code = (error as any)?.code;

@@ -26,9 +26,7 @@ import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendEmailVerification,
   sendPasswordResetEmail,
-  reload,
   signOut,
   type User as FirebaseUser,
   GoogleAuthProvider,
@@ -406,7 +404,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     };
     set({ user: newUser, firebaseUser: user, loading: false, initialized: true });
     await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
-    await sendEmailVerification(user);
     await get().refreshAuthProfile(user);
     try {
       await syncServerSession(user);
@@ -448,20 +445,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       throw new Error(getAuthErrorMessage(error));
     }
-  },
-
-  resendVerificationEmail: async () => {
-    if (!auth?.currentUser) throw new Error('Please sign in to verify your email.');
-    if (auth.currentUser.emailVerified) return;
-    await sendEmailVerification(auth.currentUser);
-  },
-
-  refreshEmailVerification: async () => {
-    if (!auth?.currentUser) return false;
-    await reload(auth.currentUser);
-    set({ firebaseUser: auth.currentUser });
-    await get().refreshAuthProfile(auth.currentUser);
-    return auth.currentUser.emailVerified;
   },
 
   sendPasswordReset: async (email) => {

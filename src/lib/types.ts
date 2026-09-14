@@ -645,8 +645,6 @@ export interface AuthState {
   signUp: (email: string, pass: string, name: string) => Promise<FirebaseUser>;
   logIn: (email: string, pass: string) => Promise<FirebaseUser>;
   signInWithGoogle: () => Promise<FirebaseUser>;
-  resendVerificationEmail: () => Promise<void>;
-  refreshEmailVerification: () => Promise<boolean>;
   sendPasswordReset: (email: string) => Promise<void>;
   logOut: () => Promise<void>;
   

@@ -46,10 +46,6 @@ export default function SignInPage() {
       hasRouted.current = true;
       let active = true;
       const routeUser = async () => {
-        if (firebaseUser && !firebaseUser.emailVerified && firebaseUser.providerData.some((provider) => provider.providerId === 'password')) {
-          router.replace('/verify-email');
-          return;
-        }
         let isSuperAdmin = user?.role === 'Admin';
         let secureSessionReady = false;
         try {
