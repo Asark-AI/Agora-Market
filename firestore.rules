@@ -722,6 +722,10 @@ service cloud.firestore {
             delete: if isSuperAdmin();
     }
 
+    match /emailVerificationOtps/{emailKey} {
+      allow read, write: if false;
+    }
+
     match /deliveries/{deliveryId} {
       allow read: if isSignedIn() && (
         resource.data.buyerId == request.auth.uid

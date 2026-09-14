@@ -481,6 +481,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         name: user.displayName || 'New User',
         email: user.email!,
         role: 'Owner',
+        firstName: user.displayName?.split(/\s+/)[0] || 'New',
+        lastName: user.displayName?.split(/\s+/).slice(1).join(' ') || 'User',
+        emailVerified: user.emailVerified,
+        roles: { buyer: true, seller: false, rider: false, admin: false },
+        accountStatus: 'active',
       };
       await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
       set({ user: newUser, firebaseUser: user });

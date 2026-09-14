@@ -146,11 +146,15 @@ export default function SignUpPage() {
     setIsLoading(true);
     try {
       await signUp(data.email, data.password, data.fullName);
-      toast({
-        title: 'Account Created!',
-        description: 'You have been logged in.',
+      const otpResponse = await fetch('/api/auth/email-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email, action: 'send' }),
       });
-      router.replace('/');
+      const otpData = await otpResponse.json() as { error?: string };
+      if (!otpResponse.ok) throw new Error(otpData.error || 'Unable to send verification code.');
+      toast({ title: 'Verification code sent', description: 'Check your email to finish creating your account.' });
+      router.replace(`/sign-up/verify?email=${encodeURIComponent(data.email)}`);
     } catch (error: unknown) {
       const errMsg = getErrorMessage(error);
       const code = (error as any)?.code;
