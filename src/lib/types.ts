@@ -296,7 +296,93 @@ export type Order = {
     transactionId?: string;
     createdAt?: Date | string | null;
     shipmentIds?: string[];
+    paymentId?: string;
+    paymentReference?: string;
+    paymentStatus?: PaymentStatus;
+    paymentAmountMinor?: number;
+    paymentCurrency?: 'GHS';
+    paymentProvider?: 'paystack' | 'flutterwave' | 'other';
+    paidAt?: string | null;
+    payoutStatus?: PayoutStatus;
+    buyerProtectionStatus?: BuyerProtectionStatus;
+    disputeStatus?: DisputeStatus;
 };
+
+  export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'REVERSED';
+  export type PayoutStatus = 'NOT_APPLICABLE' | 'PENDING' | 'HELD' | 'ELIGIBLE' | 'PROCESSING' | 'PAID' | 'FAILED' | 'REVERSED' | 'DISPUTED';
+  export type BuyerProtectionStatus = 'NOT_STARTED' | 'ACTIVE' | 'EXPIRED' | 'DISPUTED';
+  export type DisputeStatus = 'NONE' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED_BUYER' | 'RESOLVED_SELLER' | 'PARTIAL_REFUND' | 'CLOSED';
+
+  export type Payment = {
+    id: string;
+    orderId: string;
+    buyerId: string;
+    reference: string;
+    amountMinor: number;
+    currency: 'GHS';
+    status: PaymentStatus;
+    provider: 'paystack';
+    providerTransactionId?: string;
+    channel?: string;
+    paidAt?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    verificationStatus: 'UNVERIFIED' | 'VERIFIED' | 'MISMATCH' | 'REJECTED';
+    webhookProcessed: boolean;
+    refundedAmountMinor: number;
+    failureReason?: string;
+  };
+
+  export type LedgerTransactionType = 'CUSTOMER_PAYMENT' | 'AGORA_COMMISSION' | 'DELIVERY_FEE' | 'SELLER_EARNING' | 'SELLER_PAYOUT' | 'REFUND' | 'PARTIAL_REFUND' | 'ADJUSTMENT' | 'CHARGEBACK' | 'TRANSFER_REVERSAL';
+  export type LedgerDirection = 'CREDIT' | 'DEBIT';
+
+  export type FinancialTransaction = {
+    id: string;
+    orderId?: string;
+    paymentId?: string;
+    sellerId?: string;
+    buyerId?: string;
+    type: LedgerTransactionType;
+    amountMinor: number;
+    currency: 'GHS';
+    direction: LedgerDirection;
+    status: 'PENDING' | 'POSTED' | 'REVERSED';
+    reference: string;
+    description: string;
+    createdAt: string;
+    createdBy: string;
+    metadata?: Record<string, string | number | boolean | null>;
+  };
+
+  export type SellerPayout = {
+    id: string;
+    sellerId: string;
+    orderId: string;
+    amountMinor: number;
+    currency: 'GHS';
+    status: PayoutStatus;
+    recipientCode?: string;
+    transferCode?: string;
+    reference: string;
+    reason?: string;
+    initiatedAt?: string;
+    completedAt?: string;
+    failedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+    initiatedBy?: string;
+  };
+
+  export type PaymentAttempt = {
+    id: string;
+    orderId: string;
+    paymentId: string;
+    reference: string;
+    status: PaymentStatus;
+    amountMinor: number;
+    currency: 'GHS';
+    createdAt: string;
+  };
 
   export type DeliveryProvider = 'AGORA' | 'STORE' | 'PARTNER' | 'PICKUP';
 

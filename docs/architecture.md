@@ -99,3 +99,17 @@ rider:       com.agora.rider
 
 The profiles should control app name, icon, splash, permissions, deep links, and push configuration. GPS/background location permissions belong only to the rider profile.
 
+## Paystack payment foundation
+
+The shared payment domain types, integer money helpers, and server-only Paystack client are now available. The current Flutterwave/client-side checkout remains unchanged until the server-side order and payment migration is implemented as a controlled phase.
+
+Required server environment variables:
+
+```text
+PAYSTACK_SECRET_KEY=...
+NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=...
+PAYSTACK_WEBHOOK_SECRET=...
+```
+
+The Paystack secret must never use a `NEXT_PUBLIC_` prefix, appear in Firestore, or be returned from an API route. The authenticated `/api/payments/paystack/status` route only returns safe configuration presence and currency information.
+
