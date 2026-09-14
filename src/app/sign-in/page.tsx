@@ -64,7 +64,8 @@ export default function SignInPage() {
         }
 
         if (active) {
-          const targetPath = isSuperAdmin && secureSessionReady ? '/admin' : '/';
+          const requestedPath = searchParams.get('next');
+          const targetPath = isSuperAdmin && secureSessionReady ? (requestedPath || '/admin') : '/';
           router.replace(targetPath);
         }
       };
