@@ -11,7 +11,7 @@ function assertReason(reason: string) {
   return reason.trim();
 }
 
-function assertTransition(current: string, next: string, allowed: Record<string, string[]>) {
+function assertTransition(current: string, next: string, allowed: Record<string, string[] | undefined>) {
   if (!allowed[current]?.includes(next)) throw new Error(`Cannot change ${current || 'unknown'} to ${next}.`);
 }
 

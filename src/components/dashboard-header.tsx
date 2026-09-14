@@ -20,7 +20,7 @@ export function DashboardHeader({
   onOpenMobileMenu,
 }: {
   title: string;
-  onOpenMobileMenu: () => void;
+  onOpenMobileMenu?: () => void;
 }) {
   const { user, seller, logOut, sellerMessages } = useAuth();
 
@@ -38,7 +38,7 @@ export function DashboardHeader({
             size="icon"
             variant="outline"
             className="md:hidden h-9 w-9"
-            onClick={onOpenMobileMenu}
+            onClick={onOpenMobileMenu ?? undefined}
             aria-label="Open menu"
           >
             <Menu className="h-4 w-4" />

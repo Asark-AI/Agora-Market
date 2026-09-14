@@ -9,7 +9,7 @@ import { DashboardNav } from '@/components/dashboard-nav';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { PageLoader } from '@/components/page-loader';
 import Link from 'next/link';
-import { LayoutDashboard, Package, ShoppingCart, MessageSquare, Plus } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, MessageSquare } from 'lucide-react';
 
 const AppTour = dynamic(() => import('@/components/app-tour').then((mod) => mod.AppTour), {
   ssr: false,
@@ -90,10 +90,6 @@ export default function AppDashboardLayout({
             <main className="p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8">
               <SidebarInset>{children}</SidebarInset>
             </main>
-            {/* Floating Add Product Button (Mobile) */}
-            <Link href="/dashboard/add-product" className="fixed bottom-20 right-4 z-20 md:hidden inline-flex items-center justify-center h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl active:scale-95 transition-all" title="Add product" aria-label="Add product">
-              <Plus className="h-6 w-6" />
-            </Link>
           </div>
         </div>
       </div>

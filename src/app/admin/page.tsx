@@ -22,6 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Seller } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import type { AdminRecord } from '@/hooks/use-super-admin';
 
 type SellerWithCreatedAt = Seller & { createdAt?: unknown };
 
@@ -94,7 +95,7 @@ export default function SuperAdminPage() {
   }, [authLoading, claimsLoading, isSuperAdmin, router, user]);
 
   const recentSellers = useMemo(
-    () => [...snapshot.sellers].sort((left, right) => String((right as SellerWithCreatedAt).createdAt || '').localeCompare(String((left as SellerWithCreatedAt).createdAt || ''))).slice(0, 6),
+    () => [...snapshot.sellers].sort((left, right) => String((right as SellerWithCreatedAt).createdAt ?? '').localeCompare(String((left as SellerWithCreatedAt).createdAt ?? ''))).slice(0, 6),
     [snapshot.sellers]
   );
   const recentApplications = useMemo(
@@ -126,13 +127,14 @@ export default function SuperAdminPage() {
   };
 
   const handleDeleteProduct = async (product: AdminRecord) => {
+    const typedProduct = product as AdminRecord & { sellerId?: string; id: string };
     const name = getRecordName(product, 'this product');
     if (!window.confirm(`Delete ${name} permanently from the seller catalog?`)) return;
     const reason = window.prompt(`Reason for deleting ${name} (minimum 5 characters):`, 'Marketplace policy violation');
     if (!reason || reason.trim().length < 5) return;
     setDeletingKey(`product:${product.id}`);
     try {
-      await deleteProduct(String(product.sellerId), product.id, reason);
+      await deleteProduct(String(typedProduct.sellerId), typedProduct.id, reason);
       toast({ title: 'Product deleted', description: `${name} was removed from the catalog.` });
     } catch (deleteError) {
       toast({ variant: 'destructive', title: 'Unable to delete product', description: deleteError instanceof Error ? deleteError.message : 'Please try again.' });
@@ -142,11 +144,12 @@ export default function SuperAdminPage() {
   };
 
   const handleModerate = async (type: 'seller' | 'product' | 'user', record: AdminRecord, nextStatus: string) => {
+    const typedRecord = record as AdminRecord & { sellerId?: string; createdAt?: unknown };
     const name = getRecordName(record, 'this record');
     const reason = window.prompt(`Reason for changing ${name} to ${nextStatus} (minimum 5 characters):`);
     if (!reason || reason.trim().length < 5) return;
     try {
-      await moderate(type, record.id, nextStatus, reason, typeof record.sellerId === 'string' ? record.sellerId : undefined);
+      await moderate(type, record.id, nextStatus, reason, typeof typedRecord.sellerId === 'string' ? typedRecord.sellerId : undefined);
       toast({ title: 'Moderation action completed', description: `${name} is now ${nextStatus}.` });
     } catch (moderationError) {
       toast({ variant: 'destructive', title: 'Action not completed', description: moderationError instanceof Error ? moderationError.message : 'Please try again.' });
@@ -185,7 +188,12 @@ export default function SuperAdminPage() {
         {view !== 'overview' && (
           <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_16px_35px_-28px_rgba(15,23,42,0.5)]">
             <div className="border-b border-slate-100 px-5 py-5 sm:px-6"><p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Operations workspace</p><h2 className="mt-2 font-headline text-2xl font-semibold capitalize">{view}</h2><p className="mt-1 text-sm text-slate-500">Search and review live marketplace records.</p></div>
-            {dataLoading ? <div className="space-y-3 p-6">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-14 w-full" />)}</div> : focusedRecords.length === 0 ? <div className="p-12 text-center text-sm text-slate-500">No matching {view} records found.</div> : <div className="divide-y divide-slate-100">{focusedRecords.map((record) => <div key={record.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-6"><div className="min-w-0"><p className="truncate text-sm font-semibold">{getRecordName(record, 'Unnamed record')}</p><p className="mt-1 truncate text-xs text-slate-500">{getStatus(record)} · {formatDate(record.createdAt)}</p></div><div className="flex items-center gap-3"><Badge variant="outline" className={statusTone(getStatus(record))}>{getStatus(record)}</Badge>{view === 'sellers' && getStatus(record) === 'pending' && <Button size="sm" onClick={() => void handleModerate('seller', record, 'approved')}>Approve</Button>}{view === 'sellers' && getStatus(record) === 'active' && <Button size="sm" variant="outline" onClick={() => void handleModerate('seller', record, 'suspended')}>Suspend</Button>}{view === 'users' && getStatus(record) !== 'suspended' && <Button size="sm" variant="outline" onClick={() => void handleModerate('user', record, 'suspended')}>Suspend</Button>}{view === 'users' && getStatus(record) === 'suspended' && <Button size="sm" onClick={() => void handleModerate('user', record, 'active')}>Restore</Button>}{view === 'products' && getStatus(record) === 'pending_review' && <Button size="sm" onClick={() => void handleModerate('product', record, 'approved')}>Approve</Button>}</div></div>)}</div>}
+            {dataLoading ? <div className="space-y-3 p-6">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-14 w-full" />)}</div> : focusedRecords.length === 0 ? <div className="p-12 text-center text-sm text-slate-500">No matching {view} records found.</div> : <div className="divide-y divide-slate-100">{focusedRecords.map((record) => {
+              const recordWithMeta = record as Record<string, unknown> & { createdAt?: unknown };
+              return (
+                <div key={record.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-6"><div className="min-w-0"><p className="truncate text-sm font-semibold">{getRecordName(record, 'Unnamed record')}</p><p className="mt-1 truncate text-xs text-slate-500">{getStatus(record)} · {formatDate(recordWithMeta.createdAt)}</p></div><div className="flex items-center gap-3"><Badge variant="outline" className={statusTone(getStatus(record))}>{getStatus(record)}</Badge>{view === 'sellers' && getStatus(record) === 'pending' && <Button size="sm" onClick={() => void handleModerate('seller', record, 'approved')}>Approve</Button>}{view === 'sellers' && getStatus(record) === 'active' && <Button size="sm" variant="outline" onClick={() => void handleModerate('seller', record, 'suspended')}>Suspend</Button>}{view === 'users' && getStatus(record) !== 'suspended' && <Button size="sm" variant="outline" onClick={() => void handleModerate('user', record, 'suspended')}>Suspend</Button>}{view === 'users' && getStatus(record) === 'suspended' && <Button size="sm" onClick={() => void handleModerate('user', record, 'active')}>Restore</Button>}{view === 'products' && getStatus(record) === 'pending_review' && <Button size="sm" onClick={() => void handleModerate('product', record, 'approved')}>Approve</Button>}</div></div>
+              );
+            })}</div>}
           </section>
         )}
 

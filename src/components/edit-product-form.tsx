@@ -150,16 +150,19 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         let images: string[] = [];
         let price = 0;
         let costPrice: number | '' = '';
+        const isProductItem = 'stock' in itemToEdit || 'costPrice' in itemToEdit || 'barcode' in itemToEdit;
 
-        if ('price' in itemToEdit) { // It's a Product
-            description = typeof itemToEdit.description === 'string' ? itemToEdit.description : (itemToEdit.description?.english || '');
-            images = itemToEdit.images || [];
-            price = itemToEdit.price;
-            costPrice = itemToEdit.costPrice || '';
-        } else { // It's a ServiceProduct
-            description = itemToEdit.description || '';
-            images = itemToEdit.coverImageUrl ? [itemToEdit.coverImageUrl] : [];
-            price = itemToEdit.flatFee || itemToEdit.hourlyRate || 0;
+        if (isProductItem) {
+            const productItem = itemToEdit as Product;
+            description = typeof productItem.description === 'string' ? productItem.description : (productItem.description?.english || '');
+            images = productItem.images || [];
+            price = Number(productItem.price ?? 0);
+            costPrice = productItem.costPrice ?? '';
+        } else {
+            const serviceItem = itemToEdit as ServiceProduct;
+            description = serviceItem.description || '';
+            images = serviceItem.coverImageUrl ? [serviceItem.coverImageUrl] : [];
+            price = Number(serviceItem.flatFee ?? serviceItem.hourlyRate ?? 0);
         }
 
         setCurrentImages(images);
@@ -248,10 +251,10 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         };
     }
 
-    const payload: Partial<Product | ServiceProduct> = {
+    const payload: Partial<Product> = {
         name: data.name,
-        description: descriptionObject,
-        price: data.price,
+        description: descriptionObject as Product['description'],
+        price: Number(data.price ?? 0),
         costPrice: (data.costPrice && Number(data.costPrice) > 0) ? Number(data.costPrice) : undefined,
         categoryId: data.categoryId,
         specifications: data.specifications,
@@ -261,11 +264,11 @@ export function EditProductForm({ productId }: EditProductFormProps) {
     };
     
     if ('stock' in item) {
-        (payload as Partial<Product>).stock = data.stock;
-        (payload as Partial<Product>).barcode = data.barcode;
+        payload.stock = data.stock;
+        payload.barcode = data.barcode;
     }
     
-    updateProduct(productId, payload);
+    await updateProduct(productId, payload as Partial<Product>);
       
     toast({
       title: "Item Updated!",

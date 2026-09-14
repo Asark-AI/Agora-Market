@@ -37,17 +37,18 @@ export function useSuperAdmin() {
       setClaimsLoading(true);
       try {
         const token = await firebaseUser.getIdTokenResult(true);
-        if (active) setIsSuperAdmin(token.claims.superAdmin === true);
+        const roleBasedAdmin = user?.role === 'Admin';
+        if (active) setIsSuperAdmin(token.claims.superAdmin === true || roleBasedAdmin);
       } catch (claimError) {
         console.error('Unable to verify admin claims:', claimError);
-        if (active) setIsSuperAdmin(false);
+        if (active) setIsSuperAdmin(user?.role === 'Admin');
       } finally {
         if (active) setClaimsLoading(false);
       }
     }
     void loadClaims();
     return () => { active = false; };
-  }, [firebaseUser]);
+  }, [firebaseUser, user?.role]);
 
   const refresh = async (view: AdminView = 'overview', search = '') => {
     if (!isSuperAdmin) return;

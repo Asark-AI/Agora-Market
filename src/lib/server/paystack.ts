@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
 const PAYSTACK_API_BASE = 'https://api.paystack.co';
 
 export class PaystackError extends Error {
@@ -9,17 +11,61 @@ export class PaystackError extends Error {
   }
 }
 
-function getSecretKey(): string {
+function isPlaceholderValue(value?: string): boolean {
+  if (!value) return true;
+  const normalized = value.trim();
+  return normalized.length === 0
+    || normalized.toUpperCase().startsWith('REPLACE_WITH_')
+    || normalized.toUpperCase().includes('PLACEHOLDER')
+    || normalized.toUpperCase().includes('YOUR_PAYSTACK')
+    || normalized.includes('abc123')
+    || normalized.includes('def456')
+    || normalized.includes('changeme');
+}
+
+export function isPaystackConfigured(): boolean {
   const secret = process.env.PAYSTACK_SECRET_KEY;
-  if (!secret) throw new PaystackError('Paystack is not configured.');
+  const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
+  const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET;
+
+  return !isPlaceholderValue(secret)
+    && !isPlaceholderValue(publicKey)
+    && (!webhookSecret || !isPlaceholderValue(webhookSecret));
+}
+
+export function getPaystackSecretKey(): string {
+  const mainSecret = process.env.PAYSTACK_SECRET_KEY;
+  const fallbackSecret = process.env.PAYSTACK_WEBHOOK_SECRET;
+  const secret = !isPlaceholderValue(mainSecret) ? mainSecret : fallbackSecret;
+
+  if (!secret || isPlaceholderValue(secret)) {
+    throw new PaystackError('Paystack is not configured. Add valid local keys to .env.local.');
+  }
+
   return secret;
+}
+
+export function getWebhookSecret(): string {
+  return getPaystackSecretKey();
+}
+
+export function verifyWebhookSignature(rawBody: string, signature: string | null): boolean {
+  if (!signature || !rawBody) return false;
+
+  try {
+    const expected = createHmac('sha512', getPaystackSecretKey()).update(rawBody).digest('hex');
+    if (expected.length !== signature.length) return false;
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch {
+    return false;
+  }
 }
 
 async function paystackRequest<T>(path: string, init: RequestInit): Promise<T> {
   const response = await fetch(`${PAYSTACK_API_BASE}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${getSecretKey()}`,
+      Authorization: `Bearer ${getPaystackSecretKey()}`,
       'Content-Type': 'application/json',
       ...(init.headers || {}),
     },

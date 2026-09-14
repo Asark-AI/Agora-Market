@@ -292,7 +292,7 @@ export type Order = {
     total: number;
     status: OrderStatus;
     items: OrderItem[];
-    paymentMethod?: 'cash' | 'mobile_money' | 'card' | 'other' | 'flutterwave';
+    paymentMethod?: 'cash' | 'mobile_money' | 'card' | 'other' | 'flutterwave' | 'paystack';
     transactionId?: string;
     createdAt?: Date | string | null;
     shipmentIds?: string[];

@@ -27,7 +27,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
     const { toast } = useToast();
 
     const [step, setStep] = useState(0);
-    const { items, addItem, updateItem, removeItem, clear, totalCost } = usePurchaseOrder();
+    const { items, addItem, updateItem, removeItem, clear, totalCost: getTotalCost } = usePurchaseOrder();
     const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSupplierPopoverOpen, setIsSupplierPopoverOpen] = useState(false);
@@ -36,7 +36,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
     const products = useMemo(() => sellerProducts.filter(p => 'stock' in p) as Product[], [sellerProducts]);
 
     // totalCost is available from hook; keep derived value for reactivity
-    const derivedTotalCost = useMemo(() => totalCost(), [items]);
+    const derivedTotalCost = useMemo(() => getTotalCost(), [items, getTotalCost]);
 
     const addToCart = (product: Product) => {
         addItem(product);
@@ -77,7 +77,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
         addPurchaseOrder({
             supplierId: selectedSupplier.id,
             date: new Date().toISOString(),
-            totalCost,
+            totalCost: getTotalCost(),
             status: 'draft',
             items: poItems,
         });
@@ -144,7 +144,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
                             <CommandGroup>
                                 {products.map((product) => (
                                     <CommandItem key={product.id} onSelect={() => addToCart(product)}>
-                                        <Check className={cn("mr-2 h-4 w-4", cart.has(product.id) ? "opacity-100" : "opacity-0")} />
+                                        <Check className={cn("mr-2 h-4 w-4", items.some((item) => item.product.id === product.id) ? "opacity-100" : "opacity-0")} />
                                         {product.name}
                                     </CommandItem>
                                 ))}
@@ -183,7 +183,7 @@ export function PurchaseOrderModal({ isOpen, onOpenChange }: PurchaseOrderModalP
                 <Table>
                     <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>Qty</TableHead><TableHead>Cost</TableHead><TableHead className="text-right">Subtotal</TableHead></TableRow></TableHeader>
                     <TableBody>
-                        {Array.from(cart.values()).map(({ product, quantity, cost }) => (
+                        {items.map(({ product, quantity, cost }) => (
                             <TableRow key={product.id}>
                                 <TableCell>{product.name}</TableCell>
                                 <TableCell>{quantity}</TableCell>

@@ -18,6 +18,7 @@ export default function AppDashboardLayout({
   const { seller, loading } = useAuth();
   const router = useRouter();
   const [fallbackTimer, setFallbackTimer] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setFallbackTimer(true), 3000);
@@ -45,9 +46,9 @@ export default function AppDashboardLayout({
   return (
     <SidebarProvider>
       <div className="flex h-screen">
-        <DashboardNav />
+        <DashboardNav mobileOpen={mobileNavOpen} onMobileOpenChange={setMobileNavOpen} />
         <div className="flex flex-col flex-1">
-            <DashboardHeader title={config.name} />
+            <DashboardHeader title={config.name} onOpenMobileMenu={() => setMobileNavOpen(true)} />
             <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
                 <SidebarInset>{children}</SidebarInset>
             </main>

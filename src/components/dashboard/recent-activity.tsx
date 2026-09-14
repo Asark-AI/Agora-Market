@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/card';
 import { formatDistanceToNow } from 'date-fns';
-import type { Order, Product } from '@/lib/types';
+import type { Order, Product, ServiceProduct } from '@/lib/types';
 
 interface RecentActivityItem {
   id: string;
@@ -14,7 +14,7 @@ interface RecentActivityItem {
 
 interface RecentActivityProps {
   orders: Order[];
-  products: Product[];
+  products: Array<Product | ServiceProduct>;
   messages: { timestamp?: Date | string; createdAt?: Date | string; senderId: string; userId: string; text?: string }[];
 }
 
@@ -23,11 +23,12 @@ export function RecentActivity({ orders, products, messages }: RecentActivityPro
 
   // Add recent orders
   orders.slice(0, 3).forEach((order) => {
+    const orderDate = order.createdAt ? (order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt)) : new Date(order.date || Date.now());
     activities.push({
       id: `order-${order.id}`,
       type: 'order',
       title: `New order #${order.id.slice(0, 8)}`,
-      timestamp: order.createdAt instanceof Date ? order.createdAt : new Date(order.createdAt),
+      timestamp: orderDate,
       icon: '📦',
     });
   });
@@ -37,11 +38,12 @@ export function RecentActivity({ orders, products, messages }: RecentActivityPro
     .filter((p) => p.status === 'active')
     .slice(0, 2)
     .forEach((product) => {
+      const productDate = product.createdAt ? (product.createdAt instanceof Date ? product.createdAt : new Date(product.createdAt)) : new Date(Date.now());
       activities.push({
         id: `product-${product.id}`,
         type: 'product',
         title: `Product published: ${product.name}`,
-        timestamp: product.createdAt instanceof Date ? product.createdAt : new Date(product.createdAt || Date.now()),
+        timestamp: productDate,
         icon: '🛍️',
       });
     });

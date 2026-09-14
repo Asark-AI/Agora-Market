@@ -57,47 +57,48 @@ export default function ProductsPage() {
 
     return (
         <Card>
-            <CardHeader className="flex-wrap gap-4">
-                 <div className="flex-wrap gap-y-4 flex flex-col items-center text-center">
+            <CardHeader className="gap-4">
+                <div className="flex items-center justify-between gap-3">
                     <div>
-                        <CardTitle className="font-headline">My {pageConfig.itemTypePlural}</CardTitle>
-                        <CardDescription>View, manage, and add new {pageConfig.itemTypePlural.toLowerCase()}.</CardDescription>
+                        <CardTitle className="font-headline text-2xl">My {pageConfig.itemTypePlural}</CardTitle>
+                        <CardDescription>Manage your listings and keep stock moving.</CardDescription>
                     </div>
-                     <div className="flex flex-wrap justify-center gap-2">
-                        {pageConfig.isStore ? (
-                             <>
-                                <Button asChild variant="outline" onClick={showLoader}>
-                                    <Link href="/dashboard/stock">
-                                        <ListTree className="mr-2 size-5" /> Manage Inventory
-                                    </Link>
-                                </Button>
-                                 <Button asChild variant="outline" onClick={showLoader}>
-                                    <Link href="#">
-                                        <Upload className="mr-2 size-5" /> Bulk Upload (CSV)
-                                    </Link>
-                                </Button>
-                            </>
-                        ) : (
-                            <>
-                                <Button asChild variant="outline" onClick={showLoader}>
-                                    <Link href="#">
-                                        <Calendar className="mr-2 size-5" /> Availability Calendar
-                                    </Link>
-                                </Button>
-                                 <Button asChild variant="outline" onClick={showLoader}>
-                                    <Link href="#">
-                                        <Tags className="mr-2 size-5" /> Packages & Pricing
-                                    </Link>
-                                </Button>
-                            </>
-                        )}
-                         <Button asChild onClick={showLoader}>
-                            <Link href="/dashboard/add-product">
-                                <PlusCircle className="mr-2 size-5" />
-                                Add New {pageConfig.itemType}
-                            </Link>
-                        </Button>
-                    </div>
+                    <Button asChild onClick={showLoader} className="shrink-0">
+                        <Link href="/dashboard/add-product">
+                            <PlusCircle className="mr-2 size-4" />
+                            Add Product
+                        </Link>
+                    </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                    {pageConfig.isStore ? (
+                        <>
+                            <Button asChild variant="outline" onClick={showLoader}>
+                                <Link href="/dashboard/stock">
+                                    <ListTree className="mr-2 size-4" /> Manage Inventory
+                                </Link>
+                            </Button>
+                            <Button asChild variant="outline" onClick={showLoader}>
+                                <Link href="#">
+                                    <Upload className="mr-2 size-4" /> Bulk Upload
+                                </Link>
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button asChild variant="outline" onClick={showLoader}>
+                                <Link href="#">
+                                    <Calendar className="mr-2 size-4" /> Availability
+                                </Link>
+                            </Button>
+                            <Button asChild variant="outline" onClick={showLoader}>
+                                <Link href="#">
+                                    <Tags className="mr-2 size-4" /> Pricing
+                                </Link>
+                            </Button>
+                        </>
+                    )}
                 </div>
             </CardHeader>
             <CardContent>

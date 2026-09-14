@@ -24,7 +24,7 @@ function serialize(value: unknown): unknown {
 }
 
 function serializeDocs(snapshot: QuerySnapshot) {
-  return snapshot.docs.map((document) => ({ id: document.id, ...serialize(document.data()) })) as AdminDataRecord[];
+  return snapshot.docs.map((document) => ({ id: document.id, ...(serialize(document.data()) as Record<string, unknown>) })) as AdminDataRecord[];
 }
 
 function applySearch(query: Query, field: string, search: string) {
@@ -42,7 +42,7 @@ export async function getAdminData(view: AdminView = 'overview', search = '', pa
     let query = db.collectionGroup('products').limit(limit);
     if (normalizedSearch) query = applySearch(query, 'name', normalizedSearch).limit(limit);
     const snapshot = await query.get();
-    return { records: snapshot.docs.map((document) => ({ id: document.id, sellerId: document.ref.parent.parent?.id || '', ...serialize(document.data()) })) as AdminDataRecord[], hasMore: snapshot.size === limit };
+    return { records: snapshot.docs.map((document) => ({ id: document.id, sellerId: document.ref.parent.parent?.id || '', ...(serialize(document.data()) as Record<string, unknown>) })) as AdminDataRecord[], hasMore: snapshot.size === limit };
   }
 
   const collectionName = view === 'users' ? 'users' : view === 'sellers' ? 'sellers' : view === 'applications' ? 'sellerApplications' : 'reports';

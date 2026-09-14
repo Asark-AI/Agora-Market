@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/hooks/use-cart';
 import { useAuth } from '@/hooks/use-auth';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,8 +19,8 @@ import type { Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CheckoutPage() {
-  const { items, removeFromCart, updateQuantity, clearCart } = useCart();
-  const { user, addOrderFromCart, seller } = useAuth();
+  const { items, removeFromCart, updateQuantity } = useCart();
+  const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -37,49 +36,59 @@ export default function CheckoutPage() {
         return acc + price * item.quantity;
     }, 0);
   }, [items]);
-  
+
   const sellerId = items.length > 0 ? items[0].product.sellerId : null;
 
-  const flutterwaveConfig = {
-    public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || '',
-    tx_ref: Date.now().toString(),
-    amount: total,
-    currency: 'GHS',
-    payment_options: 'card,mobilemoneyghana',
-    customer: {
-      email: user?.email || '',
-      phone_number: user?.phone || '',
-      name: user?.name || '',
-    },
-    customizations: {
-      title: 'Agora Store Purchase',
-      description: `Payment for ${items.length} item(s)`,
-      logo: '/agora-logo.png',
-    },
+  const handlePaystackCheckout = async () => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Sign in required', description: 'Sign in before completing checkout.' });
+      router.push('/sign-in');
+      return;
+    }
+
+    if (!navigator.onLine) {
+      toast({ variant: 'destructive', title: 'Internet connection required', description: 'Reconnect to complete checkout and payment.' });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/payments/paystack/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: user.email,
+          amount: Number(total.toFixed(2)),
+          amountMajor: Number(total.toFixed(2)),
+          callbackUrl: typeof window !== 'undefined' ? `${window.location.origin}/checkout/complete` : undefined,
+          sellerId: sellerId || undefined,
+          items: items.map(({ product, quantity }) => ({
+            productId: product.id,
+            quantity,
+            price: (product as Product).discountPrice ?? (product as Product).price,
+          })),
+          total,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.authorizationUrl) {
+        throw new Error(data?.error || 'Unable to start payment.');
+      }
+
+      window.location.assign(data.authorizationUrl);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Payment could not be started',
+        description: error instanceof Error ? error.message : 'Please try again in a moment.',
+      });
+      setIsLoading(false);
+    }
   };
-
-    const handlePayment = useFlutterwave(flutterwaveConfig);
-
-    const onPaymentSuccess = async (response: any) => {
-        closePaymentModal();
-        if (response.status !== 'successful' || !sellerId) {
-            toast({ variant: 'destructive', title: 'Payment was not completed', description: 'No order was created.' });
-            return;
-        }
-        setIsLoading(true);
-        try {
-            await addOrderFromCart(sellerId, items, total, String(response.transaction_id || flutterwaveConfig.tx_ref));
-            clearCart();
-            toast({ title: 'Order confirmed', description: 'Your payment was received and your order is being prepared.' });
-            router.push('/profile?tab=orders');
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Order confirmation failed', description: 'Payment may have completed. Please contact support before retrying.' });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handlePaymentClose = () => setIsLoading(false);
 
   if (!isClient) {
     return (
@@ -175,22 +184,12 @@ export default function CheckoutPage() {
                             </div>
                         </CardContent>
                         <CardFooter>
-                                                        <Button className="w-full" size="lg" disabled={isLoading || !user || typeof navigator !== 'undefined' && !navigator.onLine} onClick={() => {
-                                                                if (!user) {
-                                                                    toast({ variant: 'destructive', title: 'Sign in required', description: 'Sign in before completing checkout.' });
-                                                                    router.push('/sign-in');
-                                                                    return;
-                                                                }
-                                                                if (!navigator.onLine) {
-                                                                    toast({ variant: 'destructive', title: 'Internet connection required', description: 'Reconnect to complete checkout and payment.' });
-                                                                    return;
-                                                                }
-                                                                setIsLoading(true);
-                                handlePayment({
-                                    callback: onPaymentSuccess,
-                                                                        onClose: handlePaymentClose,
-                                });
-                            }}>
+                            <Button
+                              className="w-full"
+                              size="lg"
+                              disabled={isLoading || !user || (typeof navigator !== 'undefined' && !navigator.onLine)}
+                              onClick={handlePaystackCheckout}
+                            >
                                 {isLoading ? <LiquidLoader /> : 'Proceed to Payment'}
                             </Button>
                         </CardFooter>

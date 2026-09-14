@@ -4,13 +4,13 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { Card, CardContent } from '@/components/ui/card';
 import { DollarSign, ShoppingCart, Package, MessageSquare } from 'lucide-react';
-import type { Seller, Order, Product } from '@/lib/types';
+import type { Seller, Order, Product, ServiceProduct } from '@/lib/types';
 
 interface KPIGridProps {
   seller: Seller | null;
   revenue: number;
   orders: Order[];
-  products: Product[];
+  products: Array<Product | ServiceProduct>;
   messages: { read: boolean; senderId: string; userId: string }[];
   userId: string;
 }

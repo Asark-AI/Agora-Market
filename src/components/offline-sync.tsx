@@ -13,6 +13,7 @@ export function OfflineSync() {
 
   useEffect(() => {
     if (!user || !db) return;
+    const firestore = db;
     let syncing = false;
 
     const sync = async () => {
@@ -25,7 +26,7 @@ export function OfflineSync() {
           try {
             const productId = String(action.payload.productId || '');
             if (!productId) throw new Error('Missing wishlist product.');
-            const itemRef = doc(db, 'wishlist', user.id, 'items', productId);
+            const itemRef = doc(firestore, 'wishlist', user.id, 'items', productId);
             if (action.type === 'wishlist-add') {
               await setDoc(itemRef, { product: action.payload.product, userId: user.id, updatedAt: new Date().toISOString() });
             } else if (action.type === 'wishlist-remove') {

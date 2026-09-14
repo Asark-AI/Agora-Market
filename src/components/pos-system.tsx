@@ -143,7 +143,7 @@ export function PosSystem() {
 
     const total = useMemo(() => {
         return items.reduce((acc, item) => {
-            const price = item.product.discountPrice ?? item.product.price;
+            const price = item.product.discountPrice ?? item.product.price ?? 0;
             return acc + price * item.quantity;
         }, 0);
     }, [items]);
@@ -209,7 +209,7 @@ export function PosSystem() {
         setIsSubmitting(true);
         const orderItems: OrderItem[] = items.map(({ product, quantity }) => ({
             productId: product.id,
-            price: product.discountPrice ?? product.price,
+            price: product.discountPrice ?? product.price ?? 0,
             quantity
         }));
         
@@ -290,10 +290,10 @@ export function PosSystem() {
                                {items.length > 0 ? (
                                    items.map(({ product, quantity }) => (
                                        <div key={product.id} className="flex items-center gap-2">
-                                           <NextImage src={product.images[0]} width={40} height={40} alt={product.name} className="rounded-md object-cover" />
+                                           <NextImage src={(product.images?.[0]) ?? '/placeholder.png'} width={40} height={40} alt={product.name} className="rounded-md object-cover" />
                                            <div className="flex-grow">
                                                 <p className="text-sm font-medium truncate">{product.name}</p>
-                                                <p className="text-xs text-muted-foreground">₵{(product.discountPrice ?? product.price).toFixed(2)}</p>
+                                                <p className="text-xs text-muted-foreground">₵{((product.discountPrice ?? product.price ?? 0)).toFixed(2)}</p>
                                            </div>
                                             <Input type="number" value={quantity} onChange={e => updateQuantity(product.id, parseInt(e.target.value))} className="h-8 w-16" />
                                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(product.id, 0)}><Trash2 className="size-4 text-destructive" /></Button>
