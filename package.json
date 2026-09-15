@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "admin:grant": "node ./scripts/grant-super-admin.mjs",
+    "admin:promote": "node ./scripts/grant-super-admin.mjs --email",
     "admin:reset": "node ./scripts/grant-super-admin.mjs --reset",
+    "admin:list": "node scripts/list-super-admins.mjs",
     "mobile:sync": "npm run build && npx cap sync android",
     "mobile:open": "npx cap open android",
     "mobile:build": "npm run mobile:sync && cd android && gradlew.bat assembleDebug"

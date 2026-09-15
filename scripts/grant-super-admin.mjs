@@ -1,14 +1,18 @@
 #!/usr/bin/env node
 
-import { getApps, initializeApp, cert, applicationDefault } from 'firebase-admin/app';
+import dotenv from 'dotenv';
+import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
+
+dotenv.config({ path: '.env.local' });
 
 function printHelp() {
   console.log(`
 Grant or reset super-admin access for a Firebase user.
 
 Usage:
+  npm run admin:promote -- user@example.com
   npm run admin:grant -- --email user@example.com
   npm run admin:grant -- --uid SOME_UID
   npm run admin:grant -- --email user@example.com --dry-run
@@ -23,7 +27,7 @@ Options:
   --help            Show this message
 
 Environment:
-  This script uses Google Application Default Credentials (ADC), or the following env vars:
+  This script uses the following server-only env vars:
   FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL, FIREBASE_ADMIN_PRIVATE_KEY
 `);
 }
@@ -78,20 +82,21 @@ async function resolveUidByEmail(email) {
 async function ensureAdminApp() {
   if (getApps().length > 0) return;
 
-  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
-  if (clientEmail && privateKey && projectId) {
-    initializeApp({
-      credential: cert({ projectId, clientEmail, privateKey }),
-    });
-    return;
+  const missing = [
+    ['FIREBASE_ADMIN_PROJECT_ID', projectId],
+    ['FIREBASE_ADMIN_CLIENT_EMAIL', clientEmail],
+    ['FIREBASE_ADMIN_PRIVATE_KEY', privateKey],
+  ].filter(([, value]) => !value).map(([name]) => name);
+  if (missing.length > 0) {
+    throw new Error(`Missing ${missing.join(', ')}`);
   }
 
   initializeApp({
-    credential: applicationDefault(),
-    ...(projectId ? { projectId } : {}),
+    credential: cert({ projectId, clientEmail, privateKey }),
   });
 }
 
@@ -127,6 +132,14 @@ async function main() {
     }
 
     await auth.setCustomUserClaims(uid, nextCustomClaims);
+
+    const verifiedUser = await auth.getUser(uid);
+    const claimMatches = options.reset
+      ? verifiedUser.customClaims?.superAdmin !== true
+      : verifiedUser.customClaims?.superAdmin === true;
+    if (!claimMatches) {
+      throw new Error('The Firebase custom claim could not be verified after the update.');
+    }
 
     const firestore = getFirestore();
     await firestore.collection('users').doc(uid).set({

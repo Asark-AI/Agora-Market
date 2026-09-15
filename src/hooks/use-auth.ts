@@ -450,7 +450,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sendPasswordReset: async (email) => {
     if (!auth) throw new Error('Authentication is unavailable.');
     try {
-      await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+      await sendPasswordResetEmail(auth, email.trim().toLowerCase(), {
+        url: `${window.location.origin}/sign-in`,
+        handleCodeInApp: false,
+      });
     } catch (error) {
       throw new Error((error as { code?: string })?.code === 'auth/invalid-email' ? 'Enter a valid email address.' : 'We could not send the reset email. Please try again.');
     }
