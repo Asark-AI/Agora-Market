@@ -46,11 +46,11 @@ export default function SignInPage() {
       hasRouted.current = true;
       let active = true;
       const routeUser = async () => {
-        let isSuperAdmin = user?.role === 'Admin';
+        let isSuperAdmin = false;
         let secureSessionReady = false;
         try {
           const token = await firebaseUser?.getIdTokenResult(true);
-          isSuperAdmin = token?.claims.superAdmin === true || user?.role === 'Admin';
+          isSuperAdmin = token?.claims.superAdmin === true;
           const idToken = await firebaseUser?.getIdToken();
           if (idToken) {
             const sessionResponse = await fetch('/api/auth/session', {

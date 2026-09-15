@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { getAdminDb } from '@/lib/firebase-admin';
 import type { AdminIdentity } from '@/lib/server/admin-auth';
 
-export type AuditAction = 'DELETE_USER' | 'DELETE_PRODUCT' | 'SUSPEND_USER' | 'SUSPEND_SELLER' | 'APPROVE_SELLER' | 'REJECT_SELLER' | 'APPROVE_PRODUCT' | 'REJECT_PRODUCT';
+export type AuditAction = 'DELETE_USER' | 'DELETE_PRODUCT' | 'SUSPEND_USER' | 'SUSPEND_SELLER' | 'APPROVE_SELLER' | 'REJECT_SELLER' | 'APPROVE_PRODUCT' | 'REJECT_PRODUCT' | 'CHANGE_SUPER_ADMIN_EMAIL' | 'CHANGE_SUPER_ADMIN_PASSWORD' | 'CREATE_SUPER_ADMIN' | 'DISABLE_SUPER_ADMIN';
 
 export async function writeAuditLog({ admin, action, targetType, targetId, reason, success, metadata = {}, requestId = `req_${randomUUID()}` }: {
   admin: AdminIdentity;

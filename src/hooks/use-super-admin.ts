@@ -37,11 +37,10 @@ export function useSuperAdmin() {
       setClaimsLoading(true);
       try {
         const token = await firebaseUser.getIdTokenResult(true);
-        const roleBasedAdmin = user?.role === 'Admin';
-        if (active) setIsSuperAdmin(token.claims.superAdmin === true || roleBasedAdmin);
+        if (active) setIsSuperAdmin(token.claims.superAdmin === true);
       } catch (claimError) {
         console.error('Unable to verify admin claims:', claimError);
-        if (active) setIsSuperAdmin(user?.role === 'Admin');
+        if (active) setIsSuperAdmin(false);
       } finally {
         if (active) setClaimsLoading(false);
       }

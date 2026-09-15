@@ -26,6 +26,7 @@ const navigation = [
   { href: '/admin?view=users', label: 'Users', icon: Users },
   { href: '/admin?view=applications', label: 'Applications', icon: FileCheck2 },
   { href: '/admin?view=reports', label: 'Reports', icon: BarChart3 },
+  { href: '/admin/settings', label: 'Settings', icon: ShieldCheck },
 ];
 
 export function SuperAdminShell({
@@ -52,7 +53,9 @@ export function SuperAdminShell({
 
   const renderNavigation = () => navigation.map((item) => {
     const Icon = item.icon;
-    const active = pathname === '/admin' && (item.href === '/admin' ? !searchParams.get('view') : searchParams.get('view') === new URL(item.href, 'http://localhost').searchParams.get('view'));
+    const active = item.href === '/admin/settings'
+      ? pathname === '/admin/settings'
+      : pathname === '/admin' && (item.href === '/admin' ? !searchParams.get('view') : searchParams.get('view') === new URL(item.href, 'http://localhost').searchParams.get('view'));
     return (
       <Link
         key={item.label}

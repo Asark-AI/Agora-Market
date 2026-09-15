@@ -77,11 +77,13 @@ service cloud.firestore {
 
       allow create: if isOwner(uid)
         && request.resource.data.id == uid
+        && request.resource.data.email == request.auth.token.email
         && request.resource.data.roles.buyer == true
         && request.resource.data.roles.seller == false
         && request.resource.data.roles.rider == false;
       allow update: if isOwner(uid)
         && unchanged("id")
+        && unchanged("email")
         && (!("admin" in request.resource.data) || request.resource.data.admin != true)
         && (!("superAdmin" in request.resource.data) || request.resource.data.superAdmin != true)
         && (!('roles' in request.resource.data) || request.resource.data.roles.seller == resource.data.roles.seller)

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
+import { getAdminAuth } from '@/lib/firebase-admin';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 
 const SESSION_COOKIE = '__session';
@@ -28,20 +28,10 @@ export async function requireAuthenticatedUser(): Promise<DecodedIdToken> {
   return decodedToken;
 }
 
-async function hasAdminRole(uid: string): Promise<boolean> {
-  try {
-    const userDoc = await getAdminDb().collection('users').doc(uid).get();
-    return userDoc.exists && userDoc.data()?.role === 'Admin';
-  } catch {
-    return false;
-  }
-}
-
 export async function requireSuperAdmin(): Promise<AdminIdentity> {
   const decodedToken = await verifySession();
   if (!decodedToken) redirect('/sign-in?next=%2Fadmin');
-  const isAdministrativeUser = decodedToken.superAdmin === true || (await hasAdminRole(decodedToken.uid));
-  if (!isAdministrativeUser) redirect('/');
+  if (decodedToken.superAdmin !== true) redirect('/');
 
   return {
     uid: decodedToken.uid,
@@ -55,8 +45,7 @@ export async function requireSuperAdminToken(idToken: string): Promise<AdminIden
   if (!idToken) throw new Error('Authentication token is required.');
 
   const decodedToken = await getAdminAuth().verifyIdToken(idToken, true);
-  const isAdministrativeUser = decodedToken.superAdmin === true || (await hasAdminRole(decodedToken.uid));
-  if (!isAdministrativeUser) throw new Error('Super Admin access is required.');
+  if (decodedToken.superAdmin !== true) throw new Error('Super Admin access is required.');
 
   return {
     uid: decodedToken.uid,
