@@ -27,7 +27,7 @@ function friendlyError(error: unknown) {
 }
 
 export function SuperAdminAccountSettings() {
-  const { firebaseUser, user, logOut } = useAuth();
+  const { firebaseUser, user, logOut, sendPasswordReset } = useAuth();
   const { toast } = useToast();
   const [account, setAccount] = useState<AccountDetails | null>(null);
   const [mode, setMode] = useState<Mode>(null);
@@ -35,9 +35,28 @@ export function SuperAdminAccountSettings() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPasswordError, setCurrentPasswordError] = useState('');
   const [replaceExisting, setReplaceExisting] = useState(false);
   const [replacement, setReplacement] = useState<{ email: string; existingAccount: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const sendResetEmail = async () => {
+    const email = account?.email || firebaseUser?.email;
+    if (!email) {
+      toast({ variant: 'destructive', title: 'Reset email unavailable', description: 'We could not find an email address for this account.' });
+      return;
+    }
+
+    setBusy(true);
+    try {
+      await sendPasswordReset(email);
+      toast({ title: 'Password reset email sent', description: `Check ${email} for a secure link to choose a new password.` });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Could not send reset email', description: friendlyError(error) });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     const loadAccount = async () => {
@@ -69,11 +88,20 @@ export function SuperAdminAccountSettings() {
   const reauthenticate = async () => {
     if (!firebaseUser?.email || !currentPassword) throw new Error('Enter your current password to confirm your identity.');
     const credential = EmailAuthProvider.credential(firebaseUser.email, currentPassword);
-    await reauthenticateWithCredential(firebaseUser, credential);
+    try {
+      await reauthenticateWithCredential(firebaseUser, credential);
+    } catch (error) {
+      const code = (error as { code?: string })?.code;
+      if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') {
+        setCurrentPasswordError('The current password is incorrect.');
+      }
+      throw error;
+    }
   };
 
   const submit = async () => {
     setBusy(true);
+    setCurrentPasswordError('');
     try {
       await reauthenticate();
       if (mode === 'email') {
@@ -141,7 +169,7 @@ export function SuperAdminAccountSettings() {
             </div>
             <div className="flex flex-col gap-4 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3"><KeyRound className="mt-0.5 h-5 w-5 text-emerald-700" /><div><p className="text-sm font-medium">Password</p><p className="text-sm text-slate-500">Use a strong password and never reuse it elsewhere.</p></div></div>
-              <Button variant="outline" onClick={() => setMode('password')}>Change password</Button>
+              <div className="flex flex-col gap-2 sm:items-end"><Button variant="outline" onClick={() => setMode('password')}>Change password</Button><button type="button" onClick={() => void sendResetEmail()} disabled={busy} className="text-xs font-medium text-emerald-700 underline-offset-4 hover:underline disabled:text-slate-400">Forgot your password?</button></div>
             </div>
           </CardContent>
         </Card>
@@ -159,7 +187,7 @@ export function SuperAdminAccountSettings() {
               {mode === 'replace' && replaceExisting && <p className="text-sm text-amber-800">This email already belongs to an account. Submit again to promote that existing account after explicit confirmation.</p>}
               {mode === 'email' && <p className="text-xs text-slate-500">A verification email will be sent to the new address.</p>}
               {mode === 'password' && <><div className="space-y-2"><Label htmlFor="new-password">New password</Label><Input id="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="confirm-password">Confirm new password</Label><Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} /></div><ul className="grid gap-1 text-xs text-slate-500 sm:grid-cols-2"><li>At least 12 characters</li><li>Uppercase and lowercase letter</li><li>Number</li><li>Special character</li></ul></>}
-              <div className="space-y-2"><Label htmlFor="current-password">Current password</Label><Input id="current-password" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></div>
+              <div className="space-y-2"><Label htmlFor="current-password">Current password</Label><Input id="current-password" type="password" autoComplete="current-password" value={currentPassword} aria-invalid={Boolean(currentPasswordError)} aria-describedby={currentPasswordError ? 'current-password-error' : undefined} onChange={(event) => { setCurrentPassword(event.target.value); setCurrentPasswordError(''); }} />{currentPasswordError && <p id="current-password-error" className="text-sm font-medium text-rose-600">{currentPasswordError}</p>}</div>
               <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="ghost" onClick={() => setMode(null)}>Cancel</Button><Button onClick={() => void submit()} disabled={busy}>{busy ? 'Working...' : 'Continue'}</Button></div>
             </CardContent>
           </Card>

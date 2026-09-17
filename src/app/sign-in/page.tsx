@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { AppLogo } from '@/components/app-logo';
+import { AuthShell } from '@/components/auth-shell';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,7 @@ export default function SignInPage() {
   const searchParams = useSearchParams();
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
   const hasRouted = useRef(false);
 
   useEffect(() => {
@@ -85,12 +86,15 @@ export default function SignInPage() {
 
   const onSubmit = async (data: FormValues) => {
     setIsFormLoading(true);
+    setAuthError('');
     try {
       await logIn(data.email, data.password);
       toast({ title: 'Logged In Successfully!' });
       // navigation handled by effect when auth state settles
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+      const message = error instanceof Error ? error.message : 'Unable to sign in. Please try again.';
+      setAuthError(message);
+      toast({ variant: 'destructive', title: 'Login Failed', description: message });
     } finally {
       setIsFormLoading(false);
     }
@@ -114,16 +118,14 @@ export default function SignInPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-start justify-center bg-background px-4 py-10 sm:items-center sm:py-16">
-      <div className="w-full max-w-[400px]">
-        <div className="mb-8 flex items-center gap-3">
-          <AppLogo className="size-9 text-primary" />
-          <span className="text-sm font-semibold tracking-[0.18em]">AGORA</span>
-        </div>
-        <div className="mb-7">
-          <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Sign in to shop or manage your account.</p>
-        </div>
+    <AuthShell
+      eyebrow="Welcome back"
+      title="Sign in to Agora"
+      description="Access your marketplace account, orders, and store tools."
+      alternateHref="/sign-up"
+      alternateLabel="Create an account"
+      alternatePrompt="New to Agora?"
+    >
           <Form {...form}>
             <form method="post" noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
               <FormField
@@ -135,6 +137,7 @@ export default function SignInPage() {
                     <FormControl>
                       <Input
                         placeholder="m@example.com"
+                        autoComplete="email"
                         {...field}
                       />
                     </FormControl>
@@ -157,12 +160,13 @@ export default function SignInPage() {
                       </Link>
                     </div>
                     <FormControl>
-                      <Input type="password" {...field} />
+                      <Input type="password" autoComplete="current-password" aria-invalid={Boolean(authError)} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              {authError && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{authError}</p>}
               <Button type="submit" className="w-full" disabled={isFormLoading || isGoogleLoading}>
                 {isFormLoading ? <><LiquidLoader className="mr-2" />Logging In...</> : 'Log In'}
               </Button>
@@ -171,13 +175,6 @@ export default function SignInPage() {
               </Button>
             </form>
           </Form>
-          <div className="mt-6 border-t border-border pt-5 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link href="/sign-up" className="font-medium text-foreground underline underline-offset-4">
-              Sign up
-            </Link>
-          </div>
-        </div>
-    </main>
+    </AuthShell>
   );
 }

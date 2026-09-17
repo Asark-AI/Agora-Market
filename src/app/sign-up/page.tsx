@@ -1,7 +1,6 @@
 
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -22,6 +21,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { LiquidLoader } from '@/components/liquid-loader';
+import { AuthShell } from '@/components/auth-shell';
 
 const formSchema = z.object({
   fullName: z
@@ -169,16 +169,14 @@ export default function SignUpPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-start justify-center bg-background px-4 py-10 sm:items-center sm:py-16">
-      <div className="w-full max-w-[400px]">
-        <div className="mb-8 flex items-center gap-3">
-          <span className="flex size-9 items-center justify-center bg-foreground text-sm font-bold text-background">A</span>
-          <span className="text-sm font-semibold tracking-[0.18em]">AGORA</span>
-        </div>
-        <div className="mb-7">
-          <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Join Agora and start shopping.</p>
-        </div>
+    <AuthShell
+      eyebrow="Get started"
+      title="Create your account"
+      description="Join Agora to discover local businesses or build your own storefront."
+      alternateHref="/sign-in"
+      alternateLabel="Sign in"
+      alternatePrompt="Already have an account?"
+    >
 
           <Form {...form}>
             <form
@@ -323,13 +321,6 @@ export default function SignUpPage() {
             </form>
           </Form>
 
-          <div className="mt-6 border-t border-border pt-5 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link href="/sign-in" className="font-medium text-foreground underline underline-offset-4">
-              Sign in
-            </Link>
-          </div>
-        </div>
-    </main>
+    </AuthShell>
   );
 }

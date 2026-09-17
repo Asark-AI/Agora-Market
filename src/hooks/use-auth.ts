@@ -455,7 +455,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         handleCodeInApp: false,
       });
     } catch (error) {
-      throw new Error((error as { code?: string })?.code === 'auth/invalid-email' ? 'Enter a valid email address.' : 'We could not send the reset email. Please try again.');
+      const code = (error as { code?: string })?.code;
+      const messages: Record<string, string> = {
+        'auth/invalid-email': 'Enter a valid email address.',
+        'auth/user-not-found': 'No Agora account was found for that email address.',
+        'auth/operation-not-allowed': 'Password reset is disabled because Email/Password sign-in is not enabled in Firebase Authentication.',
+        'auth/unauthorized-continue-uri': 'Firebase rejected the reset link domain. Add this site domain to Firebase Authentication authorized domains.',
+        'auth/too-many-requests': 'Too many reset requests were made. Please wait a few minutes and try again.',
+        'auth/network-request-failed': 'The reset request could not reach Firebase. Check the connection and try again.',
+      };
+      throw new Error(messages[code || ''] || `We could not send the reset email${code ? ` (${code})` : ''}. Please try again.`);
     }
   },
 

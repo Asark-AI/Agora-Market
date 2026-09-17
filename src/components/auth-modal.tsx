@@ -21,10 +21,12 @@ export default function AuthModal({ open, onOpenChange, defaultTab = 'login' }: 
   const { logIn, signUp } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setLoginError('');
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
@@ -34,7 +36,9 @@ export default function AuthModal({ open, onOpenChange, defaultTab = 'login' }: 
       toast({ title: 'Logged In Successfully!' });
       onOpenChange(false);
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+      const message = error instanceof Error ? error.message : 'Unable to sign in. Please try again.';
+      setLoginError(message);
+      toast({ variant: 'destructive', title: 'Login Failed', description: message });
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +89,8 @@ export default function AuthModal({ open, onOpenChange, defaultTab = 'login' }: 
               </div>
               <div className="space-y-2">
                 <Label htmlFor="login-password">Password</Label>
-                <Input id="login-password" name="password" type="password" required />
+                <Input id="login-password" name="password" type="password" autoComplete="current-password" aria-invalid={Boolean(loginError)} required />
+                {loginError && <p role="alert" className="text-sm font-medium text-destructive">{loginError}</p>}
               </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? <><LiquidLoader className="mr-2" />Logging In...</> : 'Log In'}
