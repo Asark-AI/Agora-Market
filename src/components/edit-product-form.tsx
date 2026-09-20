@@ -17,7 +17,7 @@ import { categories } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Product, Customer, ServiceProduct } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuth } from '@/hooks/use-auth';
+import { uploadProductMedia, useAuth } from '@/hooks/use-auth';
 import { LiquidLoader } from '@/components/liquid-loader';
 import { PlusCircle, Trash2, Sparkles, MousePointerClick, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import NextImage from 'next/image';
@@ -29,12 +29,12 @@ import { format } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 
-const MAX_IMAGE_SIZE_MB = 5;
+const MAX_IMAGE_SIZE_MB = 25;
 const MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_MB * 1024 * 1024;
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
-const MAX_VIDEO_SIZE_MB = 10;
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic", "image/heif"];
+const MAX_VIDEO_SIZE_MB = 250;
 const MAX_VIDEO_SIZE = MAX_VIDEO_SIZE_MB * 1024 * 1024;
-const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
+const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 
 const specificationSchema = z.object({
   name: z.string().min(1, 'Specification name cannot be empty.'),
@@ -65,17 +65,6 @@ type FormValues = z.infer<typeof formSchema>;
 interface EditProductFormProps {
     productId: string;
 }
-
-const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      resolve(event.target?.result as string);
-    };
-    reader.onerror = (error) => {
-      reject(error);
-    };
-    reader.readAsDataURL(file);
-});
 
 export function EditProductForm({ productId }: EditProductFormProps) {
   const [isLoading, setIsLoading] = useState(false);
@@ -200,43 +189,9 @@ export function EditProductForm({ productId }: EditProductFormProps) {
 
     setIsLoading(true);
     
-    let updatedImageUrls = [...currentImages];
-    if (data.newImages && data.newImages.length > 0) {
-      for (const file of Array.from(data.newImages)) {
-        try {
-          const dataUri = await fileToDataUri(file as File);
-          updatedImageUrls.push(dataUri);
-        } catch (error) {
-          console.error("Could not convert file to data URI", error);
-          toast({
-            variant: 'destructive',
-            title: 'Image Upload Error',
-            description: `Could not process image: ${file.name}. Please try another file.`,
-          });
-          setIsLoading(false);
-          return;
-        }
-      }
-    }
-    
-    let updatedVideoUrls = [...currentVideos];
-    if (data.newVideos && data.newVideos.length > 0) {
-      for (const file of Array.from(data.newVideos)) {
-        try {
-          const dataUri = await fileToDataUri(file as File);
-          updatedVideoUrls.push(dataUri);
-        } catch (error) {
-          console.error("Could not convert video file to data URI", error);
-          toast({
-            variant: 'destructive',
-            title: 'Video Upload Error',
-            description: `Could not process video: ${file.name}. Please try another file.`,
-          });
-          setIsLoading(false);
-          return;
-        }
-      }
-    }
+    const uploadedMedia = await uploadProductMedia(seller?.id || '', data.newImages, data.newVideos);
+    const updatedImageUrls = [...currentImages, ...uploadedMedia.imageUrls];
+    const updatedVideoUrls = [...currentVideos, ...uploadedMedia.videoUrls];
     
     const originalDescription = 'description' in item && typeof item.description === 'object' ? item.description?.english : item.description;
 
@@ -260,6 +215,7 @@ export function EditProductForm({ productId }: EditProductFormProps) {
         specifications: data.specifications,
         images: updatedImageUrls,
         videos: updatedVideoUrls,
+        productMedia: [...(('productMedia' in item && item.productMedia) ? item.productMedia : []), ...uploadedMedia.productMedia],
         discountPrice: (data.discountPrice && Number(data.discountPrice) > 0) ? Number(data.discountPrice) : undefined,
     };
     

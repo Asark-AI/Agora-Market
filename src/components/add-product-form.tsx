@@ -26,11 +26,12 @@ import { Calendar } from './ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Label } from './ui/label';
+import { ProductMediaPicker } from './product-media-picker';
 
 const MAX_IMAGE_SIZE_MB = 5;
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/heic", "image/heif"];
 const MAX_VIDEO_SIZE_MB = 10;
-const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/ogg"];
+const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
 
 const productSpecificationSchema = z.object({
     name: z.string().min(1, 'Specification name cannot be empty.'),
@@ -253,29 +254,16 @@ function AddProductFormContent() {
         </>,
         // Step 3: Media
         <>
-            <Controller
-                name="images"
-                control={form.control}
-                render={({ field: { onChange } }) => (
-                    <FormItem>
-                        <FormLabel>Product Images (Required)</FormLabel>
-                        <FormControl><Input type="file" multiple accept={ACCEPTED_IMAGE_TYPES.join(",")} onChange={(e) => onChange(e.target.files)} /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <Controller
-                name="videos"
-                control={form.control}
-                render={({ field: { onChange } }) => (
-                    <FormItem>
-                        <FormLabel>Product Videos (Optional)</FormLabel>
-                        <FormControl><Input type="file" multiple accept={ACCEPTED_VIDEO_TYPES.join(",")} onChange={(e) => onChange(e.target.files)} /></FormControl>
-                        <FormDescription>Upload short videos showcasing your product.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
+            <FormItem>
+                <FormLabel>Product media</FormLabel>
+                <ProductMediaPicker
+                    imageFiles={form.watch('images')}
+                    videoFiles={form.watch('videos')}
+                    onImagesChange={(files) => form.setValue('images', files, { shouldValidate: true })}
+                    onVideosChange={(files) => form.setValue('videos', files, { shouldValidate: true })}
+                />
+                <FormMessage>{form.formState.errors.images?.message}</FormMessage>
+            </FormItem>
         </>,
         // Step 4: Specifications
         <>

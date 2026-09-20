@@ -32,7 +32,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import type {
   Seller,
   User,
@@ -50,6 +50,7 @@ import type {
   StockAdjustment,
   CartItem,
   PayoutMethod,
+  ProductMedia,
 } from '@/lib/types';
 import { db, auth, storage } from '@/lib/firebase';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -74,16 +75,16 @@ const uploadFile = async (file: File, path: string, timeoutMs = 20000): Promise<
 
   const storageRef = ref(storage, path);
 
-  const uploadPromise = (async () => {
-    try {
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
-    } catch (err: any) {
-      const msg = err?.message ? `${err.message}` : 'Unknown upload error';
-      throw new Error(`Failed to upload ${file.name}: ${msg}`);
-    }
-  })();
+  const uploadPromise = new Promise<string>((resolve, reject) => {
+    const uploadTask = uploadBytesResumable(storageRef, file, { contentType: file.type || undefined });
+    uploadTask.on('state_changed', undefined, (error) => reject(new Error(`Failed to upload ${file.name}: ${error.message}`)), async () => {
+      try {
+        resolve(await getDownloadURL(uploadTask.snapshot.ref));
+      } catch (error) {
+        reject(new Error(`Failed to finalize ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      }
+    });
+  });
 
   // timeout wrapper to avoid hanging uploads
   const timeout = new Promise<string>((_, reject) => setTimeout(() => reject(new Error(`Upload timed out for ${file.name}`)), timeoutMs));
@@ -94,7 +95,12 @@ const uploadFile = async (file: File, path: string, timeoutMs = 20000): Promise<
 const prepareProductImage = async (file: File): Promise<File> => {
   if (!file.type.startsWith('image/') || typeof document === 'undefined') return file;
 
-  const bitmap = await createImageBitmap(file);
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
   const maxDimension = 1600;
   const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
   const width = Math.max(1, Math.round(bitmap.width * scale));
@@ -115,6 +121,28 @@ const prepareProductImage = async (file: File): Promise<File> => {
     lastModified: file.lastModified,
   });
 };
+
+export async function uploadProductMedia(sellerId: string, imageFiles?: FileList, videoFiles?: FileList) {
+  const imageUrls: string[] = [];
+  const videoUrls: string[] = [];
+  const productMedia: ProductMedia[] = [];
+
+  for (const [index, file] of Array.from(imageFiles || []).entries()) {
+    const originalUrl = await uploadFile(file, `sellers/${sellerId}/products/originals/${Date.now()}-${index}-${file.name}`);
+    const optimizedFile = await prepareProductImage(file);
+    const optimizedUrl = optimizedFile === file ? originalUrl : await uploadFile(optimizedFile, `sellers/${sellerId}/products/optimized/${Date.now()}-${index}-${optimizedFile.name}`);
+    imageUrls.push(optimizedUrl);
+    productMedia.push({ type: 'image', role: index === 0 ? 'primary' : 'gallery', originalUrl, optimizedUrl, originalName: file.name });
+  }
+
+  for (const [index, file] of Array.from(videoFiles || []).entries()) {
+    const originalUrl = await uploadFile(file, `sellers/${sellerId}/products/videos/originals/${Date.now()}-${index}-${file.name}`);
+    videoUrls.push(originalUrl);
+    productMedia.push({ type: 'video', role: 'product_demo', originalUrl, playbackUrl: originalUrl, originalName: file.name });
+  }
+
+  return { imageUrls, videoUrls, productMedia };
+}
 
 const ensureFirestore = (): Firestore => {
   if (!db) {
@@ -560,31 +588,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('addProduct: start', { sellerId: seller.id, name: productData.name });
 
     const firestore = ensureFirestore();
-    const imageUrls: string[] = [];
-    const videoUrls: string[] = [];
-
-    if (imageFiles) {
-      let idx = 0;
-      for (const file of Array.from(imageFiles)) {
-        console.log(`addProduct: uploading image ${idx} ${file.name}`);
-        const optimizedFile = await prepareProductImage(file);
-        const url = await uploadFile(optimizedFile, `sellers/${seller.id}/products/${Date.now()}-${optimizedFile.name}`);
-        console.log(`addProduct: uploaded image ${idx} -> ${url}`);
-        imageUrls.push(url);
-        idx++;
-      }
-    }
-
-    if (videoFiles) {
-      let vidIdx = 0;
-      for (const file of Array.from(videoFiles)) {
-        console.log(`addProduct: uploading video ${vidIdx} ${file.name}`);
-        const url = await uploadFile(file, `sellers/${seller.id}/products/videos/${Date.now()}-${file.name}`);
-        console.log(`addProduct: uploaded video ${vidIdx} -> ${url}`);
-        videoUrls.push(url);
-        vidIdx++;
-      }
-    }
+    const { imageUrls, videoUrls, productMedia } = await uploadProductMedia(seller.id, imageFiles, videoFiles);
 
     if (!db) {
       throw new Error('Firestore is unavailable.');
@@ -597,6 +601,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         description: productData.description || productData.name || 'Product description pending',
         images: imageUrls,
         videos: videoUrls,
+        productMedia,
         sellerId: seller.id,
         userId: seller.userId,
         createdAt: serverTimestamp(),

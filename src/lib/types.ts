@@ -118,6 +118,7 @@ export type Product = {
   discountPrice?: number;
   images: string[];
   videos: string[];
+  productMedia?: ProductMedia[];
   categoryId: string;
   sellerId: string;
   userId: string; // For security rules
@@ -134,6 +135,19 @@ export type Product = {
   clicks?: number;
   clickHistory?: ProductClick[];
   createdAt?: Date | string | null;
+};
+
+export type ProductMedia = {
+  type: 'image' | 'video';
+  role: 'primary' | 'gallery' | 'product_demo';
+  originalUrl: string;
+  optimizedUrl?: string;
+  playbackUrl?: string;
+  thumbnailUrl?: string;
+  width?: number;
+  height?: number;
+  duration?: number;
+  originalName?: string;
 };
 
 export type SellerNotifications = {

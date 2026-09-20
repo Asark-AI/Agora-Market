@@ -1,6 +1,7 @@
 import { getActiveProducts, getCategoryOptions } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
+import { ExploreDiscovery, type ExploreShortcut } from '@/components/explore-discovery';
 import { Input } from '@/components/ui/input';
 import { ArrowRight, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -26,11 +27,12 @@ function belongsToBroadCategory(categoryId: string, broadCategory: typeof broadC
   return broadCategory.match.some((term) => parent.includes(term));
 }
 
-export default async function SearchPage({ searchParams }: { searchParams: { q?: string; category?: string } }) {
+export default async function SearchPage({ searchParams }: { searchParams: { q?: string; category?: string; sort?: string } }) {
   const products = await getActiveProducts();
   const categories = getCategoryOptions();
   const query = searchParams.q?.trim().toLowerCase() || '';
   const selectedCategory = broadCategories.find((category) => category.id === searchParams.category);
+  const sort = searchParams.sort || '';
 
   const filteredProducts = products.filter((product) => {
     const matchesQuery = !query || (
@@ -41,10 +43,24 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
     const matchesCategory = !selectedCategory || belongsToBroadCategory(product.categoryId, selectedCategory, categories);
     return matchesQuery && matchesCategory;
   });
-  const trendingProducts = products.slice(0, 8);
-  const dealProducts = products.filter((product) => product.discountPrice != null).slice(0, 4);
-  const newProducts = products.slice().sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || ''))).slice(0, 4);
+  const sortedProducts = products.slice().sort((left, right) => (right.views || 0) - (left.views || 0));
+  const dealProducts = products.filter((product) => product.discountPrice != null && product.discountPrice < product.price).slice(0, 8);
+  const newProducts = products.slice().sort((left, right) => String(right.createdAt || '').localeCompare(String(left.createdAt || ''))).slice(0, 8);
+  const bestProducts = sortedProducts.slice(0, 8);
+  const recommendations = products.filter((product) => !dealProducts.some((deal) => deal.id === product.id)).slice(0, 8);
   const isResultsView = Boolean(query || selectedCategory);
+  const discoveryShortcuts: ExploreShortcut[] = [
+    { id: 'new', label: 'New Arrivals', href: '/search?sort=new' },
+    { id: 'best', label: 'Best Sellers', href: '/search?sort=best' },
+    { id: 'deals', label: 'Daily Deals', href: '/flash-deals' },
+    { id: 'electronics', label: 'Electronics', href: '/search?category=electronics' },
+    { id: 'fashion', label: 'Fashion', href: '/search?category=fashion' },
+    { id: 'power', label: 'Power', href: '/search?category=electronics' },
+    { id: 'home', label: 'Home', href: '/search?category=home' },
+    { id: 'beauty', label: 'Beauty', href: '/search?category=beauty' },
+    { id: 'smart', label: 'Smart & Office', href: '/search?category=electronics' },
+    { id: 'more', label: 'More', href: '/categories' },
+  ];
 
   return (
     <PublicShell>
@@ -56,17 +72,6 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
           </form>
         </div>
 
-        <section className="mt-9">
-          <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold">Categories</h2><span className="text-xs text-muted-foreground">Swipe to explore</span></div>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {broadCategories.map((category) => (
-              <Link key={category.id} href={`/search?category=${category.id}`} className={`shrink-0 rounded-full border px-4 py-2.5 text-sm font-medium transition ${selectedCategory?.id === category.id ? 'border-primary bg-primary text-primary-foreground' : 'border-border/80 bg-background hover:border-primary hover:text-primary'}`}>
-                {category.label}
-              </Link>
-            ))}
-          </div>
-        </section>
-
         {isResultsView ? (
           <section className="mt-10">
             <div className="mb-4 flex items-end justify-between gap-4 border-b border-border pb-4"><div><p className="text-sm font-semibold">{filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}</p><p className="mt-1 text-sm text-muted-foreground">Refine your search or browse another category.</p></div><Link href="/search" className="text-sm font-medium text-primary hover:underline">Clear</Link></div>
@@ -74,9 +79,11 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
           </section>
         ) : (
           <div className="mt-10 space-y-10">
-            <section><div className="mb-4 flex items-center justify-between"><div><h2 className="text-xl font-semibold">Trending</h2><p className="mt-1 text-sm text-muted-foreground">Popular picks from across Agora.</p></div><Link href="/products" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">See all <ArrowRight className="size-4" /></Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{trendingProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div></section>
-            {dealProducts.length > 0 && <section><div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-semibold">Flash Deals</h2><Link href="/flash-deals" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">See all <ArrowRight className="size-4" /></Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{dealProducts.map((product) => <ProductCard key={product.id} product={product} dealMode />)}</div></section>}
-            {newProducts.length > 0 && <section><div className="mb-4 flex items-center justify-between"><h2 className="text-xl font-semibold">New Arrivals</h2><Link href="/products" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">See all <ArrowRight className="size-4" /></Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{newProducts.map((product) => <ProductCard key={product.id} product={product} />)}</div></section>}
+            <ExploreDiscovery shortcuts={discoveryShortcuts} />
+            {dealProducts.length > 0 && <section aria-labelledby="daily-deals-title"><div className="mb-4 flex items-center justify-between"><h2 id="daily-deals-title" className="text-xl font-semibold">Daily Deals</h2><Link href="/flash-deals" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">See all <ArrowRight className="size-4" /></Link></div><div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{dealProducts.map((product) => <div key={product.id} className="w-[164px] shrink-0 sm:w-[190px]"><ProductCard product={product} dealMode /></div>)}</div></section>}
+            <section aria-labelledby="trending-products-title"><div className="mb-4 flex items-center justify-between"><h2 id="trending-products-title" className="text-xl font-semibold">Trending Products</h2><Link href="/search?sort=best" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">See all <ArrowRight className="size-4" /></Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{(sort === 'best' ? bestProducts : sort === 'new' ? newProducts : sortedProducts.slice(0, 8)).map((product) => <ProductCard key={product.id} product={product} />)}</div></section>
+            {newProducts.length > 0 && <section aria-labelledby="new-arrivals-title"><div className="mb-4 flex items-center justify-between"><h2 id="new-arrivals-title" className="text-xl font-semibold">New Arrivals</h2><Link href="/search?sort=new" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">See all <ArrowRight className="size-4" /></Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{newProducts.slice(0, 8).map((product) => <ProductCard key={product.id} product={product} />)}</div></section>}
+            {recommendations.length > 0 && <section aria-labelledby="recommended-title"><div className="mb-4 flex items-center justify-between"><h2 id="recommended-title" className="text-xl font-semibold">Recommended For You</h2><Link href="/products" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">See all <ArrowRight className="size-4" /></Link></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">{recommendations.map((product) => <ProductCard key={product.id} product={product} />)}</div></section>}
           </div>
         )}
         </div>
