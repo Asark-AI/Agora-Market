@@ -85,7 +85,7 @@ function OrderHistory({ orders, activeTab }: { orders: Order[]; activeTab: Order
                             return <div key={`${item.productId}-${index}`} className="flex items-center gap-3"><div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">{product.image ? <img src={product.image} alt="" className="size-full object-cover" /> : <Package className="size-6 text-muted-foreground" />}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{product.name}</p><p className="mt-1 text-xs text-muted-foreground">{product.variant} · Qty {item.quantity}</p></div><p className="text-sm font-semibold">GH₵{(item.price * item.quantity).toFixed(2)}</p></div>;
                         })}
                         {order.items.length > 2 && <p className="text-xs text-muted-foreground">+ {order.items.length - 2} more item(s)</p>}
-                        <div className="flex items-center justify-between border-t border-border/70 pt-3"><div className="flex items-center gap-2 text-xs text-muted-foreground"><Truck className="size-4" /><span>{order.status === 'shipped' || order.status === 'delivered' ? 'Estimated delivery update available' : 'Delivery estimate after dispatch'}</span></div><p className="text-base font-semibold">GH₵{order.total.toFixed(2)}</p></div>
+                        <div className="flex items-center justify-between border-t border-border/70 pt-3"><div className="flex items-center gap-2 text-xs text-muted-foreground"><Truck className="size-4" /><span>{order.status === 'shipped' || order.status === 'delivered' ? 'Estimated delivery update available' : 'Delivery estimate after dispatch'}</span></div><p className="text-base font-semibold">GH₵{Number(order.total || 0).toFixed(2)}</p></div>
                         <div className="flex gap-2"><Button asChild className="flex-1"><Link href={order.shipmentIds?.[0] ? `/track-order?deliveryId=${order.shipmentIds[0]}` : `/profile?tab=orders&order=${order.id}`}><Truck className="mr-2 size-4" />Track Order</Link></Button><Button asChild variant="outline" className="flex-1"><Link href={`/profile?tab=orders&order=${order.id}`}>View Details<ChevronRight className="ml-1 size-4" /></Link></Button></div>
                     </CardContent>
                 </Card>
@@ -133,6 +133,8 @@ export default function ProfilePage() {
     
     const isLoading = authLoading || loadingData;
     const ordersTab = searchParams.get('tab') === 'orders';
+    const displayName = user?.name?.trim() || 'Agora customer';
+    const nameInitial = displayName.charAt(0).toUpperCase();
     const visibleOrders = orders.filter((order) => {
         return getOrderTab(order) === orderFilter;
     });
@@ -170,11 +172,11 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                 <div className="flex items-center gap-6">
                     <Avatar className="size-24">
-                        <AvatarImage src={`https://placehold.co/96x96/E2E8F0/475569?text=${user.name.charAt(0)}`} />
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={`https://placehold.co/96x96/E2E8F0/475569?text=${nameInitial}`} />
+                        <AvatarFallback>{nameInitial}</AvatarFallback>
                     </Avatar>
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">{user.name}</h1>
+                        <h1 className="text-3xl font-bold font-headline">{displayName}</h1>
                         <p className="text-muted-foreground">{user.email}</p>
                     </div>
                 </div>
