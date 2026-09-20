@@ -31,7 +31,7 @@ export default async function PublicHomePage() {
       <main className="mx-auto max-w-7xl px-4 pb-8">
         <section className="border-b border-border py-3" aria-labelledby="home-shopping-title">
           <div className="flex items-center justify-between gap-3">
-            <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Agora marketplace</p><h1 id="home-shopping-title" className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">Shop what&apos;s new</h1></div>
+            <div><h1 id="home-shopping-title" className="text-xl font-semibold tracking-tight sm:text-2xl">Shop what&apos;s new</h1></div>
             <Link href="/products" className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary">All products <ArrowRight className="size-4" /></Link>
           </div>
         </section>

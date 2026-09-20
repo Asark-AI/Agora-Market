@@ -49,12 +49,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
   return (
     <PublicShell>
       <div className="container mx-auto max-w-7xl px-4 py-8 sm:py-12">
-        <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Agora marketplace</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">{isResultsView ? 'Search results' : 'Explore'}</h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{isResultsView ? `Products matching ${query ? `“${searchParams.q}”` : selectedCategory?.label}.` : 'Discover products across Agora.'}</p>
-        </div>
-        <div className="mt-7 max-w-3xl">
+        <div className="max-w-3xl">
           <form action="/search" className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
             <Input defaultValue={searchParams.q || ''} name="q" placeholder="Search products or categories" aria-label="Search products or categories" className="h-12 rounded-full border-border/80 bg-background pl-12" />
