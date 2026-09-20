@@ -79,15 +79,15 @@ export default function AppDashboardLayout({
   
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full bg-background">
+      <div className="flex min-h-[100svh] w-full bg-background lg:h-[100dvh]">
         <DashboardNav mobileOpen={mobileNavOpen} onMobileOpenChange={setMobileNavOpen} />
-        <div className="flex flex-col flex-1 h-screen overflow-x-hidden">
+        <div className="flex min-h-[100svh] flex-1 flex-col overflow-x-hidden lg:h-[100dvh]">
           <DashboardHeader
             title="Seller Center"
             onOpenMobileMenu={() => setMobileNavOpen(true)}
           />
           <div className="relative flex-1 overflow-y-auto">
-            <main className="p-4 pb-24 sm:p-6 sm:pb-6 lg:p-8">
+            <main className="p-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:p-6 sm:pb-6 lg:p-8">
               <SidebarInset>{children}</SidebarInset>
             </main>
           </div>

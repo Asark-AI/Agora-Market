@@ -755,7 +755,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         items: items.map(item => ({
             productId: item.product.id,
             quantity: item.quantity,
-            price: (item.product as Product).discountPrice ?? (item.product as Product).price
+          price: (item.product as Product).discountPrice ?? (item.product as Product).price,
+          productName: item.product.name,
+          image: item.product.images?.[0],
+          variant: 'Standard',
         })),
         paymentMethod: 'flutterwave',
           transactionId: transactionId,

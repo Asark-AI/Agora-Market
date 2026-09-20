@@ -285,7 +285,14 @@ export type OrderStatus =
   | 'ready-for-pickup'
   | 'delivered';
 
-export type OrderItem = { productId: string; quantity: number; price: number };
+export type OrderItem = {
+  productId: string;
+  quantity: number;
+  price: number;
+  productName?: string;
+  image?: string;
+  variant?: string;
+};
 
 export type Order = {
     id: string;

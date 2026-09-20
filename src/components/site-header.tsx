@@ -21,8 +21,8 @@ export function SiteHeader() {
             <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             name="q"
-            placeholder="Search products, stores & brands"
-            aria-label="Search products, stores and brands"
+            placeholder="Search products or categories"
+            aria-label="Search products or categories"
             className="h-11 w-full rounded-full border-border/80 bg-muted/30 pl-11 pr-4 text-sm shadow-none placeholder:text-muted-foreground/80 focus-visible:ring-1 focus-visible:ring-primary"
           />
           </div>

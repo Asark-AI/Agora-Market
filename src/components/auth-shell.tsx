@@ -22,8 +22,8 @@ export function AuthShell({
   alternatePrompt: string;
 }) {
   return (
-    <main className="min-h-screen bg-[#f4f6f2] px-4 py-6 text-[#17251d] sm:px-6 sm:py-10">
-      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-[#dce5dc] bg-white shadow-[0_24px_80px_-40px_rgba(23,37,29,0.35)] lg:grid-cols-[0.9fr_1.1fr]">
+    <main className="min-h-[100svh] bg-[#f4f6f2] px-4 py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[#17251d] sm:px-6 sm:py-10">
+      <div className="mx-auto grid min-h-[calc(100svh-3rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-[#dce5dc] bg-white shadow-[0_24px_80px_-40px_rgba(23,37,29,0.35)] lg:grid-cols-[0.9fr_1.1fr]">
         <section className="relative hidden overflow-hidden bg-[#173b2b] p-10 text-[#f4f6f2] lg:flex lg:flex-col lg:justify-between xl:p-14">
           <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full border-[36px] border-[#d7a84a]/25" />
           <div className="absolute -bottom-32 -left-24 h-80 w-80 rounded-full border-[52px] border-[#8fb59a]/15" />

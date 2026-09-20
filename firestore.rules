@@ -440,7 +440,9 @@ service cloud.firestore {
     ==========================================
     */
     match /sellers/{uid}/orders/{orderId} {
-      allow read: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      allow read: if isSellerOwner(uid)
+        || isSellerDocumentOwner(uid)
+        || (isSignedIn() && request.auth.uid == resource.data.buyerId);
       allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
       allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
       allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
