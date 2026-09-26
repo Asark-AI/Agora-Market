@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { AuthShell } from '@/components/auth-shell';
 
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ export default function SignInPage() {
   const searchParams = useSearchParams();
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const hasRouted = useRef(false);
 
@@ -133,34 +135,26 @@ export default function SignInPage() {
     <AuthShell
       eyebrow="Welcome back"
       title="Sign in to Agora"
-      description="Access your marketplace account, orders, and store tools."
+      description="Shop, track your orders and manage your account."
       alternateHref="/sign-up"
       alternateLabel="Create an account"
       alternatePrompt="New to Agora?"
+      browseHref="/"
     >
-      <div className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-3">
-          {['Fast checkout', 'Secure orders', 'Seller tools'].map((item) => (
-            <div key={item} className="rounded-2xl border border-[#ebefe9] bg-[#f8faf8] px-3 py-2 text-center text-[11px] font-medium text-[#4f5d57] shadow-[0_10px_25px_-18px_rgba(23,59,43,0.45)]">
-              {item}
-            </div>
-          ))}
-        </div>
-
-        <Form {...form}>
-          <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 rounded-[1.75rem] border border-[#edf0ea] bg-[#f8faf8] p-4 shadow-[0_24px_40px_-28px_rgba(23,59,43,0.28)] sm:p-5" aria-busy={isFormLoading || isGoogleLoading}>
+      <Form {...form}>
+        <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-5" aria-busy={isFormLoading || isGoogleLoading}>
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-[#24332c]">Email</FormLabel>
+                  <FormLabel className="text-sm font-medium text-[#24332c]">Email address</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       placeholder="m@example.com"
                       autoComplete="email"
-                      className="h-12 rounded-xl border-[#dfe7e2] bg-white text-sm shadow-none focus-visible:ring-[#d7a84a]"
+                      className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
                     />
                   </FormControl>
                   <FormMessage />
@@ -176,39 +170,43 @@ export default function SignInPage() {
                     <FormLabel className="text-sm font-medium text-[#24332c]">Password</FormLabel>
                     <Link
                       href={"/forgot-password" as Route}
-                      className="ml-auto inline-block text-xs font-medium text-[#173b2b] underline-offset-4 hover:underline"
+                        className="ml-auto inline-block text-sm font-medium text-[#173b2b] underline-offset-4 hover:underline"
                     >
                       Forgot password?
                     </Link>
                   </div>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="password"
-                      autoComplete="current-password"
-                      aria-invalid={Boolean(authError)}
-                      className="h-12 rounded-xl border-[#dfe7e2] bg-white text-sm shadow-none focus-visible:ring-[#d7a84a]"
-                    />
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete="current-password"
+                          aria-invalid={Boolean(authError)}
+                          className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 pr-12 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
+                        />
+                        <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center text-[#66736a] hover:text-[#173b2b]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                          {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                        </button>
+                      </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {authError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{authError}</p>}
-            <Button type="submit" className="h-12 w-full rounded-xl bg-[#173b2b] text-sm font-semibold text-[#f7f3ee] shadow-[0_18px_32px_-16px_rgba(23,59,43,0.8)] transition hover:bg-[#112b23]" disabled={isFormLoading || isGoogleLoading}>
-              {isFormLoading ? <><LiquidLoader className="mr-2" />Logging In...</> : 'Log In'}
+            {authError && <p role="alert" className="border-l-2 border-[#b42318] bg-[#fff6f5] px-3 py-2 text-sm font-medium text-[#b42318]">{authError}</p>}
+            <Button type="submit" className="h-14 w-full rounded-md bg-[#173b2b] text-base font-semibold text-white transition hover:bg-[#102d22] focus-visible:ring-2 focus-visible:ring-[#d7a84a]" disabled={isFormLoading || isGoogleLoading}>
+              {isFormLoading ? <><LiquidLoader className="mr-2" />Signing in...</> : <>Sign in <ArrowRight className="ml-2 size-4" /></>}
             </Button>
             <div className="relative flex items-center">
-              <div className="h-px flex-1 bg-[#e5ece5]" />
-              <span className="px-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#7a8b7d]">or</span>
-              <div className="h-px flex-1 bg-[#e5ece5]" />
+              <div className="h-px flex-1 bg-[#dfe6df]" />
+              <span className="px-3 text-xs text-[#78847b]">or</span>
+              <div className="h-px flex-1 bg-[#dfe6df]" />
             </div>
-            <Button type="button" variant="outline" className="h-12 w-full rounded-xl border-[#dfe7e2] bg-white text-sm font-medium text-[#18382d] hover:bg-[#f5f7f4]" onClick={handleGoogleSignIn} disabled={isFormLoading || isGoogleLoading}>
-              {isGoogleLoading ? <><LiquidLoader className="mr-2" />Please wait...</> : 'Continue with Google'}
+            <Button type="button" variant="outline" className="h-14 w-full rounded-md border-[#cfd8d0] bg-white text-base font-medium text-[#18382d] hover:bg-[#f7f9f7]" onClick={handleGoogleSignIn} disabled={isFormLoading || isGoogleLoading}>
+              {isGoogleLoading ? <><LiquidLoader className="mr-2" />Connecting...</> : <><span className="mr-3 text-lg font-bold text-[#4285f4]">G</span>Continue with Google</>}
             </Button>
-          </form>
-        </Form>
-      </div>
+        </form>
+      </Form>
     </AuthShell>
   );
 }
