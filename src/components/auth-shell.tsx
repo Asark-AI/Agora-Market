@@ -37,7 +37,7 @@ export function AuthShell({
           <span className="size-10" aria-hidden="true" />
         </header>
 
-        <div className="pt-10 sm:pt-14">
+        <div className="pt-8 sm:pt-10">
           <div className="mb-8">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#69776e]">{eyebrow}</p>
             <h1 className="font-headline text-[2rem] font-semibold leading-tight tracking-[-0.015em] text-[#17251d]">{title}</h1>

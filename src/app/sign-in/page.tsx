@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { LiquidLoader } from '@/components/liquid-loader';
+import { GoogleMark } from '@/components/google-mark';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
@@ -142,7 +143,7 @@ export default function SignInPage() {
       browseHref="/"
     >
       <Form {...form}>
-        <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-5" aria-busy={isFormLoading || isGoogleLoading}>
+        <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4" aria-busy={isFormLoading || isGoogleLoading}>
             <FormField
               control={form.control}
               name="email"
@@ -152,7 +153,7 @@ export default function SignInPage() {
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="m@example.com"
+                      placeholder="you@example.com"
                       autoComplete="email"
                       className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
                     />
@@ -180,6 +181,7 @@ export default function SignInPage() {
                         <Input
                           {...field}
                           type={showPassword ? 'text' : 'password'}
+                          placeholder="Enter your password"
                           autoComplete="current-password"
                           aria-invalid={Boolean(authError)}
                           className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 pr-12 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
@@ -203,7 +205,7 @@ export default function SignInPage() {
               <div className="h-px flex-1 bg-[#dfe6df]" />
             </div>
             <Button type="button" variant="outline" className="h-14 w-full rounded-md border-[#cfd8d0] bg-white text-base font-medium text-[#18382d] hover:bg-[#f7f9f7]" onClick={handleGoogleSignIn} disabled={isFormLoading || isGoogleLoading}>
-              {isGoogleLoading ? <><LiquidLoader className="mr-2" />Connecting...</> : <><span className="mr-3 text-lg font-bold text-[#4285f4]">G</span>Continue with Google</>}
+              {isGoogleLoading ? <><LiquidLoader className="mr-2" />Connecting...</> : <><GoogleMark className="mr-3 size-5" />Continue with Google</>}
             </Button>
         </form>
       </Form>

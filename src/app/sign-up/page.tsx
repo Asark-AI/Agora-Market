@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/form';
 import { LiquidLoader } from '@/components/liquid-loader';
 import { AuthShell } from '@/components/auth-shell';
+import { GoogleMark } from '@/components/google-mark';
 
 const formSchema = z.object({
   fullName: z
@@ -178,7 +179,7 @@ export default function SignUpPage() {
                       <Input
                         {...field}
                         type="email"
-                        placeholder="m@example.com"
+                        placeholder="you@example.com"
                         autoComplete="email"
                         aria-label="Email address"
                         className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
@@ -258,10 +259,10 @@ export default function SignUpPage() {
             </div>
 
             <FormField control={form.control} name="termsAccepted" render={({ field }) => (
-              <FormItem>
+              <FormItem className="pt-2">
                 <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-[#536158]">
                   <input type="checkbox" checked={field.value} onChange={field.onChange} className="mt-0.5 size-4 accent-[#173b2b]" />
-                  <span>I agree to the Terms of Service and Privacy Policy.</span>
+                  <span>I agree to the <a href="/terms" className="font-medium text-[#173b2b] underline-offset-4 hover:underline">Terms of Service</a> and <a href="/privacy" className="font-medium text-[#173b2b] underline-offset-4 hover:underline">Privacy Policy</a>.</span>
                 </label>
                 <FormMessage />
               </FormItem>
@@ -296,7 +297,7 @@ export default function SignUpPage() {
               onClick={handleGoogleSignUp}
               disabled={isLoading || isGoogleLoading}
             >
-              {isGoogleLoading ? <><LiquidLoader className="mr-2" />Connecting...</> : <><span className="mr-3 text-lg font-bold text-[#4285f4]">G</span>Continue with Google</>}
+              {isGoogleLoading ? <><LiquidLoader className="mr-2" />Connecting...</> : <><GoogleMark className="mr-3 size-5" />Continue with Google</>}
             </Button>
           </form>
       </Form>

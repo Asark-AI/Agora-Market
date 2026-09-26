@@ -102,31 +102,42 @@ export async function getActiveProducts(activeSellers?: Seller[]): Promise<Store
   if (!db || !firestore) return [];
 
   const firestoreDb = db;
-  const { collectionGroup, getDocs, limit, query, where } = firestore;
-  let productsSnapshot;
+  const { collection, getDocs, limit, query, where } = firestore;
+  const sellers = activeSellers ?? await getActiveSellers();
+  if (sellers.length === 0) return [];
+
   try {
-    // Keep this query to a single-field filter so it works without a deployed composite index.
-    productsSnapshot = await getDocs(query(collectionGroup(firestoreDb, 'products'), where('status', '==', 'active'), limit(PUBLIC_PRODUCT_LIMIT)));
+    const productSnapshots = await Promise.all(
+      sellers.map((seller) =>
+        getDocs(
+          query(
+            collection(firestoreDb, 'sellers', seller.id, 'products'),
+            where('status', '==', 'active'),
+            limit(PUBLIC_PRODUCT_LIMIT)
+          )
+        )
+      )
+    );
+
+    const sellersById = new Map(sellers.map((seller) => [seller.id, seller]));
+    const products = productSnapshots.flatMap((snapshot) => snapshot.docs.map((document) => {
+      const product = sanitizeForClient(document.data() as Omit<Product, 'id'>) as Omit<Product, 'id'>;
+      const seller = sellersById.get(product.sellerId);
+      return {
+        id: document.id,
+        ...product,
+        seller,
+        sellerName: seller?.name,
+      } as StorefrontProduct;
+    }));
+
+    return products
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
+      .slice(0, PUBLIC_PRODUCT_LIMIT);
   } catch (error) {
     console.warn('Unable to load active products:', error);
     return [];
   }
-
-  const sellers = activeSellers ?? await getActiveSellers();
-  const sellersById = new Map(sellers.map((seller) => [seller.id, seller]));
-
-  const products = productsSnapshot.docs.map((document) => {
-    const product = sanitizeForClient(document.data() as Omit<Product, 'id'>) as Omit<Product, 'id'>;
-    const seller = sellersById.get(product.sellerId);
-    return {
-      id: document.id,
-      ...product,
-      seller,
-      sellerName: seller?.name,
-    } as StorefrontProduct;
-  });
-
-  return products.sort((a, b) => (b.views || 0) - (a.views || 0));
 }
 
 export async function getProductBySlug(slug: string, activeProducts?: StorefrontProduct[]): Promise<StorefrontProduct | null> {
