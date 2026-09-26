@@ -1,4 +1,5 @@
 
+import { electronicsCategories } from '@/lib/electronics-catalog';
 
 export const regions = [
     { id: 'reg-1', name: 'Ashanti' },
@@ -190,7 +191,7 @@ export const mobileGroupedCategories = [
 ];
 
 // Flatten the grouped categories into a single array for easier use in forms/listings
-export const categories = mobileGroupedCategories.flatMap(section =>
+const legacyCategories = mobileGroupedCategories.flatMap(section =>
     section.categories.flatMap(group =>
         group.links.map(link => {
             return {
@@ -203,4 +204,9 @@ export const categories = mobileGroupedCategories.flatMap(section =>
         })
     )
 );
+
+export const categories = [
+    ...legacyCategories,
+    ...electronicsCategories,
+];
 

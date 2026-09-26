@@ -165,7 +165,7 @@ function AddProductFormContent() {
                         <FormLabel>Category</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Select a product category" /></SelectTrigger></FormControl>
-                            <SelectContent>{relevantCategories.map(category => (<SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>))}</SelectContent>
+                            <SelectContent>{relevantCategories.map(category => (<SelectItem key={category.id} value={category.id}>{'path' in category ? category.path : category.name}</SelectItem>))}</SelectContent>
                         </Select>
                         <FormMessage />
                     </FormItem>

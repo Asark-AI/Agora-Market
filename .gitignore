@@ -2,6 +2,11 @@
 .next/
 .env.local
 .env
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!manifest.webmanifest
 dist/
 build/
 coverage/

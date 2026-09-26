@@ -10,6 +10,7 @@
     "admin:grant": "node ./scripts/grant-super-admin.mjs",
     "admin:promote": "node ./scripts/grant-super-admin.mjs --email",
     "admin:reset": "node ./scripts/grant-super-admin.mjs --reset",
+    "admin:reset-password": "node ./scripts/reset-super-admin-password.mjs",
     "admin:list": "node scripts/list-super-admins.mjs",
     "mobile:sync": "npm run build && npx cap sync android",
     "mobile:open": "npx cap open android",

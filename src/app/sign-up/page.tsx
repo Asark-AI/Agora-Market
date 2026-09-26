@@ -41,6 +41,10 @@ const formSchema = z.object({
       /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/,
       'Password must include upper and lower case letters, a number, and a symbol.'
     ),
+  confirmPassword: z.string().min(1, { message: 'Please confirm your password.' }),
+}).refine((values) => values.password === values.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'Passwords do not match.',
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -99,11 +103,12 @@ function analyzePassword(password: string): PasswordAnalysis {
 }
 
 export default function SignUpPage() {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const isMounted = useRef(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<FormValues>({
@@ -113,11 +118,11 @@ export default function SignUpPage() {
       fullName: '',
       email: '',
       password: '',
+      confirmPassword: '',
     },
   });
 
   const { isValid, isSubmitting } = form.formState;
-
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -146,14 +151,7 @@ export default function SignUpPage() {
     setIsLoading(true);
     try {
       await signUp(data.email, data.password, data.fullName);
-      const otpResponse = await fetch('/api/auth/email-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, action: 'send' }),
-      });
-      const otpData = await otpResponse.json() as { error?: string };
-      if (!otpResponse.ok) throw new Error(otpData.error || 'Unable to send verification code.');
-      toast({ title: 'Verification code sent', description: 'Check your email to finish creating your account.' });
+      toast({ title: 'Account created', description: 'We sent a verification email to your inbox.' });
       router.replace(`/sign-up/verify?email=${encodeURIComponent(data.email)}`);
     } catch (error: unknown) {
       const errMsg = getErrorMessage(error);
@@ -168,6 +166,23 @@ export default function SignUpPage() {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+      toast({ title: 'Account created', description: 'Your Google account is ready to use.' });
+      router.replace('/');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Google Sign-Up Failed',
+        description: error?.code === 'auth/popup-closed-by-user' ? 'The sign-in popup was closed.' : error?.message || 'Please try again.',
+      });
+    } finally {
+      if (isMounted.current) setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <AuthShell
       eyebrow="Get started"
@@ -177,25 +192,37 @@ export default function SignUpPage() {
       alternateLabel="Sign in"
       alternatePrompt="Already have an account?"
     >
+      <div className="space-y-5">
+        <div className="flex items-center gap-3 border-b border-[#e5ebe5] pb-4">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#e8f0e8] text-[#173b2b]">
+            <span className="text-sm font-semibold">01</span>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-[#24332c]">Your details</p>
+            <p className="mt-0.5 text-xs text-[#748078]">Create one account for buying and selling.</p>
+          </div>
+        </div>
 
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="grid gap-4"
-              aria-busy={isLoading || isSubmitting}
-            >
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid gap-5 rounded-[1.5rem] border border-[#e1e9e1] bg-[#f8faf8]/90 p-5 shadow-[0_28px_45px_-30px_rgba(23,59,43,0.3)] sm:p-6"
+            aria-busy={isLoading || isSubmitting || isGoogleLoading}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="fullName"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel className="text-sm font-medium text-[#24332c]">Full Name</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="Ama Serwaa"
                         autoComplete="name"
                         aria-label="Full name"
+                        className="h-12 rounded-xl border-[#dfe7e2] bg-white text-sm shadow-none focus-visible:ring-[#d7a84a]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -207,8 +234,8 @@ export default function SignUpPage() {
                 control={form.control}
                 name="email"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel className="text-sm font-medium text-[#24332c]">Email</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -216,6 +243,7 @@ export default function SignUpPage() {
                         placeholder="m@example.com"
                         autoComplete="email"
                         aria-label="Email address"
+                        className="h-12 rounded-xl border-[#dfe7e2] bg-white text-sm shadow-none focus-visible:ring-[#d7a84a]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -227,8 +255,8 @@ export default function SignUpPage() {
                 control={form.control}
                 name="password"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel className="text-sm font-medium text-[#24332c]">Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -238,11 +266,12 @@ export default function SignUpPage() {
                           autoComplete="new-password"
                           aria-label="Password"
                           aria-describedby="password-strength-label password-suggestions"
+                          className="h-12 rounded-xl border-[#dfe7e2] bg-white pr-12 text-sm shadow-none focus-visible:ring-[#d7a84a]"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword((s) => !s)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-[#4b5a53] transition hover:text-[#173b2b]"
                           aria-pressed={showPassword}
                           aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
@@ -251,17 +280,16 @@ export default function SignUpPage() {
                       </div>
                     </FormControl>
 
-                    {/* Strength bar */}
                     <div className="mt-2">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span id="password-strength-label" className="text-muted-foreground">
-                          Strength: <span className="font-medium">{passwordAnalysis.label}</span>
+                      <div className="mb-1 flex items-center justify-between text-[11px] text-[#67756d]">
+                        <span id="password-strength-label">
+                          Strength: <span className="font-semibold text-[#173b2b]">{passwordAnalysis.label}</span>
                         </span>
-                        <span className="text-muted-foreground">{passwordAnalysis.percent}%</span>
+                        <span>{passwordAnalysis.percent}%</span>
                       </div>
 
                       <div
-                        className="w-full h-2 bg-muted rounded overflow-hidden"
+                        className="h-2.5 w-full overflow-hidden rounded-full bg-[#edf1ed]"
                         role="progressbar"
                         aria-valuemin={0}
                         aria-valuemax={100}
@@ -269,33 +297,28 @@ export default function SignUpPage() {
                         aria-label="Password strength"
                       >
                         <div
-                          className={`${passwordAnalysis.colorClass} h-full`}
+                          className={`${passwordAnalysis.colorClass} h-full rounded-full`}
                           style={{ width: `${passwordAnalysis.percent}%`, transition: 'width 200ms ease' }}
                         />
                       </div>
                     </div>
 
-                    {/* Suggestions */}
-                    <div
-                      id="password-suggestions"
-                      className="mt-2 text-xs"
-                      aria-live="polite"
-                    >
+                    <div id="password-suggestions" className="mt-2 text-xs" aria-live="polite">
                       {passwordValue ? (
                         passwordAnalysis.suggestions.length ? (
-                          <ul className="space-y-1 text-sm text-muted-foreground">
+                          <ul className="space-y-1.5 text-[#5d6a63]">
                             {passwordAnalysis.suggestions.map((sugg, idx) => (
                               <li key={idx} className="flex items-start gap-2">
-                                <span className="inline-block w-2 h-2 mt-1 rounded-full bg-muted-foreground/40" />
+                                <span className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-[#c3b38f]" />
                                 <span>{sugg}</span>
                               </li>
                             ))}
                           </ul>
                         ) : (
-                          <div className="text-sm text-emerald-600">Looks good — strong password!</div>
+                          <div className="text-sm font-medium text-[#1d7d57]">Looks good — strong password!</div>
                         )
                       ) : (
-                        <div className="text-sm text-muted-foreground">Use a mix of letters, numbers and symbols.</div>
+                        <div className="text-sm text-[#67756d]">Use a mix of letters, numbers and symbols.</div>
                       )}
                     </div>
                     <FormMessage />
@@ -303,24 +326,66 @@ export default function SignUpPage() {
                 )}
               />
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={!isValid || isLoading}
-                aria-disabled={!isValid || isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <LiquidLoader className="mr-2" role="status" aria-live="polite" />
-                    Creating Account...
-                  </>
-                ) : (
-                  'Create Account'
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel className="text-sm font-medium text-[#24332c]">Confirm password</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Re-enter your password"
+                        autoComplete="new-password"
+                        aria-label="Confirm password"
+                        className="h-12 rounded-xl border-[#dfe7e2] bg-white text-sm shadow-none focus-visible:ring-[#d7a84a]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
-            </form>
-          </Form>
+              />
+            </div>
 
+            <div className="rounded-xl border border-[#e6e1d5] bg-[#fffaf0] px-3 py-2 text-xs text-[#5d584b]">
+              By creating an account, you agree to our Terms of Service and Privacy Policy.
+            </div>
+
+            <Button
+              type="submit"
+              className="h-12 w-full rounded-xl bg-[#173b2b] text-sm font-semibold text-[#f7f3ee] shadow-[0_18px_32px_-16px_rgba(23,59,43,0.8)] transition hover:bg-[#112b23]"
+              disabled={!isValid || isLoading || isGoogleLoading}
+              aria-disabled={!isValid || isLoading || isGoogleLoading}
+            >
+              {isLoading ? (
+                <>
+                  <LiquidLoader className="mr-2" role="status" aria-live="polite" />
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </Button>
+
+            <div className="relative flex items-center">
+              <div className="h-px flex-1 bg-[#e5ece5]" />
+              <span className="px-3 text-[11px] font-medium uppercase tracking-[0.2em] text-[#7a8b7d]">or</span>
+              <div className="h-px flex-1 bg-[#e5ece5]" />
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 w-full rounded-xl border-[#dfe7e2] bg-white text-sm font-medium text-[#18382d] hover:bg-[#f5f7f4]"
+              onClick={handleGoogleSignUp}
+              disabled={isLoading || isGoogleLoading}
+            >
+              {isGoogleLoading ? <><LiquidLoader className="mr-2" />Please wait...</> : 'Continue with Google'}
+            </Button>
+          </form>
+        </Form>
+      </div>
     </AuthShell>
   );
 }

@@ -31,6 +31,7 @@ import {
   type User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import type {
@@ -418,6 +419,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { user } = userCredential;
 
+    try {
+      await sendEmailVerification(user);
+    } catch (emailError) {
+      console.warn('Firebase verification email could not be sent:', emailError);
+    }
+
     const nameParts = name.trim().split(/\s+/);
     const newUser: User = {
       id: user.uid,
@@ -449,15 +456,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const authUser = userCredential.user;
-      const fallbackUser = createFallbackUser(authUser);
-      set({ firebaseUser: authUser, user: fallbackUser, loading: false, initialized: true });
-      await get().refreshAuthProfile(authUser);
+      await authUser.reload();
+      const refreshedUser = auth.currentUser;
+      if (!refreshedUser?.emailVerified) {
+        await signOut(auth);
+        throw new Error('Please verify your email before signing in. Check your inbox for the verification link from Firebase.');
+      }
+      const fallbackUser = createFallbackUser(refreshedUser);
+      set({ firebaseUser: refreshedUser, user: fallbackUser, loading: false, initialized: true });
+      await get().refreshAuthProfile(refreshedUser);
       try {
-        await syncServerSession(authUser);
+        await syncServerSession(refreshedUser);
       } catch (sessionError) {
         console.warn('Secure server session could not be synchronized:', sessionError);
       }
-      return authUser;
+      return refreshedUser;
     } catch (error: any) {
       const invalidCredentialCodes = [
         'auth/invalid-credential',
