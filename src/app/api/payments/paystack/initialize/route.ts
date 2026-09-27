@@ -2,13 +2,14 @@ import { randomUUID } from 'node:crypto';
 
 import { NextResponse } from 'next/server';
 
-import { requireAuthenticatedUser } from '@/lib/server/admin-auth';
+import { verifySession } from '@/lib/server/admin-auth';
 import { initializePaystackTransaction, isPaystackConfigured, PaystackError } from '@/lib/server/paystack';
 import { getAdminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: Request) {
   try {
-    const identity = await requireAuthenticatedUser();
+    const identity = await verifySession();
+    if (!identity) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
     const body = await request.json().catch(() => null);
 
     const email = typeof body?.email === 'string' ? body.email.trim() : '';
