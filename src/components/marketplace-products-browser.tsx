@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, CheckCircle2, Filter, Mic, Search, ShieldCheck, ShoppingCart, Sparkles, Star, Truck, RefreshCw } from 'lucide-react';
+import { ChevronDown, CheckCircle2, Filter, Mic, Search, ShoppingCart, Truck, RefreshCw } from 'lucide-react';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ProductCard } from '@/components/product-card';
@@ -22,12 +22,6 @@ type SortValue = 'popular' | 'price-low' | 'price-high' | 'discount';
 type ConditionOption = 'new' | 'used' | '';
 type DeliveryOption = 'fast' | 'free' | '';
 type RatingFilterOption = '4+' | '3+' | '2+' | '';
-
-type TrustChip = {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-};
 
 export function MarketplaceProductsBrowser({ initialProducts, categories, sellers }: MarketplaceProductsBrowserProps) {
   const { items: cartItems } = useCart();
@@ -62,29 +56,6 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
     ],
     []
   );
-
-  const trustChips: TrustChip[] = [
-    {
-      label: 'Verified Sellers',
-      active: verifiedOnly,
-      onClick: () => setVerifiedOnly((current) => !current),
-    },
-    {
-      label: 'Free Shipping',
-      active: selectedFilter === 'shipping',
-      onClick: () => setSelectedFilter((current) => (current === 'shipping' ? 'all' : 'shipping')),
-    },
-    {
-      label: 'Flash Deals',
-      active: selectedFilter === 'flash',
-      onClick: () => setSelectedFilter((current) => (current === 'flash' ? 'all' : 'flash')),
-    },
-    {
-      label: '4+ Rating',
-      active: selectedFilter === 'rated',
-      onClick: () => setSelectedFilter((current) => (current === 'rated' ? 'all' : 'rated')),
-    },
-  ];
 
   const filteredProducts = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -229,47 +200,44 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
   };
 
   return (
-    <div className="space-y-6 pb-28 md:pb-12">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/95 px-4 py-4 backdrop-blur-sm shadow-sm sm:px-6">
+    <div className="space-y-5 pb-28 md:pb-12">
+      <header className="border-b border-border px-0 py-3 sm:px-0">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <div className="flex items-center gap-3"><h1 className="text-lg font-semibold">Products</h1></div>
+          <div><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9a772b]">Agora marketplace</p><h1 className="mt-1 text-xl font-semibold tracking-tight">Shop all products</h1></div>
 
           <div className="flex items-center gap-3">
-            <Link href="/cart" className="relative inline-flex items-center rounded-2xl border border-border/80 bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm transition hover:border-primary/80 hover:text-primary">
+            <Link href="/cart" className="relative inline-flex items-center border border-[#cfd8e1] bg-white px-3 py-2 text-sm font-semibold text-[#26384a] transition hover:border-[#1769aa] hover:text-[#1769aa]">
               <ShoppingCart className="mr-2 h-4 w-4" />
               Cart
               <span className="ml-2 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{cartItems.length}</span>
             </Link>
-            <div className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-border/80 bg-background text-muted-foreground sm:flex">
-              <span className="text-lg">👤</span>
-            </div>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6">
-        <section className="rounded-[28px] border border-border/70 bg-muted/40 p-4 shadow-sm sm:p-5">
+        <section className="border-b border-border py-3 sm:py-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search products, brands, categories..."
-              className="h-12 rounded-full border border-border/70 bg-background/95 pl-12 pr-14 text-sm"
+              className="h-12 rounded-md border-[#cfd8e1] bg-white pl-12 pr-14 text-sm"
             />
-            <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-primary/10 p-2 text-primary transition hover:bg-primary/20">
+            <button type="button" aria-label="Search by voice" className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-[#1769aa] transition hover:text-[#12588f]">
               <Mic className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">Popular:</span>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">Try:</span>
             {suggestionChips.map((term) => (
               <button
                 key={term}
                 type="button"
                 onClick={() => setSearchTerm(term)}
-                className="rounded-full border border-border/70 bg-background px-3 py-2 text-sm transition hover:border-primary/80 hover:text-primary"
+                className="border-b border-transparent py-1 transition hover:border-primary hover:text-primary"
               >
                 {term}
               </button>
@@ -277,7 +245,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
           </div>
         </section>
 
-        <section className="mt-4 flex gap-2 overflow-x-auto pb-2">
+        <section className="flex gap-2 overflow-x-auto border-b border-border/60 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categoryChips.map((category) => {
             const active = selectedCategory === category.id;
             return (
@@ -285,7 +253,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
                 key={category.id || 'all'}
                 type="button"
                 onClick={() => setSelectedCategory(category.id)}
-                className={`min-w-[92px] rounded-full border px-4 py-2 text-sm font-medium transition ${active ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border/70 bg-background text-foreground hover:border-primary/80 hover:text-primary'}`}
+                className={`shrink-0 border px-4 py-2 text-sm font-medium transition ${active ? 'border-[#1769aa] bg-[#1769aa] text-white' : 'border-[#d8e0e7] bg-white text-[#26384a] hover:border-[#1769aa] hover:text-[#1769aa]'}`}
               >
                 {category.name}
               </button>
@@ -293,22 +261,22 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
           })}
         </section>
 
-        <section className="sticky top-[5.5rem] z-20 mt-4 bg-background/95 px-0 py-3 backdrop-blur-sm sm:top-[6.25rem]">
-          <div className="grid grid-cols-2 gap-3 rounded-3xl border border-border/70 bg-background/90 px-3 py-3 shadow-sm sm:grid-cols-[1fr_auto_auto]">
+        <section className="border-b border-border py-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <span>All Products</span>
-              <span className="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground">{filteredProducts.length} items</span>
+              <span className="text-xs font-normal text-muted-foreground">{filteredProducts.length} items</span>
             </div>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-border/70 bg-background px-3 py-2 text-sm font-semibold text-foreground transition hover:border-primary/80 hover:text-primary"
+              className="inline-flex items-center justify-center gap-2 border border-[#d8e0e7] bg-white px-3 py-2 text-sm font-semibold text-[#26384a] transition hover:border-[#1769aa] hover:text-[#1769aa]"
               onClick={() => setIsFilterOpen(true)}
             >
               <Filter className="h-4 w-4" /> Filter
             </button>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-border/70 bg-background px-3 py-2 text-sm font-semibold text-foreground transition hover:border-primary/80 hover:text-primary"
+              className="inline-flex items-center justify-center gap-2 border border-[#d8e0e7] bg-white px-3 py-2 text-sm font-semibold text-[#26384a] transition hover:border-[#1769aa] hover:text-[#1769aa]"
               onClick={cycleSort}
             >
               Sort <ChevronDown className="h-4 w-4" />
@@ -316,22 +284,9 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
           </div>
         </section>
 
-        <section className="mt-4 flex flex-wrap gap-2">
-          {trustChips.map((chip) => (
-            <button
-              key={chip.label}
-              type="button"
-              onClick={chip.onClick}
-              className={`rounded-full border px-3 py-2 text-sm font-medium transition ${chip.active ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border/70 bg-background text-foreground hover:border-primary/80 hover:text-primary'}`}
-            >
-              {chip.label}
-            </button>
-          ))}
-        </section>
-
-        <section className="mt-4">
+        <section className="pt-1">
           {visibleProducts.length === 0 ? (
-            <div className="rounded-[28px] border border-dashed border-border/70 bg-background p-8 text-center text-muted-foreground">
+            <div className="border border-dashed border-border/70 bg-background p-8 text-center text-muted-foreground">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Search className="h-5 w-5" />
               </div>
@@ -346,15 +301,15 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
               </button>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
               {visibleProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <div key={product.id} className="min-w-0"><ProductCard product={product} /></div>
               ))}
             </div>
           )}
 
           {isLoadingMore && (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, index) => (
                 <div key={index} className="overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-sm">
                   <div className="aspect-[4/5] animate-pulse bg-muted/70" />
