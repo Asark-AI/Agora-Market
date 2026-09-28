@@ -406,7 +406,7 @@ export function EditProductForm({ productId }: EditProductFormProps) {
                           <SelectContent>
                             {relevantCategories.map(category => (
                               <SelectItem key={category.id} value={category.id}>
-                                {'path' in category ? category.path : category.name}
+                                {category.path}
                               </SelectItem>
                             ))}
                           </SelectContent>

@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { verifySession } from '@/lib/server/admin-auth';
 import { initializePaystackTransaction, isPaystackConfigured, PaystackError } from '@/lib/server/paystack';
 import { getAdminDb } from '@/lib/firebase-admin';
+import { CheckoutValidationError, validateCheckoutLines } from '@/lib/server/checkout-validation';
 
 export async function POST(request: Request) {
   try {
@@ -13,12 +14,15 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null);
 
     const email = typeof body?.email === 'string' ? body.email.trim() : '';
-    const sellerId = typeof body?.sellerId === 'string' ? body.sellerId : '';
-    const amountMajor = Number(body?.amount ?? body?.amountMajor ?? 0);
-    const items = Array.isArray(body?.items) ? body.items : [];
+    const address = body?.address;
+    if (!email || typeof address?.name !== 'string' || typeof address?.phone !== 'string' || typeof address?.address !== 'string' || typeof address?.city !== 'string') {
+      return NextResponse.json({ error: 'Valid email and delivery details are required.' }, { status: 400 });
+    }
 
-    if (!email || !Number.isFinite(amountMajor) || amountMajor <= 0) {
-      return NextResponse.json({ error: 'A valid email and amount are required.' }, { status: 400 });
+    const { lines, subtotal } = await validateCheckoutLines(body?.items);
+    const requestedTotal = Number(body?.amountMajor ?? body?.amount ?? 0);
+    if (Number.isFinite(requestedTotal) && Math.abs(requestedTotal - subtotal) > 0.01) {
+      return NextResponse.json({ error: 'Product prices changed. Review your cart and try again.', subtotal }, { status: 409 });
     }
 
     if (!isPaystackConfigured()) {
@@ -31,8 +35,9 @@ export async function POST(request: Request) {
       ? body.callbackUrl
       : `${protocol}://${host}/checkout/complete`;
 
-    const amountMinor = Math.round(amountMajor * 100);
+    const amountMinor = Math.round(subtotal * 100);
     const reference = `agora_${Date.now()}_${randomUUID().replace(/-/g, '')}`;
+    const marketplaceOrderId = `AGO-${Date.now().toString().slice(-6)}-${randomUUID().slice(0, 4).toUpperCase()}`;
 
     const result = await initializePaystackTransaction({
       email,
@@ -40,17 +45,17 @@ export async function POST(request: Request) {
       reference,
       callbackUrl,
       metadata: {
-        orderId: sellerId,
-        sellerId,
+        orderId: marketplaceOrderId,
+        marketplaceOrderId,
         buyerId: identity.uid,
         platform: 'agora',
-        amountMajor,
+        amountMajor: subtotal,
       },
     });
 
     const paymentRecord = {
       id: reference,
-      orderId: sellerId || null,
+      orderId: marketplaceOrderId,
       buyerId: identity.uid,
       reference,
       amountMinor,
@@ -63,20 +68,22 @@ export async function POST(request: Request) {
       verificationStatus: 'UNVERIFIED',
       webhookProcessed: false,
       refundedAmountMinor: 0,
-      orderDraft: sellerId
-        ? {
-            sellerId,
+      orderDraft: {
+            marketplaceOrderId,
             buyerId: identity.uid,
             buyerEmail: email,
-            items: items.map((item: any) => ({
-              productId: String(item?.productId || ''),
-              quantity: Number(item?.quantity || 0),
-              price: Number(item?.price || 0),
-            })).filter((item: any) => item.productId && item.quantity > 0),
-            total: Number(amountMajor),
+            items: lines,
+            deliveryAddress: {
+              name: address.name.trim(),
+              phone: address.phone.trim(),
+              address: address.address.trim(),
+              city: address.city.trim(),
+              instructions: typeof address.instructions === 'string' ? address.instructions.trim() : null,
+            },
+            total: subtotal,
+            deliveryFee: null,
             createdAt: new Date().toISOString(),
-          }
-        : null,
+          },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -86,12 +93,14 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       reference,
+      marketplaceOrderId,
       authorizationUrl: result.authorization_url,
       accessCode: result.access_code,
       publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
     });
   } catch (error) {
     const message = error instanceof PaystackError ? error.message : 'Unable to initialize payment.';
-    return NextResponse.json({ error: message }, { status: error instanceof PaystackError ? (error.status || 500) : 500 });
+    const status = error instanceof PaystackError ? (error.status || 500) : error instanceof CheckoutValidationError ? error.status : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

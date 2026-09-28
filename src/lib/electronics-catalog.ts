@@ -73,6 +73,7 @@ export const electronicsCategories = electronicsCategoryTree.flatMap((department
     name: category.name,
     type: 'product' as const,
     parent: department.name,
+    businessType: 'store' as const,
     department: department.name,
     path: `${department.name} / ${category.name}`,
   }))

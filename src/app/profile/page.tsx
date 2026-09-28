@@ -23,7 +23,7 @@ const orderTabs = ['To Pay', 'To Ship', 'Shipped', 'To Receive', 'Completed'] as
 type OrderTab = typeof orderTabs[number];
 
 function getOrderTab(order: Order): OrderTab {
-    if (order.status === 'pending' && !order.transactionId && order.paymentStatus !== 'SUCCESS') return 'To Pay';
+    if (order.paymentMethod !== 'cash' && order.status === 'pending' && !order.transactionId && order.paymentStatus !== 'SUCCESS') return 'To Pay';
     if (order.status === 'pending' || order.status === 'fulfilled') return 'To Ship';
     if (order.status === 'shipped') return 'Shipped';
     if (order.status === 'delivered') return 'To Receive';

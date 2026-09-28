@@ -81,6 +81,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: true,
         verified: true,
+        marketplaceOrderId: existingPayment.orderId || draft?.marketplaceOrderId || null,
         payment: {
           reference,
           amountMinor: result.amount,
@@ -107,56 +108,83 @@ export async function POST(request: Request) {
       updatedAt: new Date().toISOString(),
     }, { merge: true });
 
-    if (draft?.sellerId && Array.isArray(draft.items) && draft.items.length > 0) {
-      const sellerId = String(draft.sellerId);
-      const orderRecord = {
-        buyerId: draft.buyerId,
-        userId: draft.buyerId,
-        date: new Date().toISOString(),
-        total: Number(draft.total || result.amount / 100),
-        status: 'pending',
-        items: draft.items.map((item: any) => ({
-          productId: String(item.productId),
-          quantity: Number(item.quantity || 0),
-          price: Number(item.price || 0),
-        })),
-        paymentMethod: 'paystack',
-        transactionId: reference,
-        paymentReference: reference,
-        paymentProvider: 'paystack',
-        paymentStatus: normalizedStatus,
-        paymentAmountMinor: result.amount,
-        paymentCurrency: result.currency,
-        paidAt: result.paid_at || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const orderRef = await getAdminDb().collection('sellers').doc(sellerId).collection('orders').add(orderRecord);
-
-      await paymentRef.set({
-        orderCreated: true,
-        orderId: orderRef.id,
-        updatedAt: new Date().toISOString(),
-      }, { merge: true });
-
-      for (const item of draft.items) {
-        const productId = String(item.productId || '');
-        const quantity = Number(item.quantity || 0);
-        if (!productId || quantity <= 0) continue;
-
-        const productRef = getAdminDb().collection('sellers').doc(sellerId).collection('products').doc(productId);
-        const productSnap = await productRef.get();
-        if (productSnap.exists) {
-          const currentStock = Number(productSnap.data()?.stock ?? 0);
-          await productRef.update({ stock: Math.max(0, currentStock - quantity) });
-        }
-      }
+    const lines = Array.isArray(draft?.items) ? draft.items : [];
+    const groups = new Map<string, any[]>();
+    for (const item of lines) {
+      const sellerId = String(item.sellerId || draft?.sellerId || '');
+      if (!sellerId || !item.productId || Number(item.quantity) <= 0) continue;
+      groups.set(sellerId, [...(groups.get(sellerId) || []), item]);
     }
+
+    const db = getAdminDb();
+    const marketplaceOrderId = String(draft?.marketplaceOrderId || `AGO-${reference.slice(-10).toUpperCase()}`);
+    const orderIds: Record<string, string> = {};
+    for (const [sellerId, sellerItems] of groups) {
+      const orderRef = db.collection('sellers').doc(sellerId).collection('orders').doc(`${reference}_${sellerId}`);
+      const productRefs = sellerItems.map((item) => db.collection('sellers').doc(sellerId).collection('products').doc(String(item.productId)));
+      const sellerTotal = sellerItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+      await db.runTransaction(async (transaction) => {
+        const existingOrder = await transaction.get(orderRef);
+        if (existingOrder.exists) return;
+        const products = await Promise.all(productRefs.map((productRef) => transaction.get(productRef)));
+        const now = new Date().toISOString();
+        for (let index = 0; index < products.length; index += 1) {
+          const product = products[index].data();
+          const quantity = Number(sellerItems[index].quantity || 0);
+          const stock = Number(product?.stock ?? 0);
+          if (!products[index].exists || stock < quantity) {
+            throw new Error('A paid order requires seller review because product stock changed during payment.');
+          }
+        }
+        transaction.set(orderRef, {
+          marketplaceOrderId,
+          buyerId: draft.buyerId,
+          userId: draft.buyerId,
+          buyerEmail: draft.buyerEmail || result.customer?.email || null,
+          date: now,
+          createdAt: now,
+          updatedAt: now,
+          subtotal: Number(sellerTotal.toFixed(2)),
+          deliveryFee: null,
+          deliveryFeeStatus: 'seller_to_confirm',
+          total: Number(sellerTotal.toFixed(2)),
+          status: 'pending',
+          items: sellerItems.map((item) => ({
+            productId: String(item.productId),
+            quantity: Number(item.quantity),
+            price: Number(item.price),
+            productName: String(item.productName || 'Marketplace item'),
+            image: item.image || null,
+          })),
+          deliveryAddress: draft.deliveryAddress || null,
+          paymentMethod: 'paystack',
+          transactionId: reference,
+          paymentReference: reference,
+          paymentProvider: 'paystack',
+          paymentStatus: normalizedStatus,
+          paymentAmountMinor: result.amount,
+          paymentCurrency: result.currency,
+          paidAt: result.paid_at || null,
+        });
+        products.forEach((productSnapshot, index) => {
+          transaction.update(productRefs[index], { stock: Number(productSnapshot.data()?.stock ?? 0) - Number(sellerItems[index].quantity) });
+        });
+      });
+      orderIds[sellerId] = orderRef.id;
+    }
+
+    await paymentRef.set({
+      orderCreated: Object.keys(orderIds).length > 0,
+      orderId: marketplaceOrderId,
+      orderIds,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
 
     return NextResponse.json({
       ok: true,
       verified: normalizedStatus === 'SUCCESS',
+      marketplaceOrderId,
+      orderIds,
       payment: {
         reference,
         amountMinor: result.amount,

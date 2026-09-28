@@ -199,7 +199,8 @@ const legacyCategories = mobileGroupedCategories.flatMap(section =>
                 name: link.name,
                 type: 'product' as const,
                 parent: group.groupTitle,
-                businessType: ('businessType' in link && link.businessType) ? link.businessType : section.businessType
+                businessType: section.businessType,
+                path: `${group.groupTitle} / ${link.name}`
             }
         })
     )

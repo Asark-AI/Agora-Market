@@ -19,9 +19,9 @@ export default function PrivacyPage() {
             <p>Agora is operated by:</p>
             <p><strong>Legal Business Name:</strong> [INSERT LEGAL COMPANY NAME]</p>
             <p><strong>Trading Name:</strong> Agora</p>
-            <p><strong>Address:</strong> [INSERT BUSINESS ADDRESS]</p>
-            <p><strong>Email:</strong> [INSERT PRIVACY EMAIL]</p>
-            <p><strong>Phone:</strong> [INSERT PHONE NUMBER]</p>
+            <p><strong>Address:</strong> Accra</p>
+            <p><strong>Email:</strong> agoragh0@gmail.com</p>
+            <p><strong>Phone:</strong> 0201866404</p>
             <p><strong>Country:</strong> Ghana</p>
           </div>
           <p className="mt-5 text-sm leading-6 text-[#657269]">This Privacy Policy should be read together with our Terms of Service.</p>
@@ -152,11 +152,11 @@ export default function PrivacyPage() {
 
           <section className={sectionClass}><h2 className={headingClass}>14. International Data Transfers</h2><p>Some technology providers used by Agora may process information outside Ghana.</p><p>Where personal information is transferred or processed internationally, Agora will take reasonable steps to ensure that the processing is carried out in accordance with applicable legal requirements and appropriate safeguards.</p></section>
 
-          <section className={sectionClass}><h2 className={headingClass}>15. Your Privacy Rights</h2><p>Subject to applicable law and any lawful limitations, you may have rights relating to your personal information, including rights to:</p><ul className={listClass}><li>Request access to personal information we hold about you.</li><li>Request correction of inaccurate information.</li><li>Request deletion where legally applicable.</li><li>Object to certain processing.</li><li>Request restriction of certain processing.</li><li>Withdraw consent where processing relies on consent.</li><li>Request information about how your data is used.</li><li>Raise a complaint concerning our processing of your personal information.</li></ul><p>To exercise a privacy right, contact:</p><p><strong>Privacy Email:</strong> [INSERT PRIVACY EMAIL]</p><p>We may need to verify your identity before processing certain requests.</p></section>
+          <section className={sectionClass}><h2 className={headingClass}>15. Your Privacy Rights</h2><p>Subject to applicable law and any lawful limitations, you may have rights relating to your personal information, including rights to:</p><ul className={listClass}><li>Request access to personal information we hold about you.</li><li>Request correction of inaccurate information.</li><li>Request deletion where legally applicable.</li><li>Object to certain processing.</li><li>Request restriction of certain processing.</li><li>Withdraw consent where processing relies on consent.</li><li>Request information about how your data is used.</li><li>Raise a complaint concerning our processing of your personal information.</li></ul><p>To exercise a privacy right, contact:</p><p><strong>Privacy Email:</strong> agoragh0@gmail.com</p><p>We may need to verify your identity before processing certain requests.</p></section>
 
           <section className={sectionClass}><h2 className={headingClass}>16. Account Deletion</h2><p>You may request deletion of your Agora account.</p><p>Deleting an account may not immediately delete every record associated with you where Agora is legally required or permitted to retain certain information, such as:</p><ul className={listClass}><li>Transaction records.</li><li>Accounting records.</li><li>Fraud-prevention records.</li><li>Legal records.</li><li>Dispute records.</li><li>Security logs.</li></ul><p>Where retention is no longer required, applicable information will be deleted or anonymised according to our retention practices.</p></section>
 
-          <section className={sectionClass}><h2 className={headingClass}>17. Children&apos;s Privacy</h2><p>Agora is not intended to be used by children where use would violate applicable age restrictions or legal requirements.</p><p>We do not knowingly collect personal information from children in circumstances where such collection is prohibited by law.</p><p>If you believe a child has provided personal information to Agora improperly, contact us at:</p><p><strong>[INSERT PRIVACY EMAIL]</strong></p><p>We will assess the request and take appropriate action where required.</p></section>
+          <section className={sectionClass}><h2 className={headingClass}>17. Children&apos;s Privacy</h2><p>Agora is not intended to be used by children where use would violate applicable age restrictions or legal requirements.</p><p>We do not knowingly collect personal information from children in circumstances where such collection is prohibited by law.</p><p>If you believe a child has provided personal information to Agora improperly, contact us at:</p><p><strong>agoragh0@gmail.com</strong></p><p>We will assess the request and take appropriate action where required.</p></section>
 
           <section className={sectionClass}><h2 className={headingClass}>18. Third-Party Websites and Services</h2><p>Agora may contain links to third-party websites or services.</p><p>We are not responsible for the privacy practices of independent third parties.</p><p>You should review the privacy policy of a third-party service before providing information to it.</p></section>
 
@@ -168,10 +168,10 @@ export default function PrivacyPage() {
             <div className="space-y-1">
               <p><strong>Agora</strong></p>
               <p><strong>Legal Business Name:</strong> [INSERT LEGAL COMPANY NAME]</p>
-              <p><strong>Privacy Contact:</strong> [INSERT NAME OR PRIVACY TEAM]</p>
-              <p><strong>Email:</strong> [INSERT PRIVACY EMAIL]</p>
-              <p><strong>Phone:</strong> [INSERT PHONE NUMBER]</p>
-              <p><strong>Address:</strong> [INSERT BUSINESS ADDRESS]</p>
+              <p><strong>Privacy Contact:</strong> Agora Privacy Team</p>
+              <p><strong>Email:</strong> agoragh0@gmail.com</p>
+              <p><strong>Phone:</strong> 0201866404</p>
+              <p><strong>Address:</strong> Accra</p>
             </div>
             <p>If you are not satisfied with how a privacy matter has been handled, you may also have the right to contact the relevant data-protection regulator in Ghana.</p>
           </section>

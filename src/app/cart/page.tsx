@@ -1,5 +1,9 @@
-import CheckoutPage from '@/app/checkout/page';
+import { CartPageContent } from '@/components/cart-page-content';
+import { getActiveProducts, getActiveSellers } from '@/lib/storefront';
 
-export default function CartPage() {
-  return <CheckoutPage />;
+export const dynamic = 'force-dynamic';
+
+export default async function CartPage() {
+  const [products, sellers] = await Promise.all([getActiveProducts(), getActiveSellers()]);
+  return <CartPageContent recommendations={products} sellers={sellers} />;
 }
