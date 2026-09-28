@@ -4,7 +4,7 @@
 import { useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
-import { PageLoader } from '@/components/page-loader';
+import { DashboardSkeleton } from '@/components/loading-skeletons';
 import { AppLogo } from '@/components/app-logo';
 import { format } from 'date-fns';
 import type { Product, ServiceProduct } from '@/lib/types';
@@ -25,7 +25,7 @@ export default function ReceiptPage() {
     }, [loading, order]);
 
     if (loading || !order || !seller) {
-        return <PageLoader />;
+        return <DashboardSkeleton />;
     }
 
     const customer = { name: 'Walk-in Customer' }; // Hardcoding for now, as we don't have full customer object in order.

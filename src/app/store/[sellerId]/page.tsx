@@ -108,9 +108,9 @@ export default async function StorefrontPage({ params }: StorePageProps) {
             No active products found yet. Check back later or browse other stores.
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <div key={product.id} className="min-w-0"><ProductCard product={product} /></div>
             ))}
           </div>
         )}

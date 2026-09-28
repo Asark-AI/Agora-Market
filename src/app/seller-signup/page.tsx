@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { SellerSignupForm } from "./seller-signup-form";
-import { PageLoader } from "@/components/page-loader";
+import { DashboardSkeleton } from '@/components/loading-skeletons';
 
 export default function SellerSignupPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function SellerSignupPage() {
   }, [user, seller, loading, router]);
 
   if (loading) {
-    return <PageLoader />;
+    return <DashboardSkeleton />;
   }
 
   if (!user || seller) {

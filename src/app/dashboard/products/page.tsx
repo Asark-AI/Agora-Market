@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { categories } from '@/lib/data';
 import type { Product } from '@/lib/types';
 import { usePageLoaderStore } from '@/hooks/use-page-loader';
+import { DashboardSkeleton } from '@/components/loading-skeletons';
 
 export default function ProductsPage() {
     const { seller, sellerProducts, loading } = useAuth();
@@ -30,16 +31,7 @@ export default function ProductsPage() {
     }, [seller]);
     
     if (loading || !seller || !pageConfig) {
-        return (
-             <Card>
-                <CardHeader>
-                    <Skeleton className="h-8 w-1/3" />
-                </CardHeader>
-                <CardContent>
-                    <Skeleton className="h-48 w-full" />
-                </CardContent>
-            </Card>
-        );
+        return <DashboardSkeleton />;
     }
     
     const getCategoryName = (categoryId: string) => {

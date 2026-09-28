@@ -19,6 +19,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { LiquidLoader } from '@/components/liquid-loader';
+import { DashboardSkeleton } from '@/components/loading-skeletons';
 import type { PayoutMethod, Transaction } from '@/lib/types';
 
 const AddPayoutMethodModal = dynamic(() => import('@/components/add-payout-method-modal').then((mod) => mod.AddPayoutMethodModal), {
@@ -226,7 +227,7 @@ export default function SubscriptionPage() {
     const balance = 585.50;
 
     if (loading) {
-        return <LiquidLoader />;
+        return <DashboardSkeleton />;
     }
 
     if (!user || user.role !== 'Owner') {

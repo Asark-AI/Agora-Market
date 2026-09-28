@@ -40,6 +40,7 @@ import { format } from 'date-fns';
 import type { Order } from '@/lib/types';
 import { usePageLoaderStore } from '@/hooks/use-page-loader';
 import { PosSystem } from '@/components/pos-system';
+import { OrdersSkeleton } from '@/components/loading-skeletons';
 import React from 'react';
 
 
@@ -320,19 +321,7 @@ export default function OrdersPage() {
     const { seller, loading } = useAuth();
     
     if (loading || !seller) {
-        return (
-            <div className="space-y-6">
-                <Skeleton className="h-10 w-full" />
-                <Card>
-                    <CardHeader>
-                        <Skeleton className="h-8 w-1/3" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-64 w-full" />
-                    </CardContent>
-                </Card>
-            </div>
-        );
+        return <OrdersSkeleton />;
     }
     
     return (

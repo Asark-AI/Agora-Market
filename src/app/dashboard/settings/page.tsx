@@ -3,7 +3,7 @@
 
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { LiquidLoader } from '@/components/liquid-loader';
+import { DashboardSkeleton } from '@/components/loading-skeletons';
 import { ShieldAlert } from 'lucide-react';
 import { AccountSettingsTab } from '@/components/settings/account-settings-tab';
 
@@ -30,7 +30,7 @@ export default function SettingsPage() {
     const { user, loading } = useAuth();
 
     if (loading) {
-        return <LiquidLoader />;
+        return <DashboardSkeleton />;
     }
 
     const allowedRoles: (string | undefined)[] = ['Owner', 'Manager'];

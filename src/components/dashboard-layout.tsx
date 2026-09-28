@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
 import { DashboardNav } from '@/components/dashboard-nav';
-import { LiquidLoader } from '@/components/liquid-loader';
+import { DashboardSkeleton } from '@/components/loading-skeletons';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { businessConfig } from '@/lib/business-types';
 
@@ -34,7 +34,7 @@ export default function AppDashboardLayout({
   }, [seller, loading, router]);
 
   if (loading && !fallbackTimer) {
-    return <LiquidLoader />;
+    return <DashboardSkeleton />;
   }
 
   if (!seller) {

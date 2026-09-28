@@ -18,9 +18,9 @@ export default function WishlistPage() {
             <CardContent className="p-8 text-center text-muted-foreground">Your wishlist is empty.</CardContent>
           </Card>
         ) : (
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {items.map((item) => (
-              <ProductCard key={item.product.id} product={item.product as any} />
+              <div key={item.product.id} className="min-w-0"><ProductCard product={item.product as any} /></div>
             ))}
           </div>
         )}

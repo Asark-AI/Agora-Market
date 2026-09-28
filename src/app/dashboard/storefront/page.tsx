@@ -4,14 +4,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { AccountSettingsTab } from '@/components/settings/account-settings-tab';
 import { CommsSettingsTab } from '@/components/settings/comms-settings-tab';
 import { FinancialsSettingsTab } from '@/components/settings/financials-settings-tab';
-import { PageLoader } from '@/components/page-loader';
+import { DashboardSkeleton } from '@/components/loading-skeletons';
 import { Card, CardContent, CardHeader, CardDescription, CardTitle } from '@/components/ui/card';
 
 export default function BusinessSettingsPage() {
   const { loading } = useAuth();
 
   if (loading) {
-    return <PageLoader />;
+    return <DashboardSkeleton />;
   }
 
   return (

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NextImage from 'next/image';
-import { Check, Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, ArrowRight } from 'lucide-react';
+import { Check, Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, ArrowRight, Maximize2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,14 +12,18 @@ import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
 import type { StorefrontProduct } from '@/lib/storefront';
-import { buildProductSlug, getCategoryLabel, getImageUrl } from '@/lib/storefront';
+import { getCategoryLabel, getImageUrl } from '@/lib/storefront';
+import { ProductCard } from '@/components/product-card';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 export function ProductDetailView({ product, relatedProducts }: { product: StorefrontProduct; relatedProducts: StorefrontProduct[] }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isFavorite } = useWishlist();
-  const [selectedImage, setSelectedImage] = useState(product.images?.[0] || '');
+  const images = product.images?.filter(Boolean) || [];
+  const displayImages = images.length > 0 ? images : [getImageUrl()];
+  const [selectedImage, setSelectedImage] = useState(displayImages[0]);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const favorite = isFavorite(product.id);
 
@@ -107,13 +111,15 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
     <div className="space-y-8">
       <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
-            <div className="relative aspect-square overflow-hidden rounded-[24px] border bg-muted">
-            <NextImage src={getImageUrl(selectedImage)} alt={product.name} fill className="object-cover" />
-          </div>
-          <div className="grid grid-cols-4 gap-3">
-            {(product.images || []).slice(0, 4).map((image, index) => (
+            <button type="button" onClick={() => setIsImageViewerOpen(true)} className="group relative block aspect-square w-full overflow-hidden rounded-[24px] border bg-muted text-left" aria-label={`View ${product.name} image`}>
+            <NextImage src={getImageUrl(selectedImage)} alt={product.name} fill sizes="(max-width: 1024px) 100vw, 55vw" className="object-contain transition duration-300 group-hover:scale-[1.02]" />
+            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 bg-white/95 px-2.5 py-1.5 text-xs font-medium text-[#26384a] shadow-sm"><Maximize2 className="size-3.5" /> View image</span>
+            <span className="absolute left-3 top-3 bg-[#1c2633]/80 px-2 py-1 text-xs font-medium text-white">{images.length || 1} {images.length === 1 ? 'image' : 'images'}</span>
+            </button>
+          <div className="flex flex-wrap gap-3">
+            {displayImages.slice(0, 6).map((image, index) => (
               <button key={`${image}-${index}`} type="button" onClick={() => setSelectedImage(image)} className={`relative aspect-square overflow-hidden rounded-xl border ${selectedImage === image ? 'ring-2 ring-primary' : ''}`}>
-                <NextImage src={getImageUrl(image)} alt={`${product.name} view ${index + 1}`} fill className="object-cover" />
+                <span className="relative block size-20"><NextImage src={getImageUrl(image)} alt={`${product.name} view ${index + 1}`} fill sizes="80px" className="object-cover" /></span>
               </button>
             ))}
           </div>
@@ -262,23 +268,18 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
             <h2 className="text-2xl font-semibold">Related products</h2>
             <Link href="/search" className="text-sm text-primary hover:underline">Browse all</Link>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {relatedProducts.map((item) => (
-              <Card key={item.id} className="overflow-hidden">
-                <Link href={`/product/${buildProductSlug(item)}`}>
-                    <div className="relative aspect-square">
-                    <NextImage src={getImageUrl(item.images?.[0])} alt={item.name} fill className="object-cover" />
-                  </div>
-                </Link>
-                <CardContent className="p-4">
-                  <Link href={`/product/${buildProductSlug(item)}`} className="font-medium hover:text-primary">{item.name}</Link>
-                  <div className="mt-2 text-sm font-semibold">GH₵{(item.discountPrice ?? item.price).toFixed(2)}</div>
-                </CardContent>
-              </Card>
+              <div key={item.id} className="min-w-0"><ProductCard product={item} /></div>
             ))}
           </div>
         </div>
       )}
+
+      {isImageViewerOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111923]/90 p-4" role="dialog" aria-modal="true" aria-label={`${product.name} image viewer`} onClick={() => setIsImageViewerOpen(false)}>
+        <button type="button" onClick={() => setIsImageViewerOpen(false)} className="absolute right-4 top-4 inline-flex size-11 items-center justify-center bg-white/10 text-white hover:bg-white/20" aria-label="Close image viewer"><X className="size-6" /></button>
+        <div className="relative h-[min(78vh,720px)] w-full max-w-3xl" onClick={(event) => event.stopPropagation()}><NextImage src={getImageUrl(selectedImage)} alt={product.name} fill sizes="90vw" className="object-contain" /><p className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-[#111923]/75 px-3 py-1.5 text-xs text-white">{images.length || 1} {images.length === 1 ? 'image' : 'images'}</p></div>
+      </div>}
     </div>
   );
 }

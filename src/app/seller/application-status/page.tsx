@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageLoader } from '@/components/page-loader';
+import { DashboardSkeleton } from '@/components/loading-skeletons';
 
 const statusCopy: Record<string, { title: string; description: string }> = {
   pending: { title: 'Application submitted', description: 'Your seller application is under review. We will notify you when a decision is made.' },
@@ -14,8 +14,8 @@ const statusCopy: Record<string, { title: string; description: string }> = {
 
 export default function SellerApplicationStatusPage() {
   const { seller, loading } = useAuth();
-  if (loading) return <PageLoader />;
-  if (!seller) return <PageLoader />;
+  if (loading) return <DashboardSkeleton />;
+  if (!seller) return <DashboardSkeleton />;
   if (['approved', 'active'].includes(seller.status)) {
     return <main className="flex min-h-screen items-center justify-center px-4"><Button asChild><Link href="/dashboard">Go to Seller Center</Link></Button></main>;
   }
