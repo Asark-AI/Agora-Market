@@ -6,6 +6,7 @@ import { ChevronDown, CheckCircle2, Filter, Mic, Search, ShoppingCart, Truck, Re
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ProductCard } from '@/components/product-card';
+import { ProductCardSkeleton } from '@/components/loading-skeletons';
 import { useCart } from '@/hooks/use-cart';
 import { getCategoryLabel, type StorefrontProduct } from '@/lib/storefront';
 import type { Seller } from '@/lib/types';
@@ -310,17 +311,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
 
           {isLoadingMore && (
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="overflow-hidden rounded-[28px] border border-border/70 bg-background shadow-sm">
-                  <div className="aspect-[4/5] animate-pulse bg-muted/70" />
-                  <div className="space-y-3 p-4">
-                    <div className="h-4 w-1/2 animate-pulse rounded-full bg-muted/70" />
-                    <div className="h-5 w-full animate-pulse rounded-full bg-muted/70" />
-                    <div className="h-4 w-3/4 animate-pulse rounded-full bg-muted/70" />
-                    <div className="h-8 w-20 animate-pulse rounded-full bg-muted/70" />
-                  </div>
-                </div>
-              ))}
+              {Array.from({ length: 4 }).map((_, index) => <ProductCardSkeleton key={index} />)}
             </div>
           )}
 
