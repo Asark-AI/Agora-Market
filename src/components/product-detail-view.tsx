@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import NextImage from 'next/image';
-import { Check, Heart, ShoppingCart, Star, Truck, ShieldCheck, RotateCcw, Share2, Store, BadgeCheck, ArrowRight, Maximize2, X } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Check, ChevronLeft, ChevronRight, Heart, Share2, ShieldCheck, ShoppingCart, Star, Store, Truck, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,7 @@ import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
 import type { StorefrontProduct } from '@/lib/storefront';
 import { getCategoryLabel, getImageUrl } from '@/lib/storefront';
+import { animateProductToFloatingCart } from '@/lib/cart-fly-animation';
 import { ProductCard } from '@/components/product-card';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -22,13 +23,20 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
   const { toggleWishlist, isFavorite } = useWishlist();
   const images = product.images?.filter(Boolean) || [];
   const displayImages = images.length > 0 ? images : [getImageUrl()];
-  const [selectedImage, setSelectedImage] = useState(displayImages[0]);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const selectedImage = displayImages[selectedImageIndex] || displayImages[0];
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [isGalleryZoomed, setIsGalleryZoomed] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [cartActionPending, setCartActionPending] = useState(false);
+  const [cartActionComplete, setCartActionComplete] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const galleryDialogRef = useRef<HTMLDivElement>(null);
+  const galleryCloseButtonRef = useRef<HTMLButtonElement>(null);
   const favorite = isFavorite(product.id);
 
-  const price = useMemo(() => product.discountPrice ?? product.price, [product]);
-  const oldPrice = useMemo(() => (product.discountPrice ? product.price : null), [product]);
+  const price = useMemo(() => product.discountPrice != null && product.discountPrice < product.price ? product.discountPrice : product.price, [product]);
+  const oldPrice = useMemo(() => product.discountPrice != null && product.discountPrice < product.price ? product.price : null, [product]);
   const [selectedRating, setSelectedRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [submittingRating, setSubmittingRating] = useState(false);
@@ -67,6 +75,48 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
     return () => { active = false; };
   }, [product.id, product.sellerId, user]);
 
+  useEffect(() => {
+    setSelectedImageIndex(0);
+    setQuantity(1);
+  }, [product.id]);
+
+  useEffect(() => {
+    if (!isImageViewerOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.body.style.overflow = 'hidden';
+    const focusFrame = window.requestAnimationFrame(() => galleryCloseButtonRef.current?.focus());
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsImageViewerOpen(false);
+      if (event.key === 'ArrowRight') setSelectedImageIndex((index) => (index + 1) % displayImages.length);
+      if (event.key === 'ArrowLeft') setSelectedImageIndex((index) => (index - 1 + displayImages.length) % displayImages.length);
+      if (event.key === 'Tab') {
+        const buttons = galleryDialogRef.current?.querySelectorAll<HTMLButtonElement>('button:not([disabled])');
+        if (!buttons?.length) return;
+        const firstButton = buttons[0];
+        const lastButton = buttons[buttons.length - 1];
+        if (event.shiftKey && document.activeElement === firstButton) {
+          event.preventDefault();
+          lastButton.focus();
+        } else if (!event.shiftKey && document.activeElement === lastButton) {
+          event.preventDefault();
+          firstButton.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [displayImages.length, isImageViewerOpen]);
+
+  useEffect(() => {
+    setIsGalleryZoomed(false);
+  }, [selectedImageIndex]);
+
   const descriptionText = useMemo(() => {
     if (typeof product.description === 'string') {
       return product.description;
@@ -79,8 +129,51 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
     return '';
   }, [product.description]);
 
-  const displayRating = ratingCount > 0 ? ratingAverage : 4.8;
-  const displayReviewText = ratingCount > 0 ? `${ratingCount} review${ratingCount === 1 ? '' : 's'}` : 'No reviews yet';
+  const hasRatings = ratingCount > 0 && product.ratingAverage !== undefined;
+  const discountPercent = oldPrice ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
+  const shippingPolicy = product.seller?.customization?.policies?.shippingPolicy;
+  const returnPolicy = product.seller?.customization?.policies?.returnPolicy;
+  const isVerifiedSeller = Boolean(product.seller?.isVerifiedArtisan);
+  const canDeliver = product.seller?.deliveryOptions?.includes('seller-delivery') ?? false;
+  const canPickup = product.seller?.deliveryOptions?.includes('buyer-pickup') ?? false;
+  const soldCountValue = Number(product.soldCount);
+  const hasSoldCount = Number.isFinite(soldCountValue) && soldCountValue > 0;
+
+  const showPreviousImage = () => setSelectedImageIndex((index) => (index - 1 + displayImages.length) % displayImages.length);
+  const showNextImage = () => setSelectedImageIndex((index) => (index + 1) % displayImages.length);
+  const handleGalleryTouchStart = (event: React.TouchEvent<HTMLElement>) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  };
+  const handleGalleryTouchEnd = (event: React.TouchEvent<HTMLElement>) => {
+    if (touchStartX.current === null) return;
+    const deltaX = (event.changedTouches[0]?.clientX ?? touchStartX.current) - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(deltaX) < 45 || displayImages.length < 2) return;
+    if (deltaX < 0) showNextImage();
+    else showPreviousImage();
+  };
+  const handleShare = () => {
+    const shareUrl = window.location.href;
+    if (navigator.share) void navigator.share({ title: product.name, url: shareUrl });
+    else void navigator.clipboard?.writeText(shareUrl);
+  };
+  const handleAddToCart = (source?: Element | null) => {
+    if (cartActionPending || product.stock <= 0) return;
+    setCartActionPending(true);
+    addToCart(product as any, quantity);
+    animateProductToFloatingCart(source ?? document.querySelector('[data-cart-image-source]'));
+    setCartActionComplete(true);
+    window.setTimeout(() => {
+      setCartActionPending(false);
+      setCartActionComplete(false);
+    }, 700);
+  };
+  const handleBuyNow = () => {
+    if (cartActionPending || product.stock <= 0) return;
+    setCartActionPending(true);
+    addToCart(product as any, quantity);
+    router.push('/checkout');
+  };
 
   const handleSubmitRating = async () => {
     if (!user) {
@@ -108,95 +201,92 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
   };
 
   return (
-    <div className="space-y-8">
-      <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-4">
-            <button type="button" onClick={() => setIsImageViewerOpen(true)} className="group relative block aspect-square w-full overflow-hidden rounded-[24px] border bg-muted text-left" aria-label={`View ${product.name} image`}>
-            <NextImage src={getImageUrl(selectedImage)} alt={product.name} fill sizes="(max-width: 1024px) 100vw, 55vw" className="object-contain transition duration-300 group-hover:scale-[1.02]" />
-            <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 bg-white/95 px-2.5 py-1.5 text-xs font-medium text-[#26384a] shadow-sm"><Maximize2 className="size-3.5" /> View image</span>
-            <span className="absolute left-3 top-3 bg-[#1c2633]/80 px-2 py-1 text-xs font-medium text-white">{images.length || 1} {images.length === 1 ? 'image' : 'images'}</span>
+    <div className="flex flex-col gap-5 pb-4">
+      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
+        <section className="-mx-3 sm:-mx-4 lg:mx-0" aria-label="Product image gallery">
+          <div
+            onTouchStart={handleGalleryTouchStart}
+            onTouchEnd={handleGalleryTouchEnd}
+            className="group relative aspect-square w-full touch-pan-y overflow-hidden bg-[#f3f4f4]"
+          >
+            <button type="button" data-cart-image-source className="absolute inset-0 size-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#1769aa]" onClick={() => setIsImageViewerOpen(true)} aria-label={`Open image gallery for ${product.name}, image ${selectedImageIndex + 1} of ${displayImages.length}`}>
+              <NextImage src={getImageUrl(selectedImage)} alt={product.name} fill priority sizes="(max-width: 1024px) 100vw, 55vw" className="object-contain p-2 transition-transform duration-200 group-hover:scale-[1.015]" />
             </button>
-          <div className="flex flex-wrap gap-3">
-            {displayImages.slice(0, 6).map((image, index) => (
-              <button key={`${image}-${index}`} type="button" onClick={() => setSelectedImage(image)} className={`relative aspect-square overflow-hidden rounded-xl border ${selectedImage === image ? 'ring-2 ring-primary' : ''}`}>
-                <span className="relative block size-20"><NextImage src={getImageUrl(image)} alt={`${product.name} view ${index + 1}`} fill sizes="80px" className="object-cover" /></span>
+            <div className="absolute inset-x-0 top-0 flex items-center justify-between p-3">
+              <button type="button" onClick={(event) => { event.stopPropagation(); router.back(); }} className="inline-flex size-10 items-center justify-center rounded-full bg-white/90 text-foreground shadow-sm" aria-label="Go back"><ArrowLeft className="size-5" /></button>
+              <button type="button" onClick={(event) => { event.stopPropagation(); handleShare(); }} className="inline-flex size-10 items-center justify-center rounded-full bg-white/90 text-foreground shadow-sm" aria-label="Share product"><Share2 className="size-4" /></button>
+            </div>
+            <span className="absolute bottom-3 right-3 bg-black/65 px-2.5 py-1 text-xs font-medium tabular-nums text-white">{selectedImageIndex + 1}/{displayImages.length}</span>
+            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1 bg-black/55 px-2 py-1 text-[10px] font-medium text-white"><ZoomIn className="size-3" /> Tap to view</span>
+          </div>
+
+          {displayImages.length > 1 && <div className="flex gap-2 overflow-x-auto px-3 py-2 sm:px-4 lg:px-0">
+            {displayImages.map((image, index) => (
+              <button key={`${image}-${index}`} type="button" onClick={() => setSelectedImageIndex(index)} aria-label={`Show image ${index + 1}`} aria-current={selectedImageIndex === index ? 'true' : undefined} className={`relative size-14 shrink-0 overflow-hidden border bg-white ${selectedImageIndex === index ? 'border-[#d65a24] ring-1 ring-[#d65a24]' : 'border-border'}`}>
+                <NextImage src={getImageUrl(image)} alt={`${product.name}, image ${index + 1}`} fill sizes="56px" loading="lazy" className="object-contain p-0.5" />
               </button>
             ))}
+          </div>}
+          <div className="flex min-h-10 flex-wrap items-center gap-x-4 gap-y-1 border-y border-border px-3 py-2 text-[11px] sm:px-4 lg:px-0">
+            {canDeliver && <span className="inline-flex items-center gap-1.5 font-medium text-[#21744a]"><Truck className="size-3.5" />Seller delivery available</span>}
+            {canPickup && <span className="inline-flex items-center gap-1.5 font-medium text-[#21744a]"><Check className="size-3.5" />Pickup available</span>}
+            <span className="inline-flex items-center gap-1.5 text-muted-foreground"><ShieldCheck className="size-3.5 text-[#21744a]" />Buyer protection</span>
+            {!canDeliver && !canPickup && <span className="text-muted-foreground">Delivery options confirmed by seller after checkout</span>}
           </div>
-        </div>
+        </section>
 
-        <div className="space-y-6">
+        <section className="space-y-3" aria-label="Product purchase information">
           <div>
-            <div className="text-sm font-medium uppercase tracking-[0.2em] text-primary">{getCategoryLabel(product.categoryId)}</div>
-            <h1 className="mt-2 text-3xl font-semibold">{product.name}</h1>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1 text-amber-500">
-                <Star className="size-4 fill-current" />
-                <span className="font-semibold text-foreground">{displayRating.toFixed(1)}</span>
-              </div>
-              <span>• {displayReviewText}</span>
-              <span>• {product.stock > 0 ? 'In stock' : 'Out of stock'}</span>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-muted-foreground">
+              <span>{getCategoryLabel(product.categoryId)}</span>
+              {oldPrice && <span className="bg-[#fff1eb] px-2 py-1 text-[#bd4a1c]">-{discountPercent}% · SALE</span>}
+            </div>
+            <h1 className="mt-1 text-lg font-semibold leading-6 text-foreground sm:text-xl">{product.name}</h1>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              {hasRatings ? <span className="inline-flex items-center gap-1"><Star className="size-3.5 fill-[#d19b2d] text-[#d19b2d]" /><strong className="text-foreground">{ratingAverage.toFixed(1)}</strong><span>· {ratingCount.toLocaleString()} {ratingCount === 1 ? 'review' : 'reviews'}</span></span> : <span>No reviews yet</span>}
+              {hasSoldCount && <span>{soldCountValue.toLocaleString()} sold</span>}
+              {product.stock > 0 && product.stock <= 5 && <span className="font-semibold text-[#b42318]">Only {product.stock} left</span>}
+              {product.stock <= 0 && <span className="font-semibold text-[#b42318]">Out of stock</span>}
             </div>
           </div>
 
-          <div className="rounded-[24px] border bg-muted/40 p-4">
-            <div className="flex flex-wrap items-end gap-3">
-              <span className="text-3xl font-semibold">GH₵{price.toFixed(2)}</span>
-              {oldPrice && <span className="text-lg text-muted-foreground line-through">GH₵{oldPrice.toFixed(2)}</span>}
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">Free shipping on orders above GH₵200 • Express delivery available</p>
+          <div className="border-y border-border py-2.5">
+            <div className="text-2xl font-bold leading-8 text-foreground">GH₵{price.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            {oldPrice && <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs">
+              <span className="text-muted-foreground line-through">GH₵{oldPrice.toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="font-semibold text-[#bd4a1c]">-{discountPercent}%</span>
+              <span className="text-muted-foreground">Discounted price</span>
+            </div>}
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            <div className="flex items-center rounded-full border px-3 py-2 text-sm">
-              <span className="mr-2 font-medium">Qty</span>
-              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="h-7 w-7 rounded-full bg-muted">−</button>
-              <span className="mx-3 min-w-6 text-center">{quantity}</span>
-              <button type="button" onClick={() => setQuantity((value) => value + 1)} className="h-7 w-7 rounded-full bg-muted">+</button>
+          <div className="flex items-center justify-between gap-3">
+            <div className="inline-flex h-9 items-center border px-2 text-sm">
+              <span className="mr-1.5 text-[11px] text-muted-foreground">Qty</span>
+              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="size-7" aria-label="Decrease quantity">−</button>
+              <span className="min-w-7 text-center text-xs font-semibold">{quantity}</span>
+              <button type="button" onClick={() => setQuantity((value) => Math.min(Math.max(product.stock, 1), value + 1))} className="size-7" aria-label="Increase quantity" disabled={quantity >= product.stock}>+</button>
             </div>
-            <Button size="lg" onClick={() => addToCart(product as any, quantity)}>
-              <ShoppingCart className="mr-2 size-4" /> Add to cart
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => toggleWishlist(product)}>
-              <Heart className={`mr-2 size-4 ${favorite ? 'fill-current text-primary' : ''}`} /> Wishlist
-            </Button>
-            <Button size="icon" variant="outline" aria-label="Share product" onClick={() => {
-              const shareUrl = window.location.href;
-              if (navigator.share) void navigator.share({ title: product.name, url: shareUrl });
-              else void navigator.clipboard?.writeText(shareUrl);
-            }}>
-              <Share2 className="size-4" />
-            </Button>
+            <p className="text-right text-[10px] text-muted-foreground">{product.stock > 0 ? `${product.stock} available` : 'Currently unavailable'}</p>
           </div>
-
-          <Card>
-            <CardContent className="space-y-3 p-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2"><Truck className="size-4 text-primary" /> Estimated delivery 2–4 business days</div>
-              <div className="flex items-center gap-2"><ShieldCheck className="size-4 text-primary" /> Secure checkout with buyer protection</div>
-              <div className="flex items-center gap-2"><RotateCcw className="size-4 text-primary" /> Easy return policy within 7 days</div>
-            </CardContent>
-          </Card>
-
-          <div className="rounded-[24px] border p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-semibold">Sold by</p>
-                <span className="text-foreground">
-                  {product.sellerName || 'Verified Seller'}
-                </span>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                <div className="flex items-center gap-1"><BadgeCheck className="size-4 text-primary" /> 4.9 seller rating</div>
-                <div className="mt-1 flex items-center gap-1"><Store className="size-4" /> 1.2k followers</div>
-              </div>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-            </div>
-          </div>
-        </div>
+        </section>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr]">
+      <section className="border-y border-border py-3" aria-label="Seller and delivery policies">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Link href={`/store/${product.sellerId}`} className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold hover:text-primary">
+            <Store className="size-4 shrink-0 text-muted-foreground" />
+            <span className="truncate">Sold by {product.sellerName || 'Agora seller'}</span>
+          </Link>
+          {isVerifiedSeller && <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-emerald-700"><BadgeCheck className="size-4" /> Verified seller</span>}
+          {product.seller?.followerCount ? <span className="text-[11px] text-muted-foreground">{product.seller.followerCount.toLocaleString()} followers</span> : null}
+        </div>
+        {(shippingPolicy || returnPolicy) && <div className="mt-2 grid gap-2 text-[11px] text-muted-foreground sm:grid-cols-2">
+          {shippingPolicy && <p><strong className="font-semibold text-foreground">Shipping: </strong>{shippingPolicy}</p>}
+          {returnPolicy && <p><strong className="font-semibold text-foreground">Returns: </strong>{returnPolicy}</p>}
+        </div>}
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr] lg:gap-8">
         <Card>
           <CardHeader>
             <CardTitle>Description</CardTitle>
@@ -215,17 +305,6 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
         </Card>
 
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Highlights</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <div className="rounded-2xl border bg-muted/30 p-3">Premium quality with reliable local delivery.</div>
-              <div className="rounded-2xl border bg-muted/30 p-3">Fast response from seller and transparent shipping.</div>
-              <div className="rounded-2xl border bg-muted/30 p-3">Highly rated and frequently restocked.</div>
-            </CardContent>
-          </Card>
-
           {hasPurchased && !checkingPurchase ? <Card>
             <CardHeader>
               <CardTitle>Rate this product</CardTitle>
@@ -276,9 +355,48 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
         </div>
       )}
 
-      {isImageViewerOpen && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111923]/90 p-4" role="dialog" aria-modal="true" aria-label={`${product.name} image viewer`} onClick={() => setIsImageViewerOpen(false)}>
-        <button type="button" onClick={() => setIsImageViewerOpen(false)} className="absolute right-4 top-4 inline-flex size-11 items-center justify-center bg-white/10 text-white hover:bg-white/20" aria-label="Close image viewer"><X className="size-6" /></button>
-        <div className="relative h-[min(78vh,720px)] w-full max-w-3xl" onClick={(event) => event.stopPropagation()}><NextImage src={getImageUrl(selectedImage)} alt={product.name} fill sizes="90vw" className="object-contain" /><p className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-[#111923]/75 px-3 py-1.5 text-xs text-white">{images.length || 1} {images.length === 1 ? 'image' : 'images'}</p></div>
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-white/95 px-3 py-2 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:bottom-0 md:py-3">
+        <div className="mx-auto flex max-w-7xl items-center gap-2">
+          <div className="hidden min-w-0 flex-1 sm:block">
+            <p className="truncate text-xs font-medium text-muted-foreground">{product.name}</p>
+            <p className="text-sm font-bold">GH₵{price.toFixed(2)}</p>
+          </div>
+          <button type="button" onClick={() => toggleWishlist(product)} className="inline-flex size-10 shrink-0 items-center justify-center border border-border text-foreground" aria-label={favorite ? 'Remove from wishlist' : 'Add to wishlist'} title={favorite ? 'Remove from wishlist' : 'Add to wishlist'}>
+            <Heart className={`size-4 ${favorite ? 'fill-current text-[#b42318]' : ''}`} />
+          </button>
+          <button type="button" onClick={() => handleAddToCart()} disabled={product.stock <= 0 || cartActionPending} aria-live="polite" className="inline-flex h-10 flex-1 items-center justify-center gap-2 border border-[#bd4a1c] px-3 text-xs font-semibold text-[#bd4a1c] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-5">
+            {cartActionComplete ? <Check className="size-4" /> : <ShoppingCart className="size-4" />}
+            {cartActionComplete ? 'Added' : 'Add to cart'}
+          </button>
+          <button type="button" onClick={handleBuyNow} disabled={product.stock <= 0 || cartActionPending} className="inline-flex h-10 flex-1 items-center justify-center bg-[#d65a24] px-3 text-xs font-semibold text-white hover:bg-[#bd4a1c] disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:px-6">
+            {cartActionPending && !cartActionComplete ? 'Adding…' : 'Buy now'}
+          </button>
+        </div>
+      </div>
+
+      {isImageViewerOpen && <div ref={galleryDialogRef} className="fixed inset-0 z-[100] flex flex-col bg-black text-white" role="dialog" aria-modal="true" aria-label={`${product.name} image gallery`}>
+        <div className="flex h-14 shrink-0 items-center justify-between px-3 pt-[env(safe-area-inset-top)]">
+          <button ref={galleryCloseButtonRef} type="button" onClick={() => setIsImageViewerOpen(false)} className="inline-flex size-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10" aria-label="Close image gallery"><X className="size-5" /></button>
+          <span className="text-xs font-medium tabular-nums text-white/85">{selectedImageIndex + 1}/{displayImages.length}</span>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setIsGalleryZoomed((zoomed) => !zoomed)} className="inline-flex size-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10" aria-label={isGalleryZoomed ? 'Zoom out' : 'Zoom image'}>{isGalleryZoomed ? <ZoomOut className="size-5" /> : <ZoomIn className="size-5" />}</button>
+            <button type="button" onClick={handleShare} className="inline-flex size-10 items-center justify-center rounded-full text-white/90 hover:bg-white/10" aria-label="Share product"><Share2 className="size-4" /></button>
+          </div>
+        </div>
+        <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden touch-pan-y" onTouchStart={handleGalleryTouchStart} onTouchEnd={handleGalleryTouchEnd} onDoubleClick={() => setIsGalleryZoomed((zoomed) => !zoomed)}>
+          <NextImage src={getImageUrl(selectedImage)} alt={product.name} fill priority={selectedImageIndex === 0} sizes="100vw" className={`object-contain p-1 transition-transform duration-200 ${isGalleryZoomed ? 'scale-[1.75]' : 'scale-100'}`} />
+          {displayImages.length > 1 && <>
+            <button type="button" onClick={showPreviousImage} className="absolute left-2 inline-flex size-10 items-center justify-center rounded-full bg-black/35 text-white/80" aria-label="Previous image"><ChevronLeft className="size-6" /></button>
+            <button type="button" onClick={showNextImage} className="absolute right-2 inline-flex size-10 items-center justify-center rounded-full bg-black/35 text-white/80" aria-label="Next image"><ChevronRight className="size-6" /></button>
+          </>}
+        </div>
+        <div className="shrink-0 border-t border-white/10 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+          <p className="mb-2 truncate text-center text-xs text-white/70">{product.name}</p>
+          <button type="button" onClick={() => { handleAddToCart(galleryDialogRef.current?.querySelector('img')); setIsImageViewerOpen(false); }} disabled={product.stock <= 0 || cartActionPending} aria-label={product.stock <= 0 ? 'Product is out of stock' : 'Add product to cart'} className="mx-auto flex h-12 w-full max-w-2xl items-center justify-center gap-2 bg-[#d65a24] px-4 text-sm font-semibold text-white transition hover:bg-[#bd4a1c] disabled:cursor-not-allowed disabled:opacity-50" aria-live="polite">
+            {cartActionComplete ? <Check className="size-4" /> : <ShoppingCart className="size-4" />}
+            {product.stock <= 0 ? 'Out of stock' : cartActionComplete ? 'Added to cart' : 'Add to cart'}
+          </button>
+        </div>
       </div>}
     </div>
   );

@@ -139,7 +139,7 @@ export default function CheckoutPage() {
       <SiteHeader />
       <main className="min-h-screen bg-[#f7f8fa] pb-28 text-[#1c2633]">
         <div className="mx-auto max-w-3xl px-4 py-5 sm:px-6 sm:py-8">
-          <header className="mb-5 flex items-center gap-3 border-b border-[#e3e7eb] pb-4"><Link href="/cart" aria-label="Back to cart" className="inline-flex size-10 items-center justify-center text-[#26384a]"><ArrowLeft className="size-5" /></Link><div><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a17d32]">Agora marketplace</p><h1 className="text-xl font-semibold">Checkout</h1></div></header>
+          <header className="mb-5 flex items-center gap-3 border-b border-[#e3e7eb] pb-4"><Link href="/cart" aria-label="Back to cart" className="inline-flex size-10 items-center justify-center text-[#26384a]"><ArrowLeft className="size-5" /></Link><div><h1 className="text-xl font-semibold">Checkout</h1></div></header>
 
           <section className="border-y border-[#e1e6eb] bg-white px-4 py-4 sm:px-5">
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6d7b88]"><MapPin className="size-4 text-[#bd923a]" /> Delivery address</div>

@@ -21,7 +21,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <PublicShell>
-      <div className="container mx-auto max-w-7xl px-4 py-12">
+      <div className="container mx-auto max-w-7xl px-3 pb-32 pt-4 sm:px-4 sm:pt-8 md:pb-28">
         <ProductDetailView product={product} relatedProducts={relatedProducts} />
       </div>
     </PublicShell>

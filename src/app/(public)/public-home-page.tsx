@@ -2,7 +2,7 @@ import { getActiveProducts } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Store, Zap } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,46 +28,46 @@ export default async function PublicHomePage() {
 
   return (
     <PublicShell>
-      <main className="mx-auto max-w-7xl px-4 pb-8">
-        <section className="border-b border-border py-3" aria-labelledby="home-shopping-title">
-          <div className="flex items-center justify-between gap-3">
-            <div><h1 id="home-shopping-title" className="text-xl font-semibold tracking-tight sm:text-2xl">Shop what&apos;s new</h1></div>
-            <Link href="/products" className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-primary">All products <ArrowRight className="size-4" /></Link>
-          </div>
-        </section>
-
-        <nav className="-mx-4 flex gap-2 overflow-x-auto border-b border-border/50 bg-background px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Shop categories">
-          {homeCategories.map((category, index) => (
-            <Link key={category.id} href={`/search?category=${category.id}`} className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${index === 0 ? 'border-primary bg-primary text-primary-foreground' : 'border-border/70 bg-background text-foreground hover:border-primary hover:text-primary'}`}>
+      <main className="mx-auto max-w-7xl px-3 pb-8 sm:px-4">
+        <nav className="-mx-3 flex gap-1 overflow-x-auto border-b border-border/60 bg-background px-3 py-2 sm:-mx-4 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Shop categories">
+          <Link href="/" aria-current="page" className="shrink-0 border-b-2 border-[#d65a24] px-3 py-2 text-xs font-semibold text-foreground">All</Link>
+          {homeCategories.map((category) => (
+            <Link key={category.id} href={`/search?category=${category.id}`} className="shrink-0 px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground">
               {category.label}
             </Link>
           ))}
-          <Link href="/categories" className="flex shrink-0 items-center gap-1 rounded-full border border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground">More <ArrowRight className="size-3.5" /></Link>
+          <Link href="/categories" className="flex shrink-0 items-center gap-1 px-3 py-2 text-xs font-semibold text-muted-foreground">More <ArrowRight className="size-3.5" /></Link>
         </nav>
 
+        <div className="flex items-center gap-5 border-b border-border/60 py-2 text-[11px] font-medium text-muted-foreground" aria-label="Agora marketplace benefits">
+          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5 text-emerald-700" /> Buyer protection</span>
+          <span className="inline-flex items-center gap-1.5"><Store className="size-3.5 text-emerald-700" /> Local sellers</span>
+          <Link href="/products" className="ml-auto inline-flex shrink-0 items-center gap-1 font-semibold text-primary">All products <ArrowRight className="size-3.5" /></Link>
+        </div>
+
         {flashDeals.length > 0 && (
-          <section className="mt-3 border-y border-border bg-background py-3 sm:py-4" aria-labelledby="flash-deals-title">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div><h2 id="flash-deals-title" className="text-xl font-semibold tracking-[-0.02em] text-foreground">Flash Deals</h2><p className="mt-0.5 text-xs text-muted-foreground">Limited-time prices while stock lasts.</p></div>
+          <section className="border-b border-border/70 py-3" aria-labelledby="flash-deals-title">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="flex items-baseline gap-2"><h2 id="flash-deals-title" className="inline-flex items-center gap-1.5 text-base font-bold text-foreground"><Zap className="size-4 text-[#d65a24]" />Flash Deals</h2><p className="hidden text-[11px] text-muted-foreground sm:block">Discounted prices on selected products</p></div>
               <Link href="/flash-deals" className="shrink-0 text-xs font-semibold text-primary">See all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
             </div>
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {flashDeals.map((product) => (
-                <div key={product.id} className="w-[156px] shrink-0 sm:w-[184px]">
-                  <ProductCard product={product} />
+                <div key={product.id} className="w-[148px] shrink-0 sm:w-[176px]">
+                  <ProductCard product={product} dealMode />
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        <section className="mt-6" aria-labelledby="for-you-title">
-          <div className="mb-2.5 flex items-end justify-between gap-3">
-            <h2 id="for-you-title" className="text-xl font-semibold tracking-[-0.02em] text-foreground">Popular right now</h2>
+        <section className="mt-3" aria-labelledby="for-you-title">
+          <div className="mb-2 flex items-end justify-between gap-3">
+            <h2 id="for-you-title" className="text-base font-bold text-foreground">Popular right now</h2>
             <Link href="/products" className="text-xs font-semibold text-primary">See all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
           </div>
           {popular.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
               {popular.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)}
             </div>
           ) : (
@@ -76,12 +76,12 @@ export default async function PublicHomePage() {
         </section>
 
         {newArrivals.length > 0 && (
-          <section className="mt-5" aria-labelledby="trending-title">
-            <div className="mb-2.5 flex items-end justify-between gap-3">
-              <h2 id="trending-title" className="text-xl font-semibold text-foreground">New Arrivals</h2>
+          <section className="mt-4" aria-labelledby="trending-title">
+            <div className="mb-2 flex items-end justify-between gap-3">
+              <h2 id="trending-title" className="text-base font-bold text-foreground">New Arrivals</h2>
               <Link href="/products" className="text-xs font-semibold text-primary">Explore <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
             </div>
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {newArrivals.map((product) => <ProductCard key={product.id} product={product} />)}
             </div>
           </section>

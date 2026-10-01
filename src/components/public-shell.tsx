@@ -6,6 +6,7 @@ import { SiteHeader } from '@/components/site-header';
 import { House, Search as SearchIcon, ShoppingCart, Package, UserRound } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
+import { FloatingCart } from '@/components/floating-cart';
 
 const mobileNavItems = [
   { href: '/', label: 'Home', icon: House },
@@ -27,6 +28,7 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-[100svh] overflow-x-hidden bg-background text-foreground">
       <SiteHeader />
       <main className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-16 md:pb-10">{children}</main>
+      <FloatingCart />
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background md:hidden">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           {mobileNavItems.map(({ href, label, icon: Icon }, index) => {

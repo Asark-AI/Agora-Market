@@ -28,7 +28,6 @@ export default async function CategoriesPage({ searchParams }: { searchParams: {
     <PublicShell>
       <main className="mx-auto max-w-7xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8">
         <header className="border-b border-[#e1e6eb] pb-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9a772b]">Agora marketplace</p>
           <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div><h1 className="text-2xl font-semibold tracking-tight text-[#1c2633] sm:text-3xl">Shop by category</h1><p className="mt-2 max-w-xl text-sm leading-6 text-[#667482]">Browse departments built for the way people shop for technology, electronics, and everyday products.</p></div>
             <p className="text-sm text-[#74808d]"><span className="font-semibold text-[#1c2633]">{electronicsCategoryTree.length}</span> departments · <span className="font-semibold text-[#1c2633]">{totalCategories}</span> categories</p>

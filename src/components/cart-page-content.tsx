@@ -7,10 +7,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { SiteHeader } from '@/components/site-header';
+import { ProductCard } from '@/components/product-card';
 import type { Product, Seller } from '@/lib/types';
-import type { StorefrontProduct } from '@/lib/storefront';
+import { getImageUrl, type StorefrontProduct } from '@/lib/storefront';
 
 const money = (value: number) => `GH₵${value.toFixed(2)}`;
+const currentPrice = (product: Product) => product.discountPrice != null && product.discountPrice < product.price ? product.discountPrice : product.price;
 
 export function CartPageContent({ recommendations, sellers }: { recommendations: StorefrontProduct[]; sellers: Seller[] }) {
   const router = useRouter();
@@ -39,7 +41,7 @@ export function CartPageContent({ recommendations, sellers }: { recommendations:
   const selectedItems = items.filter(({ product }) => selected.has(product.id));
   const subtotal = selectedItems.reduce((sum, { product, quantity }) => {
     const item = product as Product;
-    return sum + (item.discountPrice ?? item.price ?? 0) * quantity;
+    return sum + currentPrice(item) * quantity;
   }, 0);
   const selectedCount = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
   const allSelected = items.length > 0 && items.every(({ product }) => selected.has(product.id));
@@ -67,38 +69,60 @@ export function CartPageContent({ recommendations, sellers }: { recommendations:
           </header>
 
           {items.length === 0 ? (
-            <section className="grid min-h-[45vh] place-items-center text-center">
-              <div><ShoppingBag className="mx-auto size-10 text-[#9aa5b1]" /><h2 className="mt-4 text-lg font-semibold">Your cart is empty</h2><p className="mt-2 text-sm text-[#74808d]">Find something useful from Agora sellers.</p><Link href="/products" className="mt-5 inline-flex h-11 items-center bg-[#1769aa] px-5 text-sm font-semibold text-white hover:bg-[#12588f]">Browse products</Link></div>
-            </section>
+            <>
+              <section className="flex flex-wrap items-center justify-between gap-3 border-y border-[#e3e7eb] bg-white px-4 py-3" aria-labelledby="empty-cart-title">
+                <div className="flex items-center gap-3">
+                  <ShoppingBag className="size-5 shrink-0 text-[#87929d]" />
+                  <div><h2 id="empty-cart-title" className="text-sm font-semibold">Your cart is empty</h2><p className="mt-0.5 text-xs text-[#74808d]">Find something useful from Agora sellers.</p></div>
+                </div>
+                <Link href="/products" className="inline-flex h-9 items-center bg-[#1769aa] px-4 text-xs font-semibold text-white hover:bg-[#12588f]">Browse products</Link>
+              </section>
+              {suggestedProducts.length > 0 ? (
+                <section className="mt-6" aria-labelledby="empty-cart-recommendations-title">
+                  <div className="mb-3 flex items-center justify-between gap-3"><h2 id="empty-cart-recommendations-title" className="text-base font-semibold">Recommended products</h2><Link href="/products" className="text-xs font-medium text-[#1769aa]">See all</Link></div>
+                  <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+                    {suggestedProducts.map((product) => <div key={product.id} className="min-w-0"><ProductCard product={product} /></div>)}
+                  </div>
+                </section>
+              ) : <p className="py-10 text-center text-sm text-[#74808d]">New products are arriving soon.</p>}
+            </>
           ) : (
             <>
-              <section aria-label="Cart items" className="divide-y divide-[#e3e7eb] border-y border-[#e3e7eb] bg-white">
+              <section aria-label="Cart items" className="space-y-3">
                 {items.map(({ product, quantity }) => {
                   const item = product as Product;
-                  const price = item.discountPrice ?? item.price ?? 0;
+                  const price = currentPrice(item);
+                  const originalPrice = price < item.price ? item.price : null;
+                  const discountPercent = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
                   const sellerName = sellersById.get(item.sellerId)?.name || 'Agora seller';
                   const checked = selected.has(product.id);
                   return (
-                    <article key={product.id} className="flex gap-3 px-3 py-4 sm:gap-4 sm:px-4">
+                    <article key={product.id} className="grid grid-cols-[20px_80px_minmax(0,1fr)] gap-3 border border-[#e0e5ea] bg-white p-3 shadow-[0_1px_3px_rgba(28,38,51,0.04)] sm:grid-cols-[20px_112px_minmax(0,1fr)] sm:gap-4 sm:p-4">
                       <button type="button" aria-label={`${checked ? 'Deselect' : 'Select'} ${product.name}`} aria-pressed={checked} onClick={() => toggleItem(product.id)} className={`mt-1 flex size-5 shrink-0 items-center justify-center border ${checked ? 'border-[#1769aa] bg-[#1769aa] text-white' : 'border-[#aab4bf] bg-white'}`}>{checked && <Check className="size-3.5" />}</button>
-                      <Link href={`/product/${product.id}`} className="relative size-[88px] shrink-0 overflow-hidden bg-[#f1f3f5] sm:size-24">
-                        <Image src={item.images?.[0] || '/placeholder.png'} alt={product.name} fill sizes="96px" className="object-cover" />
+                      <Link href={`/product/${product.id}`} className="relative aspect-square w-20 shrink-0 overflow-hidden bg-[#f1f3f5] sm:w-28">
+                        <Image src={getImageUrl(item.images?.[0])} alt={product.name} fill sizes="(max-width: 640px) 80px, 112px" className="object-contain p-1.5" />
                       </Link>
                       <div className="min-w-0 flex-1">
-                        <h2 className="line-clamp-2 text-sm font-medium leading-5 text-[#26384a]">{product.name}</h2>
-                        <p className="mt-1 truncate text-xs text-[#74808d]">Seller: {sellerName}</p>
-                        <p className="mt-1 text-[11px] text-[#74808d]">Delivery estimate at checkout</p>
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                          <p className="text-base font-semibold text-[#1c2633]">{money(price)}</p>
+                        <div className="flex min-w-0 items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <Link href={`/product/${product.id}`} className="line-clamp-2 text-sm font-semibold leading-5 text-[#26384a] hover:text-[#1769aa]">{product.name}</Link>
+                            <p className="mt-1 truncate text-[11px] text-[#74808d]">{sellerName}</p>
+                          </div>
+                          <button type="button" onClick={() => removeFromCart(product.id)} aria-label={`Remove ${product.name}`} className="-mr-1 -mt-1 inline-flex size-9 shrink-0 items-center justify-center text-[#8a95a1] hover:text-[#b42318]"><Trash2 className="size-4" /></button>
+                        </div>
+                        <p className="mt-1 text-[10px] text-[#74808d]">Delivery estimate at checkout</p>
+                        <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                          <p className="text-base font-bold text-[#1c2633]">{money(price)}</p>
+                          {originalPrice && <><p className="text-xs text-[#87929d] line-through">{money(originalPrice)}</p><span className="text-[10px] font-semibold text-[#b42318]">-{discountPercent}%</span></>}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-2">
                           <div className="flex h-9 items-center border border-[#d8dee5]">
                             <button type="button" aria-label="Decrease quantity" disabled={quantity <= 1} onClick={() => updateQuantity(product.id, quantity - 1)} className="flex size-9 items-center justify-center text-[#4d5c6a] disabled:opacity-35"><Minus className="size-4" /></button>
                             <span className="min-w-8 text-center text-sm tabular-nums">{quantity}</span>
                             <button type="button" aria-label="Increase quantity" disabled={quantity >= item.stock} onClick={() => updateQuantity(product.id, quantity + 1)} className="flex size-9 items-center justify-center text-[#1769aa] disabled:opacity-35"><Plus className="size-4" /></button>
                           </div>
-                          <button type="button" onClick={() => removeFromCart(product.id)} aria-label={`Remove ${product.name}`} className="hidden size-9 items-center justify-center text-[#8a95a1] hover:text-[#b42318] sm:inline-flex"><Trash2 className="size-4" /></button>
                         </div>
                       </div>
-                      <button type="button" onClick={() => removeFromCart(product.id)} aria-label={`Remove ${product.name}`} className="inline-flex size-9 shrink-0 items-center justify-center self-end text-[#8a95a1] hover:text-[#b42318] sm:hidden"><Trash2 className="size-4" /></button>
                     </article>
                   );
                 })}

@@ -152,17 +152,36 @@ export async function POST(request: Request) {
 
     if (normalizedStatus === 'SUCCESS' && existingPayment.orderDraft?.sellerId && Array.isArray(existingPayment.orderDraft.items) && existingPayment.orderDraft.items.length > 0) {
       const sellerId = String(existingPayment.orderDraft.sellerId);
+      const orderItems = existingPayment.orderDraft.items.filter((item: any) => {
+        const quantity = Number(item.quantity);
+        return typeof item.productId === 'string' && item.productId.length > 0 && Number.isFinite(quantity) && quantity > 0;
+      });
       const orderQuery = await db.collection('sellers').doc(sellerId).collection('orders').where('paymentReference', '==', reference).limit(1).get();
-      const orderDoc = orderQuery.docs[0];
+      const existingOrder = orderQuery.docs[0];
+      let orderId = existingOrder?.id;
 
-      if (!orderDoc) {
+      if (existingOrder) {
+        await existingOrder.ref.update({
+          paymentStatus: 'SUCCESS',
+          paymentProvider: 'paystack',
+          paymentReference: reference,
+          paymentAmountMinor: Number(verified.amount || 0),
+          paymentCurrency: verified.currency || 'GHS',
+          paidAt: verified.paid_at || null,
+          updatedAt: new Date().toISOString(),
+        });
+      } else {
+        const orderRef = db.collection('sellers').doc(sellerId).collection('orders').doc(`${reference}_${sellerId}`);
+        const productRefs = orderItems.map((item: any) =>
+          db.collection('sellers').doc(sellerId).collection('products').doc(item.productId)
+        );
         const orderRecord = {
           buyerId: existingPayment.orderDraft.buyerId,
           userId: existingPayment.orderDraft.buyerId,
           date: new Date().toISOString(),
           total: Number(existingPayment.orderDraft.total || Number(verified.amount || 0) / 100),
           status: 'pending',
-          items: existingPayment.orderDraft.items.map((item: any) => ({
+          items: orderItems.map((item: any) => ({
             productId: String(item.productId),
             quantity: Number(item.quantity || 0),
             price: Number(item.price || 0),
@@ -179,45 +198,32 @@ export async function POST(request: Request) {
           updatedAt: new Date().toISOString(),
         };
 
-        const createdOrderRef = await db.collection('sellers').doc(sellerId).collection('orders').add(orderRecord);
-        await paymentRef.set({
-          orderCreated: true,
-          orderId: createdOrderRef.id,
-          status: 'SUCCESS',
-          updatedAt: new Date().toISOString(),
-        }, { merge: true });
-
-        for (const item of existingPayment.orderDraft.items) {
-          const productId = String(item.productId || '');
-          const quantity = Number(item.quantity || 0);
-          if (!productId || quantity <= 0) continue;
-
-          const productRef = db.collection('sellers').doc(sellerId).collection('products').doc(productId);
-          const productSnap = await productRef.get();
-          if (productSnap.exists) {
-            const currentStock = Number(productSnap.data()?.stock ?? 0);
-            await productRef.update({ stock: Math.max(0, currentStock - quantity) });
-          }
-        }
-      } else {
-        await orderDoc.ref.update({
-          paymentStatus: 'SUCCESS',
-          paymentProvider: 'paystack',
-          paymentReference: reference,
-          paymentAmountMinor: Number(verified.amount || 0),
-          paymentCurrency: verified.currency || 'GHS',
-          paidAt: verified.paid_at || null,
-          updatedAt: new Date().toISOString(),
-          status: orderDoc.data().status === 'cancelled' ? orderDoc.data().status : orderDoc.data().status,
+        await db.runTransaction(async (transaction) => {
+          const orderSnapshot = await transaction.get(orderRef);
+          if (orderSnapshot.exists) return;
+          const products = await Promise.all(productRefs.map((productRef: FirebaseFirestore.DocumentReference) => transaction.get(productRef)));
+          transaction.set(orderRef, orderRecord);
+          products.forEach((productSnapshot, index) => {
+            const quantity = Number(orderItems[index].quantity);
+            if (!productSnapshot.exists) return;
+            const product = productSnapshot.data();
+            const currentStock = Number(product?.stock ?? 0);
+            const currentSoldCount = Number(product?.soldCount ?? 0);
+            transaction.update(productRefs[index], {
+              stock: Math.max(0, (Number.isFinite(currentStock) ? currentStock : 0) - quantity),
+              soldCount: Math.max(0, Number.isFinite(currentSoldCount) ? currentSoldCount : 0) + quantity,
+            });
+          });
         });
-
-        await paymentRef.set({
-          orderCreated: true,
-          orderId: orderDoc.id,
-          status: 'SUCCESS',
-          updatedAt: new Date().toISOString(),
-        }, { merge: true });
+        orderId = orderRef.id;
       }
+
+      await paymentRef.set({
+        orderCreated: true,
+        orderId,
+        status: 'SUCCESS',
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
     }
 
     return NextResponse.json({ ok: true, received: true, event: eventType || 'paystack_event' });

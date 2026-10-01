@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { AppLogo } from '@/components/app-logo';
 
 export function AuthShell({
   children,
@@ -26,15 +25,10 @@ export function AuthShell({
   return (
     <main className="min-h-[100svh] bg-[#fbfcfa] px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 text-[#17251d] sm:px-6 sm:pt-8">
       <section className="mx-auto w-full max-w-[480px]">
-        <header className="flex h-12 items-center justify-between border-b border-[#e7ebe6]">
+        <header className="flex h-12 items-center border-b border-[#e7ebe6]">
           <Link href={alternateHref} className="inline-flex size-10 items-center justify-center text-[#526057] transition hover:text-[#173b2b]" aria-label="Go back">
             <ArrowLeft className="size-5" />
           </Link>
-          <Link href="/" className="flex items-center gap-2" aria-label="Agora home">
-            <span className="flex size-8 items-center justify-center rounded-md bg-[#173b2b] p-1.5"><AppLogo className="size-full text-[#e0b75d]" /></span>
-            <span className="text-sm font-bold tracking-[0.2em] text-[#173b2b]">AGORA</span>
-          </Link>
-          <span className="size-10" aria-hidden="true" />
         </header>
 
         <div className="pt-8 sm:pt-10">

@@ -3,27 +3,27 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function ProductCardSkeleton() {
   return (
     <div className="group relative flex min-w-0 h-full flex-col overflow-hidden border border-[#e3e7eb] bg-white" aria-hidden="true">
-      <div className="relative aspect-[4/5] overflow-hidden bg-[#f1f4f6]">
+      <div className="relative aspect-square overflow-hidden bg-[#f1f4f6]">
         <Skeleton className="absolute left-2 top-2 h-5 w-12 rounded-sm" />
-        <Skeleton className="absolute right-2 top-2 size-8 rounded-full" />
+        <Skeleton className="absolute right-2 top-2 size-9 rounded-full" />
         <Skeleton className="h-full w-full" />
       </div>
 
-      <div className="flex flex-1 flex-col p-3">
+      <div className="flex flex-1 flex-col p-2.5">
         <Skeleton className="h-4 w-full" />
-        <Skeleton className="mt-2 h-4 w-4/5" />
+        <Skeleton className="mt-0.5 h-4 w-4/5" />
 
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-1 flex h-4 items-center gap-1">
           <Skeleton className="size-3 rounded-full" />
-          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-3 w-16" />
         </div>
 
-        <Skeleton className="mt-3 h-5 w-20" />
-        <Skeleton className="mt-2 h-3 w-1/2" />
+        <Skeleton className="mt-1.5 h-5 w-28" />
+        <Skeleton className="mt-0.5 h-3 w-16" />
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="size-8 rounded-none" />
+        <div className="mt-auto flex min-h-10 items-center justify-between gap-2 pt-1.5">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="size-10 rounded-full" />
         </div>
       </div>
     </div>
@@ -40,35 +40,31 @@ export function CategoryNavigationSkeleton() {
 
 export function ProductDetailsSkeleton() {
   return (
-    <div className="space-y-8" aria-busy="true" aria-label="Loading product details">
-      <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-4">
-          <Skeleton className="aspect-square w-full rounded-[24px]" />
-          <div className="flex gap-3">
-            <Skeleton className="size-20 rounded-xl" />
-            <Skeleton className="size-20 rounded-xl" />
-            <Skeleton className="size-20 rounded-xl" />
+    <div className="space-y-5" aria-busy="true" aria-label="Loading product details">
+      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
+        <div className="-mx-3 space-y-0 sm:-mx-4 lg:mx-0">
+          <Skeleton className="aspect-square w-full rounded-none" />
+          <div className="flex gap-2 overflow-hidden px-3 py-2 sm:px-4 lg:px-0">
+            <Skeleton className="size-14 shrink-0 rounded-none" />
+            <Skeleton className="size-14 shrink-0 rounded-none" />
+            <Skeleton className="size-14 shrink-0 rounded-none" />
           </div>
+          <div className="flex h-10 items-center gap-3 border-y border-border px-3 sm:px-4 lg:px-0"><Skeleton className="h-3 w-32" /><Skeleton className="h-3 w-28" /></div>
         </div>
 
-        <div className="space-y-5">
-          <Skeleton className="h-3 w-32" />
-          <Skeleton className="h-9 w-4/5" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-20 w-full rounded-[20px]" />
-          <div className="flex gap-3">
-            <Skeleton className="h-12 w-28 rounded-lg" />
-            <Skeleton className="h-12 flex-1 rounded-lg" />
-            <Skeleton className="h-12 w-12 rounded-lg" />
-          </div>
-          <Skeleton className="h-24 w-full rounded-[20px]" />
-          <Skeleton className="h-20 w-full rounded-[20px]" />
+        <div className="space-y-3">
+          <Skeleton className="h-3 w-24" />
+          <Skeleton className="h-6 w-4/5" />
+          <Skeleton className="h-4 w-2/5" />
+          <div className="space-y-2 border-y border-border py-3"><Skeleton className="h-8 w-40" /><Skeleton className="h-3 w-32" /></div>
+          <div className="flex items-center justify-between"><Skeleton className="h-9 w-28" /><Skeleton className="h-3 w-24" /></div>
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1.4fr_0.8fr]">
-        <Skeleton className="h-64 w-full rounded-[20px]" />
-        <Skeleton className="h-48 w-full rounded-[20px]" />
+      <div className="space-y-4">
+        <div className="flex h-12 items-center justify-between border-y border-border"><Skeleton className="h-4 w-48" /><Skeleton className="h-4 w-20" /></div>
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-24 w-full rounded-none" />
       </div>
     </div>
   );

@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    if (normalizedStatus !== 'SUCCESS' && normalizedStatus !== 'FAILED') {
+    if (normalizedStatus !== 'SUCCESS') {
       await paymentRef.set({
         ...existingPayment,
         reference,
@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (existingPayment.orderCreated === true || existingPayment.status === 'SUCCESS') {
+    if (existingPayment.orderCreated === true) {
       return NextResponse.json({
         ok: true,
         verified: true,
@@ -167,7 +167,13 @@ export async function POST(request: Request) {
           paidAt: result.paid_at || null,
         });
         products.forEach((productSnapshot, index) => {
-          transaction.update(productRefs[index], { stock: Number(productSnapshot.data()?.stock ?? 0) - Number(sellerItems[index].quantity) });
+          const product = productSnapshot.data();
+          const quantity = Number(sellerItems[index].quantity);
+          const soldCount = Number(product?.soldCount ?? 0);
+          transaction.update(productRefs[index], {
+            stock: Number(product?.stock ?? 0) - quantity,
+            ...(normalizedStatus === 'SUCCESS' ? { soldCount: Math.max(0, Number.isFinite(soldCount) ? soldCount : 0) + quantity } : {}),
+          });
         });
       });
       orderIds[sellerId] = orderRef.id;

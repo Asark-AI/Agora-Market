@@ -789,7 +789,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if ('stock' in item.product) {
             const productRef = doc(ensureFirestore(), 'sellers', sellerId, 'products', item.product.id);
             await updateDoc(productRef, {
-                stock: increment(-item.quantity)
+              stock: increment(-item.quantity),
+              soldCount: increment(item.quantity),
             });
         }
     }
@@ -852,7 +853,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             if (item.quantity > 0) {
                 const productRef = doc(ensureFirestore(), 'sellers', seller.id, 'products', item.productId);
                 await updateDoc(productRef, {
-                    stock: increment(-item.quantity)
+                  stock: increment(-item.quantity),
+                  soldCount: increment(item.quantity),
                 });
             }
         }

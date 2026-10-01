@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { recordProductClick } from '@/ai/flows/record-product-click';
 import { useCart } from '@/hooks/use-cart';
+import { animateProductToFloatingCart } from '@/lib/cart-fly-animation';
 import { SiteHeader } from '@/components/site-header';
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -428,6 +429,7 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
                            const name = product.name;
                            const image = product.images?.[0] || service.coverImageUrl || 'https://placehold.co/300x300.png';
                            const price = product.price || service.flatFee;
+                           const soldCount = Number(product.soldCount ?? 0);
                            const itemDescription = typeof product.description === 'string' ? product.description : product.description?.english || service.description;
 
                            const cardContent = (
@@ -446,15 +448,10 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
                                 <CardContent className="p-3 flex-grow flex flex-col">
                                     <h3 className="font-medium text-sm leading-tight line-clamp-2 h-[2.5em]">{name}</h3>
                                     {price && <p className="text-lg font-bold mt-1">GH₵{price.toFixed(2)}</p>}
-                                    {isProductBased && (
-                                        <>
-                                            <p className="text-xs text-muted-foreground mt-1">MOQ: 10 pieces</p>
-                                            <p className="text-xs text-muted-foreground">151 sold</p>
-                                        </>
-                                    )}
+                                    {isProductBased && Number.isFinite(soldCount) && soldCount > 0 && <p className="mt-1 text-xs text-muted-foreground">{soldCount.toLocaleString()} sold</p>}
                                 </CardContent>
                                 <CardFooter className="p-2">
-                                     <Button className="w-full" size="sm" onClick={(e) => { e.stopPropagation(); addToCart(item as Product); }}>
+                                     <Button className="w-full" size="sm" onClick={(e) => { e.stopPropagation(); addToCart(item as Product); animateProductToFloatingCart(e.currentTarget.closest('.group')); }}>
                                         Add to Cart
                                     </Button>
                                 </CardFooter>
@@ -483,7 +480,7 @@ export function StorefrontClientPage({ isEditorPreview = false, seller: serverSe
                                             </CardContent>
                                             <CardFooter className="justify-between items-center">
                                                 {price && <p className="text-lg font-bold">₵{price.toFixed(2)}</p>}
-                                                <Button className="ml-auto" onClick={(e) => { e.stopPropagation(); addToCart(item as Product); }}>
+                                                <Button className="ml-auto" onClick={(e) => { e.stopPropagation(); addToCart(item as Product); animateProductToFloatingCart(e.currentTarget.closest('.group')); }}>
                                                     {isProductBased ? 'Add to Cart' : 'View Details'}
                                                 </Button>
                                             </CardFooter>

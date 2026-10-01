@@ -124,6 +124,7 @@ export type Product = {
   userId: string; // For security rules
   regionId: string;
   stock: number;
+  soldCount?: number;
   status: 'active' | 'inactive' | 'draft';
   barcode?: string;
   views: number;

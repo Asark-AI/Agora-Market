@@ -204,7 +204,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
     <div className="space-y-5 pb-28 md:pb-12">
       <header className="border-b border-border px-0 py-3 sm:px-0">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <div><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9a772b]">Agora marketplace</p><h1 className="mt-1 text-xl font-semibold tracking-tight">Shop all products</h1></div>
+          <div><h1 className="text-xl font-semibold tracking-tight">Shop all products</h1></div>
 
           <div className="flex items-center gap-3">
             <Link href="/cart" className="relative inline-flex items-center border border-[#cfd8e1] bg-white px-3 py-2 text-sm font-semibold text-[#26384a] transition hover:border-[#1769aa] hover:text-[#1769aa]">

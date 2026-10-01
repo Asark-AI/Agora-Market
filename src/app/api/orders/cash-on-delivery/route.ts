@@ -52,7 +52,12 @@ export async function POST(request: Request) {
       if (Math.abs(currentSubtotal - subtotal) > 0.01) throw new CheckoutValidationError('A product price changed. Review your order and try again.', 409);
 
       for (const line of liveLines) {
-        transaction.update(productRefs[line.index], { stock: line.stockBefore - line.quantity });
+        const product = productSnapshots[line.index].data();
+        const soldCount = Number(product?.soldCount ?? 0);
+        transaction.update(productRefs[line.index], {
+          stock: line.stockBefore - line.quantity,
+          soldCount: Math.max(0, Number.isFinite(soldCount) ? soldCount : 0) + line.quantity,
+        });
       }
       for (const sellerId of sellerIds) {
         const sellerLines = liveLines.filter((line) => line.sellerId === sellerId);

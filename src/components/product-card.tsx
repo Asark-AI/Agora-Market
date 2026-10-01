@@ -3,11 +3,15 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import NextImage from 'next/image';
-import { Check, Heart, ShoppingCart, Star, Store } from 'lucide-react';
+import { BadgeCheck, Check, Heart, ShoppingCart, Star, Truck } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
 import type { StorefrontProduct } from '@/lib/storefront';
 import { buildProductSlug, getImageUrl } from '@/lib/storefront';
+import { animateProductToFloatingCart } from '@/lib/cart-fly-animation';
+
+const priceFormatter = new Intl.NumberFormat('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const countFormatter = new Intl.NumberFormat('en-GH', { maximumFractionDigits: 0 });
 
 export function ProductCard({ product, dealMode = false, priority = false }: { product: StorefrontProduct; dealMode?: boolean; priority?: boolean }) {
   const { addToCart } = useCart();
@@ -16,13 +20,24 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
   const [isWishlisted, setIsWishlisted] = useState(favorite);
   const [justAdded, setJustAdded] = useState(false);
 
-  const price = product.discountPrice ?? product.price;
-  const oldPrice = product.discountPrice ? product.price : null;
-  const isVerifiedSeller = Boolean(product.seller?.isVerifiedArtisan || product.seller?.trustScore);
-  const discountPercent = oldPrice ? Math.max(5, Math.round(((oldPrice - price) / oldPrice) * 100)) : 0;
+  const hasDiscount = product.discountPrice != null && product.discountPrice < product.price;
+  const price = hasDiscount ? product.discountPrice ?? product.price : product.price;
+  const oldPrice = hasDiscount ? product.price : null;
+  const isVerifiedSeller = Boolean(product.seller?.isVerifiedArtisan);
+  const discountPercent = oldPrice ? Math.round(((oldPrice - price) / oldPrice) * 100) : 0;
   const rating = product.ratingAverage;
   const ratingCount = product.ratingCount;
-  const stockLabel = product.stock <= 0 ? 'Out of stock' : product.stock <= 5 ? `${product.stock} left` : 'In stock';
+  const hasReviews = (ratingCount ?? 0) > 0;
+  const hasRating = rating !== undefined && hasReviews;
+  const soldCount = Number(product.soldCount);
+  const hasSoldCount = Number.isFinite(soldCount) && soldCount > 0;
+  const deliveryLabel = product.seller?.deliveryOptions?.includes('seller-delivery')
+    ? 'Delivery available'
+    : product.seller?.deliveryOptions?.includes('buyer-pickup')
+      ? 'Pickup available'
+      : null;
+  const stockLabel = product.stock <= 0 ? 'Out of stock' : product.stock <= 5 ? `${product.stock} left` : null;
+  const formatPrice = (amount: number) => `GH₵${priceFormatter.format(amount)}`;
 
   useEffect(() => {
     setIsWishlisted(favorite);
@@ -38,29 +53,31 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
   const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    const sourceImage = event.currentTarget.closest('article')?.querySelector('img') ?? null;
     addToCart(product as any);
+    animateProductToFloatingCart(sourceImage);
     setJustAdded(true);
     window.setTimeout(() => setJustAdded(false), 700);
   };
 
   return (
-    <article className="group relative flex min-w-0 h-full flex-col overflow-hidden border border-[#e3e7eb] bg-white transition-[border-color,box-shadow] duration-200 hover:border-[#b9c8d5] hover:shadow-[0_10px_28px_rgba(25,55,80,0.1)] active:scale-[0.995]">
-      <div className="relative aspect-[4/5] overflow-hidden bg-[#f1f4f6]">
+    <article className="group relative flex min-w-0 h-full flex-col overflow-hidden border border-[#e3e7eb] bg-white transition-[border-color,box-shadow] duration-200 hover:border-[#b9c8d5] hover:shadow-[0_6px_16px_rgba(25,55,80,0.08)] active:scale-[0.995]">
+      <div className="relative aspect-square overflow-hidden bg-[#f1f4f6]">
         <Link href={`/product/${buildProductSlug(product)}`} className="block h-full w-full" aria-label={`View ${product.name}`}>
           <NextImage
             src={getImageUrl(product.images?.[0])}
             alt={product.name}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             priority={priority}
             loading={priority ? undefined : 'lazy'}
-            className="object-contain p-3 transition duration-300 group-hover:scale-[1.03]"
+            className="object-contain p-2 transition duration-300 group-hover:scale-[1.02]"
           />
         </Link>
 
         <div className="absolute left-2 top-2">
           {oldPrice ? (
-            <span className="bg-[#b42318] px-1.5 py-1 text-[11px] font-bold text-white">-{discountPercent}%</span>
+            <span className="bg-[#b42318] px-1.5 py-1 text-[10px] font-bold text-white">-{discountPercent}%</span>
           ) : null}
         </div>
 
@@ -69,42 +86,45 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
         <button
           type="button"
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          aria-pressed={isWishlisted}
           onClick={handleWishlist}
-            className={`absolute right-2 top-2 z-10 inline-flex size-9 items-center justify-center rounded-full border border-[#e0e5e9] bg-white/95 text-sm transition ${isWishlisted ? 'text-[#b42318]' : 'text-[#526170] hover:text-[#1769aa]'}`}
+          className={`absolute right-2 top-2 z-10 inline-flex size-9 items-center justify-center rounded-full border border-[#e0e5e9] bg-white/95 shadow-sm transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1769aa] ${isWishlisted ? 'text-[#b42318]' : 'text-[#526170] hover:text-[#1769aa]'}`}
         >
           <Heart className={`h-3.5 w-3.5 ${isWishlisted ? 'fill-current' : ''}`} />
         </button>
       </div>
 
-      <div className="flex flex-1 flex-col p-3">
+      <div className="flex flex-1 flex-col p-2.5">
         <Link href={`/product/${buildProductSlug(product)}`} className="block min-w-0">
-          <h3 className="line-clamp-2 min-h-[38px] text-[13px] font-medium leading-[19px] text-[#26384a]">{product.name}</h3>
+          <h3 className="line-clamp-2 min-h-9 text-[13px] font-semibold leading-[18px] text-[#26384a]">{product.name}</h3>
         </Link>
-        <div className="mt-2 flex min-w-0 items-center gap-1 text-[11px] text-[#74808d]">
-          <Store className="size-3 shrink-0 text-[#9a772b]" />
-          <span className="truncate">{product.seller?.name || product.sellerName || 'Agora seller'}</span>
-          {isVerifiedSeller && <span className="shrink-0 text-[#1769aa]" title="Verified seller">✓</span>}
+        <div className="mt-1 flex h-4 min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-[10px] text-[#74808d]">
+          {hasRating ? <span className="inline-flex shrink-0 items-center gap-0.5"><Star className="size-3 fill-[#d19b2d] text-[#d19b2d]" />{rating.toFixed(1)}</span> : hasReviews ? <span className="shrink-0">{countFormatter.format(ratingCount ?? 0)} reviews</span> : <span className="shrink-0">No reviews yet</span>}
+          {hasReviews && hasRating && <span className="shrink-0">· {countFormatter.format(ratingCount ?? 0)} reviews</span>}
+          {hasSoldCount && <span className="shrink-0">· {countFormatter.format(soldCount)} sold</span>}
+          {isVerifiedSeller && <span className="shrink-0" aria-label="Verified seller" title="Verified seller"><BadgeCheck className="size-3.5 text-[#1769aa]" aria-hidden="true" /></span>}
         </div>
-        <div className="mt-1.5 flex items-baseline gap-1.5">
-          <div className="text-[18px] font-bold leading-5 text-[#1c2633]">GH₵{price.toFixed(2)}</div>
-          {oldPrice ? <div className="text-[11px] text-[#87929d] line-through">GH₵{oldPrice.toFixed(2)}</div> : null}
-        </div>
-        {rating !== undefined || !dealMode ? <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[#74808d]">
-          {rating !== undefined ? <span className="inline-flex items-center gap-0.5"><Star className="size-3 fill-[#d19b2d] text-[#d19b2d]" />{rating.toFixed(1)}{ratingCount ? <span>({ratingCount})</span> : null}</span> : <span>No reviews yet</span>}
-        </div> : null}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-3 text-[10px] text-[#74808d]">
-          <span className={product.stock > 0 && product.stock <= 5 ? 'font-medium text-[#b42318]' : 'truncate'}>{stockLabel}</span>
-          <div className="flex-shrink-0">
-            <button
-              type="button"
-              aria-label="Add to cart"
-              onClick={handleAddToCart}
-              className={`inline-flex h-8 w-8 items-center justify-center border border-[#cfd8e1] bg-white text-[#1769aa] transition ${justAdded ? 'border-[#21744a] bg-[#21744a] text-white' : 'hover:border-[#1769aa]'} ${product.stock <= 0 ? 'cursor-not-allowed opacity-40' : ''}`}
-              disabled={product.stock <= 0}
-            >
-              {justAdded ? <Check className="size-3.5" /> : <ShoppingCart className="size-3.5" />}
-            </button>
+        <div className="mt-1.5 min-w-0">
+          <div className="truncate text-base font-bold leading-5 text-[#1c2633] sm:text-[17px]">{formatPrice(price)}</div>
+          <div className="mt-0.5 flex h-4 items-center gap-1.5 text-[10px]">
+            {oldPrice ? <><span className="truncate text-[#87929d] line-through">{formatPrice(oldPrice)}</span><span className="shrink-0 font-semibold text-[#b42318]">-{discountPercent}%</span></> : <span className="invisible">&nbsp;</span>}
           </div>
+        </div>
+        <div className="mt-auto flex min-h-10 items-center justify-between gap-2 pt-1.5">
+          <div className="flex min-w-0 flex-col text-[10px] leading-4">
+            {deliveryLabel && <span className="inline-flex min-w-0 items-center gap-1 truncate text-[#526170]"><Truck className="size-3 shrink-0 text-[#21744a]" />{deliveryLabel}</span>}
+            {stockLabel && <span className={`truncate ${product.stock <= 0 ? 'font-medium text-[#b42318]' : 'text-[#74808d]'}`}>{stockLabel}</span>}
+          </div>
+          <button
+            type="button"
+            aria-label={justAdded ? 'Product added to cart' : 'Add product to cart'}
+            title={justAdded ? 'Added to cart' : 'Add to cart'}
+            onClick={handleAddToCart}
+            className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full border transition active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1769aa] ${justAdded ? 'border-[#21744a] bg-[#21744a] text-white' : 'border-[#cfd8e1] bg-white text-[#1769aa] hover:border-[#1769aa]'} ${product.stock <= 0 ? 'cursor-not-allowed opacity-40' : ''}`}
+            disabled={product.stock <= 0}
+          >
+            {justAdded ? <Check className="size-4" /> : <ShoppingCart className="size-4" />}
+          </button>
         </div>
       </div>
     </article>
