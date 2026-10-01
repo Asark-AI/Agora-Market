@@ -1,4 +1,4 @@
-const VERSION = 'agora-shell-v1';
+const VERSION = 'agora-shell-v2';
 const STATIC_CACHE = `${VERSION}-static`;
 const OFFLINE_URL = '/offline.html';
 const SHELL = ['/', '/index.html', OFFLINE_URL, '/manifest.webmanifest', '/agora-logo.png', '/favicon.png'];
@@ -18,11 +18,7 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).then((response) => {
-      const copy = response.clone();
-      caches.open(STATIC_CACHE).then((cache) => cache.put(request, copy));
-      return response;
-    }).catch(() => caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL))));
+    event.respondWith(fetch(request).catch(() => caches.match(request).then((cached) => cached || caches.match(OFFLINE_URL))));
     return;
   }
 

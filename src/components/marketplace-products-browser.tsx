@@ -302,7 +302,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
               </button>
             </div>
           ) : (
-            <div className="grid min-w-0 grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
               {visibleProducts.map((product) => (
                 <div key={product.id} className="min-w-0"><ProductCard product={product} /></div>
               ))}
@@ -310,7 +310,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
           )}
 
           {isLoadingMore && (
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, index) => <ProductCardSkeleton key={index} />)}
             </div>
           )}

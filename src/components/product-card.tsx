@@ -61,8 +61,8 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
   };
 
   return (
-    <article className="group relative flex min-w-0 h-full flex-col overflow-hidden border border-[#e3e7eb] bg-white transition-[border-color,box-shadow] duration-200 hover:border-[#b9c8d5] hover:shadow-[0_6px_16px_rgba(25,55,80,0.08)] active:scale-[0.995]">
-      <div className="relative aspect-square overflow-hidden bg-[#f1f4f6]">
+    <article className="group relative flex min-w-0 h-full flex-col overflow-hidden rounded-[var(--radius)] border border-[#e7edf3] bg-white/95 shadow-[0_12px_28px_-20px_rgba(15,23,42,0.32)] ring-1 ring-black/[0.02] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#c4d2de] hover:shadow-[0_20px_38px_-24px_rgba(15,23,42,0.38)] active:scale-[0.995]">
+      <div className="relative aspect-square overflow-hidden rounded-t-[var(--radius)] bg-gradient-to-br from-slate-50 via-white to-slate-100">
         <Link href={`/product/${buildProductSlug(product)}`} className="block h-full w-full" aria-label={`View ${product.name}`}>
           <NextImage
             src={getImageUrl(product.images?.[0])}
@@ -71,7 +71,7 @@ export function ProductCard({ product, dealMode = false, priority = false }: { p
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             priority={priority}
             loading={priority ? undefined : 'lazy'}
-            className="object-contain p-2 transition duration-300 group-hover:scale-[1.02]"
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
           />
         </Link>
 
