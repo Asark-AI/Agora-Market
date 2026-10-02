@@ -2,14 +2,14 @@ import { randomUUID } from 'node:crypto';
 
 import { NextResponse } from 'next/server';
 
-import { verifySession } from '@/lib/server/admin-auth';
+import { verifyMarketplaceSession } from '@/lib/server/admin-auth';
 import { initializePaystackTransaction, isPaystackConfigured, PaystackError } from '@/lib/server/paystack';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { CheckoutValidationError, validateCheckoutLines } from '@/lib/server/checkout-validation';
 
 export async function POST(request: Request) {
   try {
-    const identity = await verifySession();
+    const identity = await verifyMarketplaceSession();
     if (!identity) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
     const body = await request.json().catch(() => null);
 

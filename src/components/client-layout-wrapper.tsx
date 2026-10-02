@@ -9,16 +9,33 @@ import { NavigationEvents } from '@/components/navigation-events';
 import { NetworkStatus } from '@/components/network-status';
 import { OfflineSync } from '@/components/offline-sync';
 import { Toaster } from '@/components/ui/toaster';
+import { usePathname, useRouter } from 'next/navigation';
 
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
     const init = useAuthStore(state => state.init);
     const initialized = useAuthStore(state => state.initialized);
     const { isLoading } = usePageLoaderStore();
     const authState = useAuthStore(state => state.user);
+    const firebaseUser = useAuthStore(state => state.firebaseUser);
+    const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         init();
     }, [init]);
+
+    useEffect(() => {
+        let active = true;
+        if (!firebaseUser || !authState || pathname.startsWith('/admin')) return;
+
+        void firebaseUser.getIdTokenResult().then((token) => {
+            if (active && token.claims.superAdmin === true) router.replace('/admin');
+        }).catch((error) => {
+            console.warn('Unable to check super-admin route access:', error);
+        });
+
+        return () => { active = false; };
+    }, [authState, firebaseUser, pathname, router]);
 
     useEffect(() => {
         if ('serviceWorker' in navigator) {

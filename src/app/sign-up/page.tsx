@@ -100,9 +100,11 @@ export default function SignUpPage() {
 
     setIsLoading(true);
     try {
-      await signUp(data.email, data.password, data.fullName);
-      toast({ title: 'Account created', description: 'We sent a verification email to your inbox.' });
-      router.replace(`/sign-up/verify?email=${encodeURIComponent(data.email)}`);
+      const result = await signUp(data.email, data.password, data.fullName);
+      toast(result.verificationEmailSent
+        ? { title: 'Account created', description: 'Check your inbox to verify your email before shopping or applying to sell.' }
+        : { variant: 'destructive', title: 'Account created, email not sent', description: 'Use the resend option on the verification screen to request another email.' });
+      router.replace(`/sign-up/verify?email=${encodeURIComponent(data.email)}${result.verificationEmailSent ? '' : '&send=failed'}`);
     } catch (error: unknown) {
       const errMsg = getErrorMessage(error);
       const code = (error as any)?.code;

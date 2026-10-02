@@ -64,33 +64,62 @@ export interface AuthState extends PublicAuthState {
   clearListeners: () => void;
   clearAllData: () => void;
   init: () => void;
+  authListenerStarted: boolean;
   refreshAuthProfile: (firebaseUser?: FirebaseUser | null) => Promise<void>;
   initDashboardListeners: () => void;
   addCustomer: (customerData: { name: string, email: string, phone: string }) => Promise<Customer>;
 }
 
-const uploadFile = async (file: File, path: string, timeoutMs = 20000): Promise<string> => {
+const UPLOAD_IDLE_TIMEOUT_MS = 120_000;
+
+const uploadFile = async (file: File, path: string): Promise<string> => {
   if (!storage) {
     throw new Error('Storage is unavailable.');
   }
 
   const storageRef = ref(storage, path);
 
-  const uploadPromise = new Promise<string>((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const uploadTask = uploadBytesResumable(storageRef, file, { contentType: file.type || undefined });
-    uploadTask.on('state_changed', undefined, (error) => reject(new Error(`Failed to upload ${file.name}: ${error.message}`)), async () => {
+    let settled = false;
+    let lastBytesTransferred = 0;
+    let idleTimeout: ReturnType<typeof setTimeout>;
+
+    const clearIdleTimeout = () => clearTimeout(idleTimeout);
+    const rejectUpload = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      clearIdleTimeout();
+      reject(error);
+    };
+    const resetIdleTimeout = () => {
+      clearIdleTimeout();
+      idleTimeout = setTimeout(() => {
+        rejectUpload(new Error(`Upload stalled for ${file.name}. Check your connection and try again.`));
+        uploadTask.cancel();
+      }, UPLOAD_IDLE_TIMEOUT_MS);
+    };
+
+    resetIdleTimeout();
+    uploadTask.on('state_changed', (snapshot) => {
+      if (snapshot.bytesTransferred > lastBytesTransferred) {
+        lastBytesTransferred = snapshot.bytesTransferred;
+        resetIdleTimeout();
+      }
+    }, (error) => {
+      rejectUpload(new Error(`Failed to upload ${file.name}: ${error.message}`));
+    }, async () => {
       try {
-        resolve(await getDownloadURL(uploadTask.snapshot.ref));
+        const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+        if (settled) return;
+        settled = true;
+        clearIdleTimeout();
+        resolve(downloadUrl);
       } catch (error) {
-        reject(new Error(`Failed to finalize ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        rejectUpload(new Error(`Failed to finalize ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`));
       }
     });
   });
-
-  // timeout wrapper to avoid hanging uploads
-  const timeout = new Promise<string>((_, reject) => setTimeout(() => reject(new Error(`Upload timed out for ${file.name}`)), timeoutMs));
-
-  return Promise.race([uploadPromise, timeout]);
 };
 
 const prepareProductImage = async (file: File): Promise<File> => {
@@ -219,6 +248,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   sellerPayoutMethods: [],
   loading: true,
   initialized: false,
+  authListenerStarted: false,
   dashboardListenersInitialized: false,
   unsubscribeListeners: [],
 
@@ -250,7 +280,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   init: () => {
-    if (get().initialized) return;
+    if (get().initialized || get().authListenerStarted) return;
+
+    set({ authListenerStarted: true });
 
     if (!auth || !db) {
       set({
@@ -268,13 +300,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         await get().refreshAuthProfile(firebaseUser as FirebaseUser | null);
       });
-
-      set({ initialized: true, loading: false });
-
       void authUnsubscribe;
     } catch (error) {
       console.warn('Firebase auth initialization failed:', error);
       set({
+        authListenerStarted: false,
         user: null,
         firebaseUser: null,
         seller: null,
@@ -287,11 +317,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   refreshAuthProfile: async (firebaseUserOverride?: FirebaseUser | null) => {
     const authUser = firebaseUserOverride ?? auth?.currentUser ?? null;
 
+    const previousFirebaseUser = get().firebaseUser;
+    if (previousFirebaseUser && previousFirebaseUser.uid !== authUser?.uid) {
+      get().clearAllData();
+    }
+
     set({ firebaseUser: authUser });
     // Indicate we're loading profile data (prevents UI redirects before seller is fetched)
     set({ loading: true });
 
     if (!authUser) {
+      get().clearAllData();
       set({
         user: null,
         firebaseUser: null,
@@ -304,14 +340,45 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       if (!db) {
-        set({ user: null, seller: null, loading: false });
+        set({ user: null, seller: null, loading: false, initialized: true });
         return;
       }
+
+      const tokenResult = await authUser.getIdTokenResult();
+      const isSuperAdmin = tokenResult.claims.superAdmin === true;
+      if (isSuperAdmin) get().clearListeners();
 
       const userRef = doc(ensureFirestore(), 'users', authUser.uid);
       const userDoc = await getDoc(userRef);
 
       let userData: User;
+      if (isSuperAdmin) {
+        const storedUser = userDoc.exists() ? userDoc.data() as Partial<User> : {};
+        userData = {
+          id: authUser.uid,
+          name: storedUser.name || authUser.displayName || 'Super Admin',
+          email: authUser.email || storedUser.email || '',
+          role: 'Admin',
+          emailVerified: authUser.emailVerified,
+          roles: { buyer: false, seller: false, rider: false, admin: true },
+          accountStatus: 'active',
+        };
+        set({
+          user: userData,
+          seller: null,
+          sellerProducts: [],
+          sellerOrders: [],
+          sellerCustomers: [],
+          sellerSuppliers: [],
+          sellerRepairRequests: [],
+          sellerMessages: [],
+          sellerPurchaseOrders: [],
+          sellerStockAdjustments: [],
+          sellerPayoutMethods: [],
+        });
+        return;
+      }
+
       if (userDoc.exists()) {
         userData = { ...(userDoc.data() as User), id: userDoc.id };
       } else {
@@ -419,9 +486,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { user } = userCredential;
 
+    let verificationEmailSent = true;
     try {
       await sendEmailVerification(user);
     } catch (emailError) {
+      verificationEmailSent = false;
       console.warn('Firebase verification email could not be sent:', emailError);
     }
 
@@ -440,12 +509,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: newUser, firebaseUser: user, loading: false, initialized: true });
     await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
     await get().refreshAuthProfile(user);
-    try {
-      await syncServerSession(user);
-    } catch (sessionError) {
-      console.warn('Secure server session could not be synchronized:', sessionError);
-    }
-    return user;
+    return { user, verificationEmailSent };
   },
 
   logIn: async (email, password) => {
@@ -459,17 +523,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       await authUser.reload();
       const refreshedUser = auth.currentUser;
       if (!refreshedUser?.emailVerified) {
-        await signOut(auth);
+        set({ firebaseUser: refreshedUser, user: createFallbackUser(refreshedUser), loading: false, initialized: true });
+        await get().refreshAuthProfile(refreshedUser);
+        await clearServerSession();
         throw new Error('Please verify your email before signing in. Check your inbox for the verification link from Firebase.');
       }
       const fallbackUser = createFallbackUser(refreshedUser);
       set({ firebaseUser: refreshedUser, user: fallbackUser, loading: false, initialized: true });
       await get().refreshAuthProfile(refreshedUser);
-      try {
-        await syncServerSession(refreshedUser);
-      } catch (sessionError) {
-        console.warn('Secure server session could not be synchronized:', sessionError);
-      }
+      await syncServerSession(refreshedUser);
       return refreshedUser;
     } catch (error: any) {
       const invalidCredentialCodes = [
@@ -517,13 +579,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const { user } = result;
+    await user.reload();
+    if (!user.emailVerified) {
+      set({ firebaseUser: user, user: createFallbackUser(user), loading: false, initialized: true });
+      await get().refreshAuthProfile(user);
+      await clearServerSession();
+      throw new Error('Verify your email before using your Agora account.');
+    }
+
+    const tokenResult = await user.getIdTokenResult(true);
+    if (tokenResult.claims.superAdmin === true) {
+      set({ firebaseUser: user, loading: true, initialized: true });
+      await get().refreshAuthProfile(user);
+      await syncServerSession(user);
+      return user;
+    }
+
     const fallbackUser = createFallbackUser(user);
     set({ firebaseUser: user, user: fallbackUser, loading: false, initialized: true });
-    try {
-      await syncServerSession(user);
-    } catch (sessionError) {
-      console.warn('Secure server session could not be synchronized:', sessionError);
-    }
+    await syncServerSession(user);
 
     const userRef = doc(ensureFirestore(), 'users', user.uid);
     const userDoc = await getDoc(userRef);
@@ -551,14 +625,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!auth) {
       return;
     }
-
-    if (!auth) {
-      return;
+    try {
+      await signOut(auth);
+    } finally {
+      get().clearAllData();
+      set({ loading: false, initialized: true });
+      await clearServerSession();
     }
-
-    await signOut(auth);
-    await clearServerSession();
-    // onAuthStateChanged in init() will handle clearing the state.
   },
 
   setSeller: (seller) => set({ seller }),
@@ -566,6 +639,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   addSeller: async (sellerData, logoFile) => {
     const user = get().user;
     if (!user) throw new Error('User not authenticated');
+    const authUser = auth?.currentUser;
+    if (!authUser) throw new Error('Please sign in again to continue.');
+    const tokenResult = await authUser.getIdTokenResult();
+    if (tokenResult.claims.superAdmin === true) {
+      throw new Error('Super Admin accounts cannot create seller profiles.');
+    }
+    if (!authUser.emailVerified) throw new Error('Verify your email before creating a seller profile.');
 
     const finalSellerData: Omit<Seller, 'id'> = { ...sellerData };
 

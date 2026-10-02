@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, ShoppingCart, Bell, LockKeyhole, HelpCircle, Package, Clock3, Heart, Bike, Store, Star, Eye, ArrowRight, CheckCircle2, ChevronRight, CircleDot, Truck } from 'lucide-react';
+import { LogOut, ShoppingCart, LockKeyhole, HelpCircle, Package, Clock3, Heart, Bike, Store, ArrowRight, ChevronRight, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
@@ -186,12 +186,15 @@ export default function ProfilePage() {
                 </Button>
             </div>
 
-            <section className="mb-8 border-b border-border pb-6">
+            <section className="mb-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Store className="size-4" /> {seller ? 'Your store is ready' : 'One account, two capabilities'}</div>
-                        <h2 className="mt-2 text-2xl font-semibold tracking-tight">{seller ? 'Open Seller Center' : 'Start selling on Agora'}</h2>
-                        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{seller ? 'Manage products, orders, inventory, and customer conversations without leaving Agora.' : 'Turn your products into sales with the same Agora identity you use for shopping.'}</p>
+                    <div className="flex items-start gap-4">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#eef4ef] text-[#397253]"><Store className="size-5" /></div>
+                        <div>
+                            <p className="text-sm font-semibold text-primary">{seller ? 'Your store is ready' : 'One account, two capabilities'}</p>
+                            <h2 className="mt-1 text-2xl font-semibold tracking-tight">{seller ? 'Seller Center' : 'Start selling on Agora'}</h2>
+                            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{seller ? 'Manage products, inventory, orders, and customer conversations from one place.' : 'Use the same Agora account you already use to shop and turn it into a storefront.'}</p>
+                        </div>
                     </div>
                     <Button asChild className="shrink-0">
                         <Link href={seller ? '/dashboard' : '/seller-signup'}>{seller ? 'Open Seller Center' : 'Start Selling'} <ArrowRight className="ml-2 size-4" /></Link>
@@ -199,43 +202,38 @@ export default function ProfilePage() {
                 </div>
             </section>
 
-            <section className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"><Bike className="size-5" /></div>
-                    <div>
-                        <h2 className="font-semibold">Rider Center</h2>
-                        <p className="mt-1 text-sm text-muted-foreground">Apply to deliver with Agora or manage your rider availability.</p>
+            <section className="mb-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-4">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#eef4ef] text-[#397253]"><Bike className="size-5" /></div>
+                        <div>
+                            <p className="text-sm font-semibold text-primary">Deliver with Agora</p>
+                            <h2 className="mt-1 text-xl font-semibold tracking-tight">Rider Center</h2>
+                            <p className="mt-2 text-sm text-muted-foreground">Apply to deliver, manage availability, and keep your orders on track.</p>
+                        </div>
                     </div>
+                    <Button asChild variant="outline" className="shrink-0"><Link href="/rider">Open Rider Center <ArrowRight className="ml-2 size-4" /></Link></Button>
                 </div>
-                <Button asChild variant="outline" className="shrink-0"><Link href="/rider">Open Rider Center <ArrowRight className="ml-2 size-4" /></Link></Button>
             </section>
 
             <div className="mb-8 grid gap-2 sm:grid-cols-2">
                 {[
                     { label: 'My Orders', href: '/profile?tab=orders', icon: ShoppingCart },
                     { label: 'Wishlist', href: '/wishlist', icon: Heart },
-                    { label: 'Recently Viewed', href: '/products', icon: Clock3 },
-                    { label: 'My Reviews', href: '/profile?tab=reviews', icon: Star },
+                    { label: 'Account Settings', href: '/dashboard/settings', icon: LockKeyhole },
+                    { label: 'Help & Support', href: '/about', icon: HelpCircle },
                 ].map(({ label, href, icon: Icon }) => (
                     <Link key={label} href={href} className="flex items-center justify-between border-b border-border px-1 py-3 text-sm font-medium transition hover:text-primary">
                         <span className="flex items-center gap-3"><Icon className="size-4 text-muted-foreground" /> {label}</span><ArrowRight className="size-4 text-muted-foreground" />
                     </Link>
                 ))}
             </div>
+
             <section className="mt-6 space-y-1 border-t border-border pt-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Sell on Agora</p>
-                <Link href={seller ? '/dashboard' : '/seller-signup'} className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Store className="size-4 text-muted-foreground" /> {seller ? 'Open Seller Center' : 'Become a Seller'}</span><ArrowRight className="size-4 text-muted-foreground" /></Link>
-            </section>
-            <section className="mt-6 space-y-1 border-t border-border pt-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Deliver with Agora</p>
-                <Link href="/rider" className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Bike className="size-4 text-muted-foreground" /> Rider Center</span><ArrowRight className="size-4 text-muted-foreground" /></Link>
-            </section>
-            <section className="mt-6 space-y-1 border-t border-border pt-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Settings</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Support</p>
                 {([
-                    ['Settings', '/dashboard/settings', LockKeyhole],
-                    ['Notifications', '/profile', Bell],
-                    ['Help & Support', '/about', HelpCircle],
+                    ['Privacy Policy', '/privacy', LockKeyhole],
+                    ['Terms of Service', '/terms', HelpCircle],
                 ] as const).map(([label, href, Icon]) => <Link key={label} href={href} className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"><span className="flex items-center gap-3"><Icon className="size-4 text-muted-foreground" /> {label}</span><ArrowRight className="size-4 text-muted-foreground" /></Link>)}
                 <button type="button" onClick={logOut} className="flex w-full items-center gap-3 py-3 text-left text-sm font-medium text-destructive"><LogOut className="size-4" /> Log Out</button>
             </section>

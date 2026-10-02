@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ interface AuthModalProps {
 
 export default function AuthModal({ open, onOpenChange, defaultTab = 'login' }: AuthModalProps) {
   const { logIn, signUp } = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -53,9 +55,12 @@ export default function AuthModal({ open, onOpenChange, defaultTab = 'login' }: 
     const password = formData.get('password') as string;
 
     try {
-      await signUp(email, password, name);
-      toast({ title: 'Account Created!', description: 'You have been logged in.' });
+      const result = await signUp(email, password, name);
+      toast(result.verificationEmailSent
+        ? { title: 'Account created', description: 'Verify your email to continue.' }
+        : { variant: 'destructive', title: 'Account created, email not sent', description: 'Request a new verification email on the next screen.' });
       onOpenChange(false);
+      router.push(`/sign-up/verify?email=${encodeURIComponent(email.trim().toLowerCase())}${result.verificationEmailSent ? '' : '&send=failed'}`);
     } catch (error: any) {
       let description = 'An unknown error occurred.';
       if (error.code === 'auth/email-already-in-use') {

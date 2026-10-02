@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 
 import { getAdminDb } from '@/lib/firebase-admin';
-import { verifySession } from '@/lib/server/admin-auth';
+import { verifyMarketplaceSession } from '@/lib/server/admin-auth';
 import { PaystackError, verifyPaystackTransaction } from '@/lib/server/paystack';
 
 export async function POST(request: Request) {
   try {
-    if (!await verifySession()) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
+    if (!await verifyMarketplaceSession()) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
     const body = await request.json().catch(() => null);
     const reference = typeof body?.reference === 'string' ? body.reference.trim() : '';
 

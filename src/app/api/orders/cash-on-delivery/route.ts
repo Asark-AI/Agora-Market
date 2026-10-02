@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import { verifySession } from '@/lib/server/admin-auth';
+import { verifyMarketplaceSession } from '@/lib/server/admin-auth';
 import { CheckoutValidationError, validateCheckoutLines } from '@/lib/server/checkout-validation';
 
 export async function POST(request: Request) {
-  const identity = await verifySession();
+  const identity = await verifyMarketplaceSession();
   if (!identity) return NextResponse.json({ error: 'Sign in to place your order.' }, { status: 401 });
 
   try {

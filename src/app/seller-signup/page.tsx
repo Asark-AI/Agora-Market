@@ -19,6 +19,16 @@ export default function SellerSignupPage() {
       return;
     }
 
+    if (user.role === 'Admin' || user.roles?.admin) {
+      router.replace('/admin');
+      return;
+    }
+
+    if (!user.emailVerified) {
+      router.replace(`/sign-up/verify?email=${encodeURIComponent(user.email)}`);
+      return;
+    }
+
     if (seller) {
       router.replace(['approved', 'active'].includes(seller.status) ? '/dashboard' : '/seller/application-status');
     }
@@ -28,7 +38,7 @@ export default function SellerSignupPage() {
     return <DashboardSkeleton />;
   }
 
-  if (!user || seller) {
+  if (!user || user.role === 'Admin' || user.roles?.admin || !user.emailVerified || seller) {
     return null;
   }
 

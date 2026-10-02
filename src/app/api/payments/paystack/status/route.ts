@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifySession } from '@/lib/server/admin-auth';
+import { verifyMarketplaceSession } from '@/lib/server/admin-auth';
 
 function isPlaceholderValue(value?: string): boolean {
   if (!value) return true;
@@ -15,7 +15,7 @@ function isPlaceholderValue(value?: string): boolean {
 
 export async function GET() {
   try {
-    if (!await verifySession()) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
+    if (!await verifyMarketplaceSession()) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
     const hasSecret = Boolean(process.env.PAYSTACK_SECRET_KEY && !isPlaceholderValue(process.env.PAYSTACK_SECRET_KEY));
     const hasPublicKey = Boolean(process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY && !isPlaceholderValue(process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY));
     const hasWebhookSecret = Boolean(process.env.PAYSTACK_WEBHOOK_SECRET && !isPlaceholderValue(process.env.PAYSTACK_WEBHOOK_SECRET));

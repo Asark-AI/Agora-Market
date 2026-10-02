@@ -16,6 +16,9 @@ export async function POST(request: Request) {
     if (!idToken) return NextResponse.json({ error: 'Authentication token is required.' }, { status: 401 });
 
     const decodedToken = await getAdminAuth().verifyIdToken(idToken, true);
+    if (decodedToken.email_verified !== true) {
+      return NextResponse.json({ error: 'Verify your email before creating a secure session.' }, { status: 403 });
+    }
     const sessionCookie = await getAdminAuth().createSessionCookie(idToken, { expiresIn: 5 * 24 * 60 * 60 * 1000 });
     const response = NextResponse.json({ ok: true, uid: decodedToken.uid });
     response.cookies.set(SESSION_COOKIE, sessionCookie, { ...cookieOptions, maxAge: 5 * 24 * 60 * 60 });

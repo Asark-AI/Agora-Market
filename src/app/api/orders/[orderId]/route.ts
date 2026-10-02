@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import { verifySession } from '@/lib/server/admin-auth';
+import { verifyMarketplaceSession } from '@/lib/server/admin-auth';
 
 export async function GET(_request: Request, { params }: { params: { orderId: string } }) {
-  const identity = await verifySession();
+  const identity = await verifyMarketplaceSession();
   if (!identity) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
 
   try {

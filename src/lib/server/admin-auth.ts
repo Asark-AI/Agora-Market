@@ -22,6 +22,12 @@ export async function verifySession(): Promise<DecodedIdToken | null> {
   }
 }
 
+export async function verifyMarketplaceSession(): Promise<DecodedIdToken | null> {
+  const decodedToken = await verifySession();
+  if (!decodedToken || decodedToken.superAdmin === true || decodedToken.email_verified !== true) return null;
+  return decodedToken;
+}
+
 export async function requireAuthenticatedUser(): Promise<DecodedIdToken> {
   const decodedToken = await verifySession();
   if (!decodedToken) redirect('/sign-in');

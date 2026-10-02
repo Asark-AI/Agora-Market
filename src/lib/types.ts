@@ -662,9 +662,10 @@ export interface AuthState {
   sellerPayoutMethods: PayoutMethod[];
   loading: boolean;
   initialized: boolean;
+  authListenerStarted: boolean;
   
   // Auth methods
-  signUp: (email: string, pass: string, name: string) => Promise<FirebaseUser>;
+  signUp: (email: string, pass: string, name: string) => Promise<{ user: FirebaseUser; verificationEmailSent: boolean }>;
   logIn: (email: string, pass: string) => Promise<FirebaseUser>;
   signInWithGoogle: () => Promise<FirebaseUser>;
   sendPasswordReset: (email: string) => Promise<void>;

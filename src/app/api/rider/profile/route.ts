@@ -3,12 +3,30 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
 import { requireApprovedRider } from '@/lib/server/authorization';
 import type { DecodedIdToken } from 'firebase-admin/auth';
 
+class RiderAuthenticationError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
 async function authenticate(request: Request): Promise<DecodedIdToken> {
   const authorization = request.headers.get('authorization');
   if (!authorization?.startsWith('Bearer ')) {
-    throw new Error('Authentication is required.');
+    throw new RiderAuthenticationError('Authentication is required.', 401);
   }
-  return getAdminAuth().verifyIdToken(authorization.slice(7), true);
+  let identity: DecodedIdToken;
+  try {
+    identity = await getAdminAuth().verifyIdToken(authorization.slice(7), true);
+  } catch {
+    throw new RiderAuthenticationError('Authentication is required.', 401);
+  }
+  if (identity.superAdmin === true) {
+    throw new RiderAuthenticationError('Super Admin accounts cannot access Rider Center.', 403);
+  }
+  if (identity.email_verified !== true) {
+    throw new RiderAuthenticationError('Verify your email before accessing rider features.', 403);
+  }
+  return identity;
 }
 
 function publicProfile(data: FirebaseFirestore.DocumentData | undefined) {
@@ -32,8 +50,9 @@ export async function GET(request: Request) {
     const identity = await authenticate(request);
     const snapshot = await getAdminDb().collection('riderProfiles').doc(identity.uid).get();
     return NextResponse.json({ profile: publicProfile(snapshot.data()) });
-  } catch {
-    return NextResponse.json({ error: 'Unable to load rider access.' }, { status: 401 });
+  } catch (error) {
+    const authError = error instanceof RiderAuthenticationError ? error : null;
+    return NextResponse.json({ error: authError?.message || 'Unable to load rider access.' }, { status: authError?.status || 500 });
   }
 }
 
@@ -74,7 +93,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ profile: publicProfile(profile.data()) }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to submit rider application.';
-    return NextResponse.json({ error: message }, { status: message === 'Authentication is required.' ? 401 : 400 });
+    const status = error instanceof RiderAuthenticationError ? error.status : 400;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 
@@ -92,6 +112,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ profile: publicProfile(updated.data()) });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to update availability.';
-    return NextResponse.json({ error: message }, { status: message.includes('Authentication') ? 401 : 403 });
+    const status = error instanceof RiderAuthenticationError ? error.status : 403;
+    return NextResponse.json({ error: message }, { status });
   }
 }

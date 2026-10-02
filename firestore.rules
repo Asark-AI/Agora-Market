@@ -76,16 +76,23 @@ service cloud.firestore {
                   || isSuperAdmin();
 
       allow create: if isOwner(uid)
+        && !isSuperAdmin()
+        && request.auth.token.email_verified == true
         && request.resource.data.id == uid
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.roles.buyer == true
         && request.resource.data.roles.seller == false
-        && request.resource.data.roles.rider == false;
+        && request.resource.data.roles.rider == false
+        && request.resource.data.roles.admin != true
+        && request.resource.data.role != 'Admin';
       allow update: if isOwner(uid)
+        && !isSuperAdmin()
         && unchanged("id")
         && unchanged("email")
+        && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)
         && (!("admin" in request.resource.data) || request.resource.data.admin != true)
         && (!("superAdmin" in request.resource.data) || request.resource.data.superAdmin != true)
+        && (!('roles' in request.resource.data) || request.resource.data.roles.admin != true)
         && (!('roles' in request.resource.data) || request.resource.data.roles.seller == resource.data.roles.seller)
         && (!('roles' in request.resource.data) || request.resource.data.roles.rider == resource.data.roles.rider);
       allow delete: if isOwner(uid)
@@ -106,6 +113,8 @@ service cloud.firestore {
     match /sellers/{uid} {
       allow read: if true;
       allow create: if isSignedIn()
+        && request.auth.token.superAdmin != true
+        && request.auth.token.email_verified == true
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'pending';
       allow update: if isSignedIn()

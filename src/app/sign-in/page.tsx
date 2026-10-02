@@ -75,13 +75,12 @@ export default function SignInPage() {
         }
 
         if (active) {
-          const requestedPath = searchParams.get('next');
           if (isSuperAdmin && !secureSessionReady) {
             setAuthError('Your credentials were accepted, but the secure Admin session could not be created. Restart the local server and try again.');
             hasRouted.current = false;
             return;
           }
-          const targetPath = isSuperAdmin ? (requestedPath || '/admin') : '/';
+          const targetPath = isSuperAdmin ? '/admin' : '/';
           router.replace(targetPath);
         }
       };
