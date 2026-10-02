@@ -5,6 +5,22 @@ import { AlertCircle, CheckCircle2, RefreshCw, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { errorEmitter } from '@/firebase/error-emitter';
 
+const checkInternetReachability = async (): Promise<boolean> => {
+  try {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 2500);
+    await fetch(new URL('/favicon.ico', window.location.origin).toString(), {
+      method: 'HEAD',
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    window.clearTimeout(timer);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export function NetworkStatus() {
   const [offline, setOffline] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -12,19 +28,43 @@ export function NetworkStatus() {
 
   useEffect(() => {
     let recoveryTimer: number | undefined;
-    const markOffline = () => {
-      setOffline(true);
-      setRecovered(false);
+
+    const syncStatus = async () => {
+      const isReachable = await checkInternetReachability();
+      setOffline(!isReachable);
+      if (isReachable) {
+        setRecovered(true);
+        window.clearTimeout(recoveryTimer);
+        recoveryTimer = window.setTimeout(() => setRecovered(false), 2600);
+      } else {
+        setRecovered(false);
+      }
     };
+
+    const markOffline = async () => {
+      setRecovered(false);
+      setOffline(true);
+      const isReachable = await checkInternetReachability();
+      if (isReachable) {
+        setOffline(false);
+        setRecovered(true);
+        window.clearTimeout(recoveryTimer);
+        recoveryTimer = window.setTimeout(() => setRecovered(false), 2600);
+      }
+    };
+
     const markOnline = () => {
       setOffline(false);
       setRecovered(true);
       window.clearTimeout(recoveryTimer);
       recoveryTimer = window.setTimeout(() => setRecovered(false), 2600);
     };
-    const handleNetworkError = () => markOffline();
 
-    if (!navigator.onLine) markOffline();
+    const handleNetworkError = async () => {
+      await markOffline();
+    };
+
+    void syncStatus();
     window.addEventListener('offline', markOffline);
     window.addEventListener('online', markOnline);
     errorEmitter.on('network-error', handleNetworkError);
@@ -40,8 +80,12 @@ export function NetworkStatus() {
   const retryConnection = async () => {
     setChecking(true);
     try {
-      await fetch('/favicon.ico', { cache: 'no-store', method: 'HEAD' });
-      window.dispatchEvent(new Event('online'));
+      const isReachable = await checkInternetReachability();
+      if (isReachable) {
+        window.dispatchEvent(new Event('online'));
+      } else {
+        setOffline(true);
+      }
     } catch {
       setOffline(true);
     } finally {
