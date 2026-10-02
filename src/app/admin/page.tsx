@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertTriangle,
   ArrowUpRight,
   CheckCircle2,
   FileClock,
+  Package,
   RefreshCw,
   Store,
   Trash2,
@@ -19,9 +21,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Seller } from '@/lib/types';
+import type { Seller, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import type { AdminRecord } from '@/hooks/use-super-admin';
 
 type SellerWithCreatedAt = Seller & { createdAt?: unknown };
@@ -83,10 +86,12 @@ export default function SuperAdminPage() {
   const searchParams = useSearchParams();
   const view = searchParams.get('view') || 'overview';
   const pageTitle = view === 'overview' ? 'Admin overview' : `${view.charAt(0).toUpperCase()}${view.slice(1)} management`;
-  const { user, logOut, isSuperAdmin, authLoading, claimsLoading, dataLoading, snapshot, error, refresh, deleteUser, deleteProduct, moderate } = useSuperAdmin();
+  const { user, logOut, isSuperAdmin, authLoading, claimsLoading, dataLoading, snapshot, error, refresh, deleteUser, deleteUsers, deleteProduct, deleteSeller, moderate } = useSuperAdmin();
   const { toast } = useToast();
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [moderatingKey, setModeratingKey] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (authLoading || claimsLoading) return;
@@ -102,25 +107,65 @@ export default function SuperAdminPage() {
     () => [...snapshot.applications].slice(0, 6),
     [snapshot.applications]
   );
-  const recentUsers = useMemo(() => snapshot.users.slice(0, 6), [snapshot.users]);
+  const recentUsers = useMemo(
+    () => [...snapshot.users].sort((left, right) => String((right as User & { createdAt?: unknown }).createdAt ?? '').localeCompare(String((left as User & { createdAt?: unknown }).createdAt ?? ''))).slice(0, 6),
+    [snapshot.users]
+  );
   const recentProducts = useMemo(() => snapshot.products.slice(0, 6), [snapshot.products]);
   const focusedRecords = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const records = view === 'sellers' ? snapshot.sellers : view === 'users' ? snapshot.users : view === 'applications' ? snapshot.applications : snapshot.reports;
+    const records = view === 'sellers' ? snapshot.sellers : view === 'users' ? snapshot.users : view === 'products' ? snapshot.products : view === 'applications' ? snapshot.applications : snapshot.reports;
     if (!term) return records;
     return records.filter((record) => JSON.stringify(record).toLowerCase().includes(term));
   }, [searchTerm, snapshot, view]);
+  const selectableUserIds = useMemo(
+    () => view === 'users' ? focusedRecords.filter((record) => record.id !== user?.id).map((record) => record.id) : [],
+    [focusedRecords, user?.id, view]
+  );
+  const selectedVisibleCount = selectableUserIds.filter((id) => selectedUserIds.includes(id)).length;
+  const allVisibleUsersSelected = selectableUserIds.length > 0 && selectedVisibleCount === selectableUserIds.length;
+
+  useEffect(() => {
+    setSelectedUserIds((current) => current.filter((id) => selectableUserIds.includes(id)));
+  }, [selectableUserIds]);
 
   const handleDeleteUser = async (userId: string, name: string) => {
-    if (!window.confirm(`Delete the Firestore profile for ${name}? This does not delete their Firebase Authentication account.`)) return;
+    if (userId === user?.id) {
+      toast({ variant: 'destructive', title: 'Cannot delete your own account', description: 'Use a different super-admin account to manage this account.' });
+      return;
+    }
+    if (!window.confirm(`Permanently delete ${name}'s Agora account and sign-in access? This also removes their Firestore profile and cannot be undone.`)) return;
     const reason = window.prompt(`Reason for deleting ${name} (minimum 5 characters):`, 'Policy violation');
     if (!reason || reason.trim().length < 5) return;
     setDeletingKey(`user:${userId}`);
     try {
       await deleteUser(userId, reason);
-      toast({ title: 'User profile deleted', description: `${name}'s Firestore profile was removed.` });
+      toast({ title: 'User account deleted', description: `${name}'s sign-in access and Firestore profile were removed.` });
     } catch (deleteError) {
       toast({ variant: 'destructive', title: 'Unable to delete user', description: deleteError instanceof Error ? deleteError.message : 'Please try again.' });
+    } finally {
+      setDeletingKey(null);
+    }
+  };
+
+  const handleBulkDeleteUsers = async () => {
+    const selectedRecords = focusedRecords.filter((record) => selectedUserIds.includes(record.id) && record.id !== user?.id);
+    if (!selectedRecords.length) return;
+    const count = selectedRecords.length;
+    if (!window.confirm(`Permanently delete ${count} selected user account${count === 1 ? '' : 's'} and remove their sign-in access? This cannot be undone.`)) return;
+    const reason = window.prompt(`Reason for deleting ${count} user account${count === 1 ? '' : 's'} (minimum 5 characters):`, 'Policy violation');
+    if (!reason || reason.trim().length < 5) return;
+    setDeletingKey('users:bulk');
+    try {
+      const result = await deleteUsers(selectedRecords.map((record) => record.id), reason);
+      setSelectedUserIds([]);
+      if (result.failedIds.length) {
+        toast({ variant: 'destructive', title: 'Some accounts were not deleted', description: `${result.deletedIds.length} deleted; ${result.failedIds.length} failed.` });
+      } else {
+        toast({ title: 'User accounts deleted', description: `${result.deletedIds.length} account${result.deletedIds.length === 1 ? '' : 's'} deleted.` });
+      }
+    } catch (deleteError) {
+      toast({ variant: 'destructive', title: 'Unable to delete selected users', description: deleteError instanceof Error ? deleteError.message : 'Please try again.' });
     } finally {
       setDeletingKey(null);
     }
@@ -143,16 +188,36 @@ export default function SuperAdminPage() {
     }
   };
 
+  const handleDeleteSeller = async (record: AdminRecord) => {
+    const name = getRecordName(record, 'this seller');
+    if (!window.confirm(`Delete ${name}'s seller profile and product listings? Historical orders will be retained, but the storefront and product catalog will be removed.`)) return;
+    const reason = window.prompt(`Reason for deleting ${name} (minimum 5 characters):`, 'Marketplace policy violation');
+    if (!reason || reason.trim().length < 5) return;
+    setDeletingKey(`seller:${record.id}`);
+    try {
+      await deleteSeller(record.id, reason);
+      toast({ title: 'Seller deleted', description: `${name}'s seller profile and product listings were removed. Order history was retained.` });
+    } catch (deleteError) {
+      toast({ variant: 'destructive', title: 'Unable to delete seller', description: deleteError instanceof Error ? deleteError.message : 'Please try again.' });
+    } finally {
+      setDeletingKey(null);
+    }
+  };
+
   const handleModerate = async (type: 'seller' | 'product' | 'user', record: AdminRecord, nextStatus: string) => {
     const typedRecord = record as AdminRecord & { sellerId?: string; createdAt?: unknown };
     const name = getRecordName(record, 'this record');
+    if (type === 'seller' && nextStatus === 'approved' && !window.confirm(`Approve ${name} as an Agora seller? This enables Seller Center access and activates their storefront.`)) return;
     const reason = window.prompt(`Reason for changing ${name} to ${nextStatus} (minimum 5 characters):`);
     if (!reason || reason.trim().length < 5) return;
+    setModeratingKey(`${type}:${record.id}`);
     try {
       await moderate(type, record.id, nextStatus, reason, typeof typedRecord.sellerId === 'string' ? typedRecord.sellerId : undefined);
-      toast({ title: 'Moderation action completed', description: `${name} is now ${nextStatus}.` });
+      toast({ title: type === 'seller' && nextStatus === 'approved' ? 'Seller approved' : 'Moderation action completed', description: type === 'seller' && nextStatus === 'approved' ? `${name} is approved and active, Seller Center is enabled, and the application status is updated.` : `${name} is now ${nextStatus}.` });
     } catch (moderationError) {
       toast({ variant: 'destructive', title: 'Action not completed', description: moderationError instanceof Error ? moderationError.message : 'Please try again.' });
+    } finally {
+      setModeratingKey(null);
     }
   };
 
@@ -187,11 +252,29 @@ export default function SuperAdminPage() {
 
         {view !== 'overview' && (
           <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_16px_35px_-28px_rgba(15,23,42,0.5)]">
-            <div className="border-b border-slate-100 px-5 py-5 sm:px-6"><p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Operations workspace</p><h2 className="mt-2 font-headline text-2xl font-semibold capitalize">{view}</h2><p className="mt-1 text-sm text-slate-500">Search and review live marketplace records.</p></div>
+            <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:px-6"><div><p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Operations workspace</p><h2 className="mt-2 font-headline text-2xl font-semibold capitalize">{view}</h2><p className="mt-1 text-sm text-slate-500">Search and review live marketplace records.</p></div>{view === 'users' && <div className="flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2 text-sm text-slate-600"><Checkbox checked={allVisibleUsersSelected ? true : selectedVisibleCount > 0 ? 'indeterminate' : false} onCheckedChange={(checked) => setSelectedUserIds(checked === true ? selectableUserIds : [])} aria-label="Select all visible users" />Select visible users</label><Button type="button" variant="destructive" size="sm" onClick={() => void handleBulkDeleteUsers()} disabled={selectedVisibleCount === 0 || deletingKey === 'users:bulk'}><Trash2 className="mr-2 size-4" />Delete selected ({selectedVisibleCount})</Button></div>}</div>
             {dataLoading ? <div className="space-y-3 p-6">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-14 w-full" />)}</div> : focusedRecords.length === 0 ? <div className="p-12 text-center text-sm text-slate-500">No matching {view} records found.</div> : <div className="divide-y divide-slate-100">{focusedRecords.map((record) => {
               const recordWithMeta = record as Record<string, unknown> & { createdAt?: unknown };
               return (
-                <div key={record.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-6"><div className="min-w-0"><p className="truncate text-sm font-semibold">{getRecordName(record, 'Unnamed record')}</p><p className="mt-1 truncate text-xs text-slate-500">{getStatus(record)} · {formatDate(recordWithMeta.createdAt)}</p></div><div className="flex items-center gap-3"><Badge variant="outline" className={statusTone(getStatus(record))}>{getStatus(record)}</Badge>{view === 'sellers' && getStatus(record) === 'pending' && <Button size="sm" onClick={() => void handleModerate('seller', record, 'approved')}>Approve</Button>}{view === 'sellers' && getStatus(record) === 'active' && <Button size="sm" variant="outline" onClick={() => void handleModerate('seller', record, 'suspended')}>Suspend</Button>}{view === 'users' && getStatus(record) !== 'suspended' && <Button size="sm" variant="outline" onClick={() => void handleModerate('user', record, 'suspended')}>Suspend</Button>}{view === 'users' && getStatus(record) === 'suspended' && <Button size="sm" onClick={() => void handleModerate('user', record, 'active')}>Restore</Button>}{view === 'products' && getStatus(record) === 'pending_review' && <Button size="sm" onClick={() => void handleModerate('product', record, 'approved')}>Approve</Button>}</div></div>
+                <div key={record.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-6">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {view === 'users' && record.id !== user.id && <Checkbox checked={selectedUserIds.includes(record.id)} onCheckedChange={(checked) => setSelectedUserIds((current) => checked === true ? [...new Set([...current, record.id])] : current.filter((id) => id !== record.id))} aria-label={`Select ${getRecordName(record, 'user')}`} disabled={deletingKey === 'users:bulk'} />}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{getRecordName(record, 'Unnamed record')}{view === 'users' && record.id === user.id && <span className="ml-2 text-xs font-medium text-emerald-700">You</span>}</p>
+                      <p className="mt-1 truncate text-xs text-slate-500">{getStatus(record)} · {formatDate(recordWithMeta.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className={statusTone(getStatus(record))}>{getStatus(record)}</Badge>
+                    {view === 'sellers' && getStatus(record) === 'pending' && <Button size="sm" disabled={moderatingKey === `seller:${record.id}`} onClick={() => void handleModerate('seller', record, 'approved')}>{moderatingKey === `seller:${record.id}` ? 'Approving…' : 'Approve'}</Button>}
+                    {view === 'sellers' && getStatus(record) === 'active' && <Button size="sm" variant="outline" onClick={() => void handleModerate('seller', record, 'suspended')}>Suspend</Button>}
+                    {view === 'sellers' && <Button type="button" size="icon" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" aria-label={`Delete seller ${getRecordName(record, 'seller')}`} title="Delete seller profile and listings" disabled={deletingKey === `seller:${record.id}`} onClick={() => void handleDeleteSeller(record)}><Trash2 className="h-4 w-4" /></Button>}
+                    {view === 'users' && record.id !== user.id && getStatus(record) !== 'suspended' && <Button size="sm" variant="outline" onClick={() => void handleModerate('user', record, 'suspended')}>Suspend</Button>}
+                    {view === 'users' && record.id !== user.id && getStatus(record) === 'suspended' && <Button size="sm" onClick={() => void handleModerate('user', record, 'active')}>Restore</Button>}
+                    {view === 'users' && record.id !== user.id && <Button type="button" size="icon" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" aria-label={`Permanently delete ${getRecordName(record, 'user')}`} title="Permanently delete user" disabled={deletingKey === `user:${record.id}` || deletingKey === 'users:bulk'} onClick={() => void handleDeleteUser(record.id, getRecordName(record, 'this user'))}><Trash2 className="h-4 w-4" /></Button>}
+                    {view === 'products' && getStatus(record) === 'pending_review' && <Button size="sm" onClick={() => void handleModerate('product', record, 'approved')}>Approve</Button>}
+                  </div>
+                </div>
               );
             })}</div>}
           </section>
@@ -208,14 +291,23 @@ export default function SuperAdminPage() {
           <Card className="border-slate-200/80 bg-white shadow-[0_16px_35px_-28px_rgba(15,23,42,0.5)]">
             <CardHeader className="flex-row items-center justify-between space-y-0 border-b border-slate-100 px-5 py-5 sm:px-6">
               <div><CardTitle className="font-headline text-xl">Seller network</CardTitle><p className="mt-1 text-sm text-slate-500">The latest businesses connected to Agora.</p></div>
-              <Button variant="ghost" size="sm" className="text-emerald-700">View all <ArrowUpRight className="ml-1 h-4 w-4" /></Button>
+              <Button asChild variant="ghost" size="sm" className="text-emerald-700"><Link href="/admin?view=sellers">View all <ArrowUpRight className="ml-1 h-4 w-4" /></Link></Button>
             </CardHeader>
             <CardContent className="p-0">
               {dataLoading ? <div className="space-y-4 p-6">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-12 w-full" />)}</div> : recentSellers.length === 0 ? <div className="p-10 text-center text-sm text-slate-500">No seller profiles have been created yet.</div> : (
                 <div className="divide-y divide-slate-100">{recentSellers.map((seller) => (
                   <div key={seller.id} className="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
-                    <div className="flex min-w-0 items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e4efe6] text-sm font-bold text-[#24553d]">{seller.name.charAt(0).toUpperCase()}</div><div className="min-w-0"><p className="truncate text-sm font-semibold">{seller.name}</p><p className="truncate text-xs text-slate-500">{seller.businessType} · {seller.regionId || 'Region not set'}</p></div></div>
-                    <div className="text-right"><Badge variant="outline" className={statusTone(seller.status)}>{seller.status || 'unknown'}</Badge><p className="mt-1 text-[11px] text-slate-400">{formatDate((seller as SellerWithCreatedAt).createdAt)}</p></div>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e4efe6] text-sm font-bold text-[#24553d]">{seller.name.charAt(0).toUpperCase()}</div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{seller.name}</p>
+                        <p className="truncate text-xs text-slate-500">{seller.businessType} · {seller.regionId || 'Region not set'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge variant="outline" className={statusTone(seller.status)}>{seller.status || 'unknown'}</Badge>
+                      <p className="mt-1 text-[11px] text-slate-400">{formatDate((seller as SellerWithCreatedAt).createdAt)}</p>
+                    </div>
                   </div>
                 ))}</div>
               )}
@@ -230,7 +322,7 @@ export default function SuperAdminPage() {
 
         <section className={`${view === 'overview' ? '' : 'hidden'} grid gap-5 xl:grid-cols-2`}>
           <Card className="border-slate-200/80 bg-white shadow-[0_16px_35px_-28px_rgba(15,23,42,0.5)]">
-            <CardHeader className="border-b border-slate-100 px-5 py-5 sm:px-6"><CardTitle className="font-headline text-xl">User profiles</CardTitle><p className="mt-1 text-sm text-slate-500">Remove platform profiles that should no longer be active.</p></CardHeader>
+            <CardHeader className="flex-row items-center justify-between gap-3 border-b border-slate-100 px-5 py-5 sm:px-6"><div><CardTitle className="font-headline text-xl">Buyer profiles</CardTitle><p className="mt-1 text-sm text-slate-500">Registered marketplace accounts.</p></div><Button asChild variant="ghost" size="sm" className="shrink-0 text-emerald-700"><Link href="/admin?view=users">View all <ArrowUpRight className="ml-1 h-4 w-4" /></Link></Button></CardHeader>
             <CardContent className="p-0">{recentUsers.length === 0 ? <div className="p-10 text-center text-sm text-slate-500">No user profiles found.</div> : <div className="divide-y divide-slate-100">{recentUsers.map((account) => <div key={account.id} className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6"><div className="min-w-0"><p className="truncate text-sm font-semibold">{account.name || 'Unnamed user'}</p><p className="truncate text-xs text-slate-500">{account.email} · {account.role}</p></div><Button type="button" variant="ghost" size="icon" className="shrink-0 text-rose-600 hover:bg-rose-50 hover:text-rose-700" aria-label={`Delete ${account.name || 'user'}`} disabled={deletingKey === `user:${account.id}`} onClick={() => handleDeleteUser(account.id, account.name || account.email)}><Trash2 className="h-4 w-4" /></Button></div>)}</div>}</CardContent>
           </Card>
 

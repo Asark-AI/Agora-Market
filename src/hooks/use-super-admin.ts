@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { deleteAdminProduct, deleteAdminUser, moderateProduct, moderateSeller, moderateUser } from '@/app/admin/actions';
+import { approveAdminSeller, deleteAdminProduct, deleteAdminSeller, deleteAdminUser, deleteAdminUsers, moderateProduct, moderateSeller, moderateUser } from '@/app/admin/actions';
 import { getAdminData, getAdminOverview, type AdminDataRecord, type AdminView } from '@/app/admin/data-actions';
 import type { Seller, User } from '@/lib/types';
 
@@ -57,9 +57,9 @@ export function useSuperAdmin() {
       if (view === 'overview') {
         const [metrics, sellers, applications, users, products, reports] = await Promise.all([
           getAdminOverview(),
-          getAdminData('sellers'),
+          getAdminData('sellers', '', 100),
           getAdminData('applications'),
-          getAdminData('users'),
+          getAdminData('users', '', 100),
           getAdminData('products'),
           getAdminData('reports'),
         ]);
@@ -81,10 +81,29 @@ export function useSuperAdmin() {
   }, [isSuperAdmin]);
 
   const deleteUser = async (userId: string, reason: string) => {
-    const idToken = await firebaseUser?.getIdToken(true);
+    const idToken = await firebaseUser?.getIdToken();
     if (!idToken) throw new Error('Your session has expired. Please sign in again.');
     await deleteAdminUser(idToken, userId, reason);
-    await refresh('users');
+    setSnapshot((current) => ({
+      ...current,
+      users: current.users.filter((account) => account.id !== userId),
+      metrics: { ...current.metrics, users: Math.max(0, current.metrics.users - 1) },
+    }));
+  };
+
+  const deleteUsers = async (userIds: string[], reason: string) => {
+    const idToken = await firebaseUser?.getIdToken();
+    if (!idToken) throw new Error('Your session has expired. Please sign in again.');
+    const result = await deleteAdminUsers(idToken, userIds, reason);
+    if (result.deletedIds.length) {
+      const deletedIds = new Set(result.deletedIds);
+      setSnapshot((current) => ({
+        ...current,
+        users: current.users.filter((account) => !deletedIds.has(account.id)),
+        metrics: { ...current.metrics, users: Math.max(0, current.metrics.users - result.deletedIds.length) },
+      }));
+    }
+    return result;
   };
 
   const deleteProduct = async (sellerId: string, productId: string, reason: string) => {
@@ -94,14 +113,37 @@ export function useSuperAdmin() {
     await refresh('products');
   };
 
+  const deleteSeller = async (sellerId: string, reason: string) => {
+    const idToken = await firebaseUser?.getIdToken();
+    if (!idToken) throw new Error('Your session has expired. Please sign in again.');
+    await deleteAdminSeller(idToken, sellerId, reason);
+    const deletedSeller = snapshot.sellers.find((seller) => seller.id === sellerId);
+    setSnapshot((current) => ({
+      ...current,
+      sellers: current.sellers.filter((seller) => seller.id !== sellerId),
+      products: current.products.filter((product) => product.sellerId !== sellerId),
+      metrics: {
+        ...current.metrics,
+        sellers: Math.max(0, current.metrics.sellers - 1),
+        activeSellers: Math.max(0, current.metrics.activeSellers - (deletedSeller?.status === 'active' ? 1 : 0)),
+        products: Math.max(0, current.metrics.products - snapshot.products.filter((product) => product.sellerId === sellerId).length),
+      },
+    }));
+  };
+
   const moderate = async (type: 'seller' | 'product' | 'user', targetId: string, nextStatus: string, reason: string, sellerId?: string) => {
     const idToken = await firebaseUser?.getIdToken(true);
     if (!idToken) throw new Error('Your session has expired. Please sign in again.');
+    if (type === 'seller' && nextStatus === 'approved') {
+      await approveAdminSeller(idToken, targetId, reason);
+      await Promise.all([refresh('sellers'), refresh('applications')]);
+      return;
+    }
     if (type === 'seller') await moderateSeller(idToken, targetId, nextStatus, reason);
     if (type === 'product') await moderateProduct(idToken, sellerId || '', targetId, nextStatus, reason);
     if (type === 'user') await moderateUser(idToken, targetId, nextStatus, reason);
     await refresh(type === 'product' ? 'products' : type === 'seller' ? 'sellers' : 'users');
   };
 
-  return { user, logOut, isSuperAdmin, authLoading, claimsLoading, dataLoading, snapshot, error, refresh, deleteUser, deleteProduct, moderate };
+  return { user, logOut, isSuperAdmin, authLoading, claimsLoading, dataLoading, snapshot, error, refresh, deleteUser, deleteUsers, deleteProduct, deleteSeller, moderate };
 }

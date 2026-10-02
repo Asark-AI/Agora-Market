@@ -84,11 +84,11 @@ export function ProductMediaPicker({
         <p className="mt-3 text-sm font-semibold">Add photos and videos</p>
         <p className="mt-1 text-xs text-muted-foreground">Original quality is accepted. Agora handles optimization after upload.</p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
-          <Button type="button" variant="outline" onClick={() => imageInput.current?.click()}><ImagePlus className="mr-2 size-4" />Add photos</Button>
-          <Button type="button" variant="outline" onClick={() => videoInput.current?.click()}><Video className="mr-2 size-4" />Add videos</Button>
+          <Button type="button" variant="outline" onClick={() => imageInput.current?.click()}><ImagePlus className="mr-2 size-4" />Choose photos</Button>
+          <Button type="button" variant="outline" onClick={() => videoInput.current?.click()}><Video className="mr-2 size-4" />Choose videos</Button>
         </div>
-        <input ref={imageInput} className="hidden" type="file" multiple accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif" capture="environment" onChange={(event) => updateFiles('image', Array.from(event.target.files || []))} />
-        <input ref={videoInput} className="hidden" type="file" multiple accept="video/mp4,video/quicktime,video/webm" capture="environment" onChange={(event) => updateFiles('video', Array.from(event.target.files || []))} />
+        <input ref={imageInput} className="hidden" type="file" multiple accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif" onChange={(event) => updateFiles('image', Array.from(event.target.files || []))} />
+        <input ref={videoInput} className="hidden" type="file" multiple accept="video/mp4,video/quicktime,video/webm" onChange={(event) => updateFiles('video', Array.from(event.target.files || []))} />
       </div>
       {error && <p role="alert" className="text-sm font-medium text-destructive">{error}</p>}
       {imageItems.length === 0 && videoItems.length === 0 && <p className="text-sm text-muted-foreground">Add at least one clear product photo. Square images around 1000 × 1000 px work best.</p>}

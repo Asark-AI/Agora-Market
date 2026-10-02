@@ -6,11 +6,13 @@ import { useEffect, useState } from 'react';
 import {
   BarChart3,
   Bell,
+  ChartNoAxesCombined,
   ChevronRight,
   FileCheck2,
   LayoutDashboard,
   LogOut,
   Menu,
+  Package,
   ShieldCheck,
   Store,
   Users,
@@ -24,6 +26,8 @@ const navigation = [
   { href: '/admin', label: 'Overview', icon: LayoutDashboard },
   { href: '/admin?view=sellers', label: 'Sellers', icon: Store },
   { href: '/admin?view=users', label: 'Users', icon: Users },
+  { href: '/admin?view=products', label: 'Products', icon: Package },
+  { href: '/admin/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
   { href: '/admin?view=applications', label: 'Applications', icon: FileCheck2 },
   { href: '/admin?view=reports', label: 'Reports', icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: ShieldCheck },
@@ -55,7 +59,9 @@ export function SuperAdminShell({
     const Icon = item.icon;
     const active = item.href === '/admin/settings'
       ? pathname === '/admin/settings'
-      : pathname === '/admin' && (item.href === '/admin' ? !searchParams.get('view') : searchParams.get('view') === new URL(item.href, 'http://localhost').searchParams.get('view'));
+      : item.href === '/admin/analytics'
+        ? pathname === '/admin/analytics'
+        : pathname === '/admin' && (item.href === '/admin' ? !searchParams.get('view') : searchParams.get('view') === new URL(item.href, 'http://localhost').searchParams.get('view'));
     return (
       <Link
         key={item.label}

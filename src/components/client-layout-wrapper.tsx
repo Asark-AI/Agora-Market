@@ -8,6 +8,7 @@ import { PageLoader } from '@/components/page-loader';
 import { NavigationEvents } from '@/components/navigation-events';
 import { NetworkStatus } from '@/components/network-status';
 import { OfflineSync } from '@/components/offline-sync';
+import { Toaster } from '@/components/ui/toaster';
 
 export function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
     const init = useAuthStore(state => state.init);
@@ -46,6 +47,7 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
             {isLoading && <PageLoader overlay />}
             <NetworkStatus />
             <OfflineSync />
+            <Toaster />
             <Suspense fallback={null}>
                 <NavigationEvents />
             </Suspense>

@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { ArrowRight, Check, Circle, MessageSquare, PackageCheck, Rocket, Sparkles, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardOverviewSkeleton } from '@/components/loading-skeletons';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { NeedsAttention } from '@/components/dashboard/needs-attention';
@@ -21,17 +21,7 @@ export default function DashboardPage() {
   } = useAuth();
 
   if (authLoading || !seller || !user) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-20 w-48" />
-        <div className="grid gap-4 grid-cols-2">
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
-        </div>
-      </div>
-    );
+    return <DashboardOverviewSkeleton />;
   }
 
   const activeProducts = sellerProducts.filter((product) => product.status === 'active').length;
