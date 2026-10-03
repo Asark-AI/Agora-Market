@@ -18,6 +18,9 @@ export async function POST(request: Request) {
     if (!email || typeof address?.name !== 'string' || typeof address?.phone !== 'string' || typeof address?.address !== 'string' || typeof address?.city !== 'string') {
       return NextResponse.json({ error: 'Valid email and delivery details are required.' }, { status: 400 });
     }
+    if (identity.email && email.toLowerCase() !== identity.email.toLowerCase()) {
+      return NextResponse.json({ error: 'Use the email address associated with your Agora account.' }, { status: 400 });
+    }
 
     const { lines, subtotal } = await validateCheckoutLines(body?.items);
     const requestedTotal = Number(body?.amountMajor ?? body?.amount ?? 0);
@@ -31,9 +34,7 @@ export async function POST(request: Request) {
 
     const host = request.headers.get('host') || 'localhost:3000';
     const protocol = request.headers.get('x-forwarded-proto') || 'http';
-    const callbackUrl = typeof body?.callbackUrl === 'string' && body.callbackUrl
-      ? body.callbackUrl
-      : `${protocol}://${host}/checkout/complete`;
+    const callbackUrl = `${protocol}://${host}/checkout/complete`;
 
     const amountMinor = Math.round(subtotal * 100);
     const reference = `agora_${Date.now()}_${randomUUID().replace(/-/g, '')}`;
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
             marketplaceOrderId,
             buyerId: identity.uid,
             buyerEmail: email,
-            items: lines,
+        items: lines.map((line) => ({ ...line, price: line.unitPrice })),
             deliveryAddress: {
               name: address.name.trim(),
               phone: address.phone.trim(),
@@ -81,6 +82,8 @@ export async function POST(request: Request) {
               instructions: typeof address.instructions === 'string' ? address.instructions.trim() : null,
             },
             total: subtotal,
+            totalMinor: amountMinor,
+            currency: 'GHS',
             deliveryFee: null,
             createdAt: new Date().toISOString(),
           },

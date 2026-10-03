@@ -4,7 +4,7 @@ import type { Query, QuerySnapshot } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { requireSuperAdmin } from '@/lib/server/admin-auth';
 
-export type AdminView = 'overview' | 'users' | 'sellers' | 'products' | 'applications' | 'reports';
+export type AdminView = 'overview' | 'users' | 'sellers' | 'products' | 'applications' | 'reports' | 'solutions';
 export type AdminDataRecord = Record<string, unknown> & { id: string };
 export type AdminAnalyticsPeriod = '30d' | '90d' | '12m';
 
@@ -52,6 +52,17 @@ export async function getAdminData(view: AdminView = 'overview', search = '', pa
     return { records: snapshot.docs.map((document) => ({ id: document.id, sellerId: document.ref.parent.parent?.id || '', ...(serialize(document.data()) as Record<string, unknown>) })) as AdminDataRecord[], hasMore: snapshot.size === limit };
   }
 
+  if (view === 'solutions') {
+    let query: Query = db.collection('solutions');
+    if (normalizedSearch) {
+      query = query.orderBy('name').startAt(normalizedSearch).endAt(`${normalizedSearch}\uf8ff`);
+    } else {
+      query = query.orderBy('updatedAt', 'desc');
+    }
+    const snapshot = await query.limit(limit).get();
+    return { records: serializeDocs(snapshot), hasMore: snapshot.size === limit };
+  }
+
   if (view === 'users') {
     let userQuery: Query = db.collection('users');
     if (normalizedSearch) userQuery = applySearch(userQuery, 'email', normalizedSearch);
@@ -80,7 +91,7 @@ export async function getAdminData(view: AdminView = 'overview', search = '', pa
 export async function getAdminOverview() {
   const adminIdentity = await requireSuperAdmin();
   const db = getAdminDb();
-  const [users, adminProfiles, currentAdminProfile, sellers, products, applications, reports] = await Promise.all([
+  const [users, adminProfiles, currentAdminProfile, sellers, products, applications, reports, solutions] = await Promise.all([
     db.collection('users').count().get(),
     db.collection('users').where('role', '==', 'Admin').count().get(),
     db.collection('users').doc(adminIdentity.uid).get(),
@@ -88,6 +99,7 @@ export async function getAdminOverview() {
     db.collectionGroup('products').count().get(),
     db.collection('sellerApplications').count().get(),
     db.collection('reports').count().get(),
+    db.collection('solutions').count().get(),
   ]);
   const [activeSellers, pendingApplications, openReports] = await Promise.all([
     db.collection('sellers').where('status', '==', 'active').count().get(),
@@ -100,6 +112,7 @@ export async function getAdminOverview() {
     products: products.data().count,
     applications: applications.data().count,
     reports: reports.data().count,
+    solutions: solutions.data().count,
     activeSellers: activeSellers.data().count,
     pendingApplications: pendingApplications.data().count,
     openReports: openReports.data().count,

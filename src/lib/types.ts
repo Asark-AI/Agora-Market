@@ -329,15 +329,28 @@ export type Order = {
     paymentProvider?: 'paystack' | 'flutterwave' | 'other';
     paidAt?: string | null;
     payoutStatus?: PayoutStatus;
+    fulfillmentStatus?: FulfillmentStatus;
+    settlementStatus?: SettlementStatus;
     buyerProtectionStatus?: BuyerProtectionStatus;
     disputeStatus?: DisputeStatus;
+    financialBreakdown?: {
+      buyerPaidAmountMinor: number;
+      sellerGrossAmountMinor: number;
+      sellerCommissionAmountMinor: number | null;
+      sellerNetAmountMinor: number | null;
+      deliveryGrossAmountMinor: number;
+      currency: 'GHS';
+      settlementStatus: SettlementStatus;
+    };
     pickup?: PickupLocation;
 };
 
   export type PaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | 'PARTIALLY_REFUNDED' | 'REVERSED';
   export type PayoutStatus = 'NOT_APPLICABLE' | 'PENDING' | 'HELD' | 'ELIGIBLE' | 'PROCESSING' | 'PAID' | 'FAILED' | 'REVERSED' | 'DISPUTED';
+  export type FulfillmentStatus = 'PROCESSING' | 'READY_TO_SHIP' | 'SHIPPED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'DELIVERY_FAILED' | 'RETURNED' | 'CANCELLED';
+  export type SettlementStatus = 'PENDING' | 'ELIGIBLE' | 'ON_HOLD' | 'RELEASE_PROCESSING' | 'RELEASED' | 'PAYOUT_PROCESSING' | 'PAID_OUT' | 'REVERSED' | 'REFUNDED';
   export type BuyerProtectionStatus = 'NOT_STARTED' | 'ACTIVE' | 'EXPIRED' | 'DISPUTED';
-  export type DisputeStatus = 'NONE' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED_BUYER' | 'RESOLVED_SELLER' | 'PARTIAL_REFUND' | 'CLOSED';
+  export type DisputeStatus = 'NONE' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED_BUYER' | 'RESOLVED_SELLER' | 'PARTIAL_RESOLUTION' | 'PARTIAL_REFUND' | 'CLOSED';
 
   export type Payment = {
     id: string;
@@ -357,6 +370,8 @@ export type Order = {
     webhookProcessed: boolean;
     refundedAmountMinor: number;
     failureReason?: string;
+    orderCreationStatus?: 'PENDING' | 'CREATED' | 'REVIEW_REQUIRED';
+    reviewReason?: string;
   };
 
   export type LedgerTransactionType = 'CUSTOMER_PAYMENT' | 'AGORA_COMMISSION' | 'DELIVERY_FEE' | 'SELLER_EARNING' | 'SELLER_PAYOUT' | 'REFUND' | 'PARTIAL_REFUND' | 'ADJUSTMENT' | 'CHARGEBACK' | 'TRANSFER_REVERSAL';
@@ -376,7 +391,10 @@ export type Order = {
     reference: string;
     description: string;
     createdAt: string;
+    updatedAt?: string;
     createdBy: string;
+    idempotencyKey?: string;
+    providerReference?: string;
     metadata?: Record<string, string | number | boolean | null>;
   };
 

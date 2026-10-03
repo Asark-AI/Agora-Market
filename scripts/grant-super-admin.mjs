@@ -132,6 +132,9 @@ async function main() {
     }
 
     await auth.setCustomUserClaims(uid, nextCustomClaims);
+    if (options.reset) {
+      await auth.revokeRefreshTokens(uid);
+    }
 
     const verifiedUser = await auth.getUser(uid);
     const claimMatches = options.reset

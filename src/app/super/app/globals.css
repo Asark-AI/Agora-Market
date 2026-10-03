@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 50% 95%; /* Desaturated beige */
+    --foreground: 80 15% 10%;
+    
+    --card: 40 50% 98%;
+    --card-foreground: 80 15% 10%;
+    
+    --popover: 40 50% 98%;
+    --popover-foreground: 80 15% 10%;
+    
+    --primary: 45 61% 52%; /* Rich, saturated gold */
+    --primary-foreground: 45 90% 10%;
+    
+    --secondary: 40 30% 90%;
+    --secondary-foreground: 80 15% 10%;
+    
+    --muted: 40 30% 90%;
+    --muted-foreground: 80 15% 40%;
+    
+    --accent: 85 24% 43%; /* Dark olive green */
+    --accent-foreground: 40 50% 98%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 40 20% 85%;
+    --input: 40 20% 85%;
+    --ring: 45 61% 52%;
+    
+    --radius: 0.8rem;
+
+    --chart-1: 45 61% 52%; /* Gold */
+    --chart-2: 85 24% 43%; /* Olive */
+    --chart-3: 20 80% 55%; 
+    --chart-4: 190 70% 45%;
+    --chart-5: 340 70% 55%;
+  }
+
+  .dark {
+    --background: 80 15% 10%;
+    --foreground: 40 50% 95%;
+
+    --card: 80 15% 12%;
+    --card-foreground: 40 50% 95%;
+    
+    --popover: 80 15% 12%;
+    --popover-foreground: 40 50% 95%;
+
+    --primary: 45 61% 52%;
+    --primary-foreground: 45 90% 10%;
+
+    --secondary: 80 10% 20%;
+    --secondary-foreground: 40 50% 95%;
+
+    --muted: 80 10% 20%;
+    --muted-foreground: 40 50% 70%;
+
+    --accent: 85 24% 43%;
+    --accent-foreground: 40 50% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 80 10% 20%;
+    --input: 80 10% 20%;
+    --ring: 45 61% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .card {
+     @apply shadow-sm;
+  }
+}

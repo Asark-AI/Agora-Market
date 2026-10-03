@@ -25,7 +25,9 @@ import type { Seller, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import type { AdminRecord } from '@/hooks/use-super-admin';
+import { deleteSolutionDefinition, saveSolutionDefinition } from '@/lib/server/solutions';
 
 type SellerWithCreatedAt = Seller & { createdAt?: unknown };
 
@@ -81,6 +83,74 @@ function LoadingOverview() {
   );
 }
 
+type RequirementDraft = {
+  id: string;
+  name: string;
+  description: string;
+  type: 'required' | 'optional' | 'conditional';
+  required: boolean;
+  minQuantity: string;
+  maxQuantity: string;
+  quantity: string;
+  keywords: string;
+  categoryIds: string;
+  notes: string;
+};
+
+type SolutionDraft = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  status: 'draft' | 'active' | 'archived';
+  image: string;
+  budgetHint: string;
+  budgetMin: string;
+  budgetMax: string;
+  targetAudience: string;
+  useCases: string;
+  outcomes: string;
+  questions: string;
+  requirements: RequirementDraft[];
+};
+
+const emptySolutionDraft: SolutionDraft = {
+  id: '',
+  slug: '',
+  name: '',
+  description: '',
+  category: 'Computing',
+  status: 'draft',
+  image: '',
+  budgetHint: '',
+  budgetMin: '',
+  budgetMax: '',
+  targetAudience: '',
+  useCases: '',
+  outcomes: '',
+  questions: 'What is your budget?\nWhat are you trying to achieve?\nDo you already own any equipment?',
+  requirements: [],
+};
+
+const createRequirementDraft = (): RequirementDraft => ({
+  id: '',
+  name: '',
+  description: '',
+  type: 'required',
+  required: true,
+  minQuantity: '1',
+  maxQuantity: '',
+  quantity: '1',
+  keywords: '',
+  categoryIds: '',
+  notes: '',
+});
+
+const splitDraftLines = (value: string) => value.split(/\n+/).map((item) => item.trim()).filter(Boolean);
+const splitDraftList = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
+const solutionSlug = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
 export default function SuperAdminPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -92,6 +162,8 @@ export default function SuperAdminPage() {
   const [moderatingKey, setModeratingKey] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [solutionDraft, setSolutionDraft] = useState<SolutionDraft>(emptySolutionDraft);
+  const [solutionFormSaving, setSolutionFormSaving] = useState(false);
 
   useEffect(() => {
     if (authLoading || claimsLoading) return;
@@ -114,7 +186,7 @@ export default function SuperAdminPage() {
   const recentProducts = useMemo(() => snapshot.products.slice(0, 6), [snapshot.products]);
   const focusedRecords = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const records = view === 'sellers' ? snapshot.sellers : view === 'users' ? snapshot.users : view === 'products' ? snapshot.products : view === 'applications' ? snapshot.applications : snapshot.reports;
+    const records = view === 'sellers' ? snapshot.sellers : view === 'users' ? snapshot.users : view === 'products' ? snapshot.products : view === 'applications' ? snapshot.applications : view === 'solutions' ? snapshot.solutions : snapshot.reports;
     if (!term) return records;
     return records.filter((record) => JSON.stringify(record).toLowerCase().includes(term));
   }, [searchTerm, snapshot, view]);
@@ -221,6 +293,166 @@ export default function SuperAdminPage() {
     }
   };
 
+  const saveSolution = async () => {
+    const name = solutionDraft.name.trim();
+    const slug = solutionSlug(solutionDraft.slug || name) || 'solution';
+    const description = solutionDraft.description.trim();
+    const questions = splitDraftLines(solutionDraft.questions);
+    const parseNumber = (value: string) => value.trim() ? Number(value) : undefined;
+    const budgetHint = parseNumber(solutionDraft.budgetHint);
+    const budgetMin = parseNumber(solutionDraft.budgetMin);
+    const budgetMax = parseNumber(solutionDraft.budgetMax);
+
+    if (!name) {
+      toast({ variant: 'destructive', title: 'Solution title required', description: 'Add a name before saving the template.' });
+      return;
+    }
+
+    if ([budgetHint, budgetMin, budgetMax].some((value) => value !== undefined && (!Number.isFinite(value) || value < 0)) || (budgetMin !== undefined && budgetMax !== undefined && budgetMax < budgetMin)) {
+      toast({ variant: 'destructive', title: 'Check the budget values', description: 'Budgets must be non-negative numbers, and the maximum cannot be below the minimum.' });
+      return;
+    }
+
+    const invalidRequirement = solutionDraft.requirements.find((requirement) => {
+      const minQuantity = Number(requirement.minQuantity);
+      const quantity = Number(requirement.quantity);
+      const maxQuantity = requirement.maxQuantity.trim() ? Number(requirement.maxQuantity) : undefined;
+      return !requirement.name.trim() || !Number.isInteger(minQuantity) || minQuantity < 0 || !Number.isInteger(quantity) || quantity < Math.max(1, minQuantity) || (maxQuantity !== undefined && (!Number.isInteger(maxQuantity) || maxQuantity < minQuantity || quantity > maxQuantity));
+    });
+
+    if (invalidRequirement) {
+      toast({ variant: 'destructive', title: 'Check the requirements', description: 'Each requirement needs a name and valid whole-number quantities. Maximum quantity must be at least the minimum and selected quantity.' });
+      return;
+    }
+
+    const requirementIds = solutionDraft.requirements.map((requirement) => solutionSlug(requirement.id || requirement.name));
+    if (new Set(requirementIds).size !== requirementIds.length) {
+      toast({ variant: 'destructive', title: 'Requirement names must be unique', description: 'Each requirement needs a unique name or identifier.' });
+      return;
+    }
+
+    setSolutionFormSaving(true);
+    try {
+      const payload = {
+        id: solutionDraft.id || undefined,
+        slug,
+        name,
+        description: description || 'Goal-based shopping experience for buyers.',
+        category: solutionDraft.category || 'Computing',
+        status: solutionDraft.status,
+        image: solutionDraft.image || 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=80',
+        version: 1,
+        questions: questions.length ? questions : ['What is your budget?', 'What are you trying to achieve?'],
+        budgetHint,
+        metadata: {
+          targetAudience: solutionDraft.targetAudience.trim(),
+          useCases: splitDraftLines(solutionDraft.useCases),
+          outcomes: splitDraftLines(solutionDraft.outcomes),
+          budgetRange: { currency: 'GHS' as const, min: budgetMin, max: budgetMax },
+        },
+        requirements: solutionDraft.requirements.map((requirement, index) => ({
+          id: requirementIds[index],
+          name: requirement.name.trim(),
+          description: requirement.description.trim(),
+          type: requirement.type,
+          required: requirement.required,
+          minQuantity: Number(requirement.minQuantity),
+          maxQuantity: requirement.maxQuantity.trim() ? Number(requirement.maxQuantity) : undefined,
+          quantity: Number(requirement.quantity),
+          keywords: splitDraftList(requirement.keywords),
+          categoryIds: splitDraftList(requirement.categoryIds),
+          notes: splitDraftLines(requirement.notes),
+        })),
+      };
+      await saveSolutionDefinition(payload);
+      toast({ title: solutionDraft.id ? 'Solution updated' : 'Solution created', description: `${name} is now available to the marketplace.` });
+      setSolutionDraft(emptySolutionDraft);
+      await refresh('solutions');
+    } catch (solutionError) {
+      toast({ variant: 'destructive', title: 'Solution not saved', description: solutionError instanceof Error ? solutionError.message : 'Please try again.' });
+    } finally {
+      setSolutionFormSaving(false);
+    }
+  };
+
+  const removeSolution = async (record: AdminRecord) => {
+    if (!record.id) return;
+    const label = getRecordName(record, 'this solution');
+    if (!window.confirm(`Delete ${label}? This removes the template from the public catalog.`)) return;
+    try {
+      await deleteSolutionDefinition(record.id);
+      toast({ title: 'Solution deleted', description: `${label} was removed from the solution library.` });
+      await refresh('solutions');
+    } catch (solutionError) {
+      toast({ variant: 'destructive', title: 'Solution not deleted', description: solutionError instanceof Error ? solutionError.message : 'Please try again.' });
+    }
+  };
+
+  const fillSolutionDraft = (record: AdminRecord) => {
+    const solutionRecord = record as AdminRecord & {
+      slug?: string;
+      name?: string;
+      description?: string;
+      category?: string;
+      status?: string;
+      image?: string;
+      budgetHint?: number | string;
+      questions?: string[] | string;
+      metadata?: {
+        targetAudience?: string;
+        useCases?: string[];
+        outcomes?: string[];
+        budgetRange?: { min?: number; max?: number };
+      };
+      requirements?: Array<{
+        id?: string;
+        name?: string;
+        description?: string;
+        type?: string;
+        required?: boolean;
+        minQuantity?: number;
+        maxQuantity?: number;
+        quantity?: number;
+        keywords?: string[];
+        categoryIds?: string[];
+        notes?: string[];
+      }>;
+    };
+    const nextStatus = solutionRecord.status === 'active' || solutionRecord.status === 'archived'
+      ? solutionRecord.status
+      : 'draft';
+
+    setSolutionDraft({
+      id: String(solutionRecord.id || ''),
+      slug: String(solutionRecord.slug || ''),
+      name: String(solutionRecord.name || ''),
+      description: String(solutionRecord.description || ''),
+      category: String(solutionRecord.category || 'Computing'),
+      status: nextStatus as 'draft' | 'active' | 'archived',
+      image: String(solutionRecord.image || ''),
+      budgetHint: typeof solutionRecord.budgetHint === 'number' ? String(solutionRecord.budgetHint) : '',
+      budgetMin: typeof solutionRecord.metadata?.budgetRange?.min === 'number' ? String(solutionRecord.metadata.budgetRange.min) : '',
+      budgetMax: typeof solutionRecord.metadata?.budgetRange?.max === 'number' ? String(solutionRecord.metadata.budgetRange.max) : '',
+      targetAudience: String(solutionRecord.metadata?.targetAudience || ''),
+      useCases: Array.isArray(solutionRecord.metadata?.useCases) ? solutionRecord.metadata.useCases.join('\n') : '',
+      outcomes: Array.isArray(solutionRecord.metadata?.outcomes) ? solutionRecord.metadata.outcomes.join('\n') : '',
+      questions: Array.isArray(solutionRecord.questions) ? String(solutionRecord.questions.join('\n')) : (typeof solutionRecord.questions === 'string' ? solutionRecord.questions : emptySolutionDraft.questions),
+      requirements: Array.isArray(solutionRecord.requirements) ? solutionRecord.requirements.map((requirement) => ({
+        id: String(requirement.id || ''),
+        name: String(requirement.name || ''),
+        description: String(requirement.description || ''),
+        type: requirement.type === 'optional' || requirement.type === 'conditional' ? requirement.type : 'required',
+        required: requirement.required ?? requirement.type !== 'optional',
+        minQuantity: String(requirement.minQuantity ?? 1),
+        maxQuantity: typeof requirement.maxQuantity === 'number' ? String(requirement.maxQuantity) : '',
+        quantity: String(requirement.quantity ?? 1),
+        keywords: Array.isArray(requirement.keywords) ? requirement.keywords.join(', ') : '',
+        categoryIds: Array.isArray(requirement.categoryIds) ? requirement.categoryIds.join(', ') : '',
+        notes: Array.isArray(requirement.notes) ? requirement.notes.join('\n') : '',
+      })) : [],
+    });
+  };
+
   if (authLoading || claimsLoading || !user) return <LoadingOverview />;
   if (!isSuperAdmin) return null;
 
@@ -252,27 +484,156 @@ export default function SuperAdminPage() {
 
         {view !== 'overview' && (
           <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-[0_16px_35px_-28px_rgba(15,23,42,0.5)]">
-            <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:px-6"><div><p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Operations workspace</p><h2 className="mt-2 font-headline text-2xl font-semibold capitalize">{view}</h2><p className="mt-1 text-sm text-slate-500">Search and review live marketplace records.</p></div>{view === 'users' && <div className="flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2 text-sm text-slate-600"><Checkbox checked={allVisibleUsersSelected ? true : selectedVisibleCount > 0 ? 'indeterminate' : false} onCheckedChange={(checked) => setSelectedUserIds(checked === true ? selectableUserIds : [])} aria-label="Select all visible users" />Select visible users</label><Button type="button" variant="destructive" size="sm" onClick={() => void handleBulkDeleteUsers()} disabled={selectedVisibleCount === 0 || deletingKey === 'users:bulk'}><Trash2 className="mr-2 size-4" />Delete selected ({selectedVisibleCount})</Button></div>}</div>
+            <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:px-6"><div><p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Operations workspace</p><h2 className="mt-2 font-headline text-2xl font-semibold capitalize">{view}</h2><p className="mt-1 text-sm text-slate-500">{view === 'solutions' ? 'Manage goal-based shopping templates for the public storefront.' : 'Search and review live marketplace records.'}</p></div>{view === 'users' && <div className="flex flex-wrap items-center justify-between gap-3"><label className="flex items-center gap-2 text-sm text-slate-600"><Checkbox checked={allVisibleUsersSelected ? true : selectedVisibleCount > 0 ? 'indeterminate' : false} onCheckedChange={(checked) => setSelectedUserIds(checked === true ? selectableUserIds : [])} aria-label="Select all visible users" />Select visible users</label><Button type="button" variant="destructive" size="sm" onClick={() => void handleBulkDeleteUsers()} disabled={selectedVisibleCount === 0 || deletingKey === 'users:bulk'}><Trash2 className="mr-2 size-4" />Delete selected ({selectedVisibleCount})</Button></div>}</div>
+
+            {view === 'solutions' && (
+              <div className="border-b border-slate-100 bg-slate-50 p-5 sm:p-6">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Template name</label>
+                    <Input value={solutionDraft.name} onChange={(event) => setSolutionDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Gaming PC" className="border-slate-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Slug</label>
+                    <Input value={solutionDraft.slug} onChange={(event) => setSolutionDraft((current) => ({ ...current, slug: event.target.value }))} placeholder="gaming-pc" className="border-slate-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Category</label>
+                    <Input value={solutionDraft.category} onChange={(event) => setSolutionDraft((current) => ({ ...current, category: event.target.value }))} placeholder="Computing" className="border-slate-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</label>
+                    <select value={solutionDraft.status} onChange={(event) => setSolutionDraft((current) => ({ ...current, status: event.target.value as 'draft' | 'active' | 'archived' }))} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                      <option value="draft">Draft</option>
+                      <option value="active">Active</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Budget hint (GHS)</label>
+                    <Input value={solutionDraft.budgetHint} onChange={(event) => setSolutionDraft((current) => ({ ...current, budgetHint: event.target.value }))} placeholder="10000" className="border-slate-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Typical budget minimum (GHS)</label>
+                    <Input type="number" min="0" value={solutionDraft.budgetMin} onChange={(event) => setSolutionDraft((current) => ({ ...current, budgetMin: event.target.value }))} placeholder="5000" className="border-slate-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Typical budget maximum (GHS)</label>
+                    <Input type="number" min="0" value={solutionDraft.budgetMax} onChange={(event) => setSolutionDraft((current) => ({ ...current, budgetMax: event.target.value }))} placeholder="15000" className="border-slate-200" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Target audience</label>
+                    <Input value={solutionDraft.targetAudience} onChange={(event) => setSolutionDraft((current) => ({ ...current, targetAudience: event.target.value }))} placeholder="First-time PC builders, students, or home offices" className="border-slate-200" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Use cases (one per line)</label>
+                    <Textarea value={solutionDraft.useCases} onChange={(event) => setSolutionDraft((current) => ({ ...current, useCases: event.target.value }))} placeholder={'1080p gaming\nSchool and productivity'} className="min-h-[90px] border-slate-200" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Intended outcomes (one per line)</label>
+                    <Textarea value={solutionDraft.outcomes} onChange={(event) => setSolutionDraft((current) => ({ ...current, outcomes: event.target.value }))} placeholder={'A balanced build within budget\nRoom to upgrade later'} className="min-h-[90px] border-slate-200" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Image URL</label>
+                    <Input value={solutionDraft.image} onChange={(event) => setSolutionDraft((current) => ({ ...current, image: event.target.value }))} placeholder="https://..." className="border-slate-200" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Description</label>
+                    <Textarea value={solutionDraft.description} onChange={(event) => setSolutionDraft((current) => ({ ...current, description: event.target.value }))} placeholder="Describe the goal-based shopping flow..." className="min-h-[90px] border-slate-200" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                    <label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Questions (one per line)</label>
+                    <Textarea value={solutionDraft.questions} onChange={(event) => setSolutionDraft((current) => ({ ...current, questions: event.target.value }))} placeholder="What is your budget?" className="min-h-[110px] border-slate-200" />
+                  </div>
+                  <div className="space-y-4 md:col-span-2 xl:col-span-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-800">Product requirements</h3>
+                        <p className="mt-1 text-xs text-slate-500">Each requirement filters real products by keywords and optional category IDs.</p>
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => setSolutionDraft((current) => ({ ...current, requirements: [...current.requirements, createRequirementDraft()] }))}>Add requirement</Button>
+                    </div>
+                    {solutionDraft.requirements.length === 0 ? (
+                      <p className="rounded-lg border border-dashed border-slate-300 bg-white px-4 py-5 text-sm text-slate-500">No product requirements yet. Add one to generate marketplace recommendations.</p>
+                    ) : solutionDraft.requirements.map((requirement, index) => (
+                      <div key={`${requirement.id}-${index}`} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold text-slate-800">Requirement {index + 1}</p>
+                          <Button type="button" variant="ghost" size="sm" className="text-rose-700 hover:bg-rose-50" onClick={() => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.filter((_, requirementIndex) => requirementIndex !== index) }))}>Remove</Button>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                          <div className="space-y-1.5 sm:col-span-2">
+                            <label className="text-xs font-medium text-slate-600">Name</label>
+                            <Input value={requirement.name} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item) }))} placeholder="Graphics card" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-slate-600">Requirement type</label>
+                            <select value={requirement.type} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, type: event.target.value as RequirementDraft['type'] } : item) }))} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700">
+                              <option value="required">Required</option><option value="optional">Optional</option><option value="conditional">Conditional</option>
+                            </select>
+                          </div>
+                          <label className="flex items-center gap-2 self-end pb-2 text-sm text-slate-700">
+                            <Checkbox checked={requirement.required} onCheckedChange={(checked) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, required: checked === true } : item) }))} />Must be included
+                          </label>
+                          <div className="space-y-1.5 sm:col-span-2 xl:col-span-4">
+                            <label className="text-xs font-medium text-slate-600">Description</label>
+                            <Input value={requirement.description} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, description: event.target.value } : item) }))} placeholder="What this component contributes to the solution" />
+                          </div>
+                          <div className="space-y-1.5"><label className="text-xs font-medium text-slate-600">Minimum quantity</label><Input type="number" min="0" step="1" value={requirement.minQuantity} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, minQuantity: event.target.value } : item) }))} /></div>
+                          <div className="space-y-1.5"><label className="text-xs font-medium text-slate-600">Suggested quantity</label><Input type="number" min="0" step="1" value={requirement.quantity} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, quantity: event.target.value } : item) }))} /></div>
+                          <div className="space-y-1.5"><label className="text-xs font-medium text-slate-600">Maximum quantity (optional)</label><Input type="number" min="0" step="1" value={requirement.maxQuantity} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, maxQuantity: event.target.value } : item) }))} placeholder="No limit" /></div>
+                          <div className="space-y-1.5"><label className="text-xs font-medium text-slate-600">Keywords (comma-separated)</label><Input value={requirement.keywords} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, keywords: event.target.value } : item) }))} placeholder="gpu, graphics card" /></div>
+                          <div className="space-y-1.5 sm:col-span-2"><label className="text-xs font-medium text-slate-600">Category IDs (comma-separated)</label><Input value={requirement.categoryIds} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, categoryIds: event.target.value } : item) }))} placeholder="electronics-hardware" /></div>
+                          <div className="space-y-1.5 sm:col-span-2"><label className="text-xs font-medium text-slate-600">Selection notes (one per line)</label><Textarea value={requirement.notes} onChange={(event) => setSolutionDraft((current) => ({ ...current, requirements: current.requirements.map((item, itemIndex) => itemIndex === index ? { ...item, notes: event.target.value } : item) }))} placeholder="Compatibility details or buyer guidance" className="min-h-[72px]" /></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <Button type="button" onClick={() => void saveSolution()} disabled={solutionFormSaving} className="bg-emerald-700 text-white hover:bg-emerald-800">
+                    {solutionFormSaving ? 'Saving…' : solutionDraft.id ? 'Update template' : 'Create template'}
+                  </Button>
+                  {solutionDraft.id && (
+                    <Button type="button" variant="outline" onClick={() => setSolutionDraft(emptySolutionDraft)}>
+                      Reset form
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {dataLoading ? <div className="space-y-3 p-6">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-14 w-full" />)}</div> : focusedRecords.length === 0 ? <div className="p-12 text-center text-sm text-slate-500">No matching {view} records found.</div> : <div className="divide-y divide-slate-100">{focusedRecords.map((record) => {
               const recordWithMeta = record as Record<string, unknown> & { createdAt?: unknown };
+              const solutionRecord = view === 'solutions' ? record as AdminRecord & { category?: string; status?: string } : null;
               return (
                 <div key={record.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-6">
                   <div className="flex min-w-0 items-center gap-3">
                     {view === 'users' && record.id !== user.id && <Checkbox checked={selectedUserIds.includes(record.id)} onCheckedChange={(checked) => setSelectedUserIds((current) => checked === true ? [...new Set([...current, record.id])] : current.filter((id) => id !== record.id))} aria-label={`Select ${getRecordName(record, 'user')}`} disabled={deletingKey === 'users:bulk'} />}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold">{getRecordName(record, 'Unnamed record')}{view === 'users' && record.id === user.id && <span className="ml-2 text-xs font-medium text-emerald-700">You</span>}</p>
-                      <p className="mt-1 truncate text-xs text-slate-500">{getStatus(record)} · {formatDate(recordWithMeta.createdAt)}</p>
+                      <p className="mt-1 truncate text-xs text-slate-500">{view === 'solutions' ? `${String(solutionRecord?.category || 'Computing')} · ${solutionRecord?.status || 'draft'}` : `${getStatus(record)} · ${formatDate(recordWithMeta.createdAt)}`}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant="outline" className={statusTone(getStatus(record))}>{getStatus(record)}</Badge>
-                    {view === 'sellers' && getStatus(record) === 'pending' && <Button size="sm" disabled={moderatingKey === `seller:${record.id}`} onClick={() => void handleModerate('seller', record, 'approved')}>{moderatingKey === `seller:${record.id}` ? 'Approving…' : 'Approve'}</Button>}
-                    {view === 'sellers' && getStatus(record) === 'active' && <Button size="sm" variant="outline" onClick={() => void handleModerate('seller', record, 'suspended')}>Suspend</Button>}
-                    {view === 'sellers' && <Button type="button" size="icon" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" aria-label={`Delete seller ${getRecordName(record, 'seller')}`} title="Delete seller profile and listings" disabled={deletingKey === `seller:${record.id}`} onClick={() => void handleDeleteSeller(record)}><Trash2 className="h-4 w-4" /></Button>}
-                    {view === 'users' && record.id !== user.id && getStatus(record) !== 'suspended' && <Button size="sm" variant="outline" onClick={() => void handleModerate('user', record, 'suspended')}>Suspend</Button>}
-                    {view === 'users' && record.id !== user.id && getStatus(record) === 'suspended' && <Button size="sm" onClick={() => void handleModerate('user', record, 'active')}>Restore</Button>}
-                    {view === 'users' && record.id !== user.id && <Button type="button" size="icon" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" aria-label={`Permanently delete ${getRecordName(record, 'user')}`} title="Permanently delete user" disabled={deletingKey === `user:${record.id}` || deletingKey === 'users:bulk'} onClick={() => void handleDeleteUser(record.id, getRecordName(record, 'this user'))}><Trash2 className="h-4 w-4" /></Button>}
-                    {view === 'products' && getStatus(record) === 'pending_review' && <Button size="sm" onClick={() => void handleModerate('product', record, 'approved')}>Approve</Button>}
+                    {view === 'solutions' ? (
+                      <>
+                        <Badge variant="outline" className={statusTone(getStatus(record))}>{getStatus(record)}</Badge>
+                        <Button size="sm" variant="outline" onClick={() => fillSolutionDraft(record)}>Edit</Button>
+                        <Button type="button" size="icon" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" aria-label={`Delete solution ${getRecordName(record, 'solution')}`} title="Delete solution template" onClick={() => void removeSolution(record)}><Trash2 className="h-4 w-4" /></Button>
+                      </>
+                    ) : (
+                      <>
+                        <Badge variant="outline" className={statusTone(getStatus(record))}>{getStatus(record)}</Badge>
+                        {view === 'sellers' && getStatus(record) === 'pending' && <Button size="sm" disabled={moderatingKey === `seller:${record.id}`} onClick={() => void handleModerate('seller', record, 'approved')}>{moderatingKey === `seller:${record.id}` ? 'Approving…' : 'Approve'}</Button>}
+                        {view === 'sellers' && getStatus(record) === 'active' && <Button size="sm" variant="outline" onClick={() => void handleModerate('seller', record, 'suspended')}>Suspend</Button>}
+                        {view === 'sellers' && <Button type="button" size="icon" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" aria-label={`Delete seller ${getRecordName(record, 'seller')}`} title="Delete seller profile and listings" disabled={deletingKey === `seller:${record.id}`} onClick={() => void handleDeleteSeller(record)}><Trash2 className="h-4 w-4" /></Button>}
+                        {view === 'users' && record.id !== user.id && getStatus(record) !== 'suspended' && <Button size="sm" variant="outline" onClick={() => void handleModerate('user', record, 'suspended')}>Suspend</Button>}
+                        {view === 'users' && record.id !== user.id && getStatus(record) === 'suspended' && <Button size="sm" onClick={() => void handleModerate('user', record, 'active')}>Restore</Button>}
+                        {view === 'users' && record.id !== user.id && <Button type="button" size="icon" variant="ghost" className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" aria-label={`Permanently delete ${getRecordName(record, 'user')}`} title="Permanently delete user" disabled={deletingKey === `user:${record.id}` || deletingKey === 'users:bulk'} onClick={() => void handleDeleteUser(record.id, getRecordName(record, 'this user'))}><Trash2 className="h-4 w-4" /></Button>}
+                        {view === 'products' && getStatus(record) === 'pending_review' && <Button size="sm" onClick={() => void handleModerate('product', record, 'approved')}>Approve</Button>}
+                      </>
+                    )}
                   </div>
                 </div>
               );
@@ -285,6 +646,7 @@ export default function SuperAdminPage() {
           <StatCard label="Active sellers" value={snapshot.metrics.activeSellers} detail={`${snapshot.metrics.sellers} seller profiles in total`} icon={Store} accent="bg-sky-100/70" />
           <StatCard label="Applications to review" value={snapshot.metrics.pendingApplications} detail={`${snapshot.metrics.applications} applications in total`} icon={FileClock} accent="bg-amber-100/80" />
           <StatCard label="Open reports" value={snapshot.metrics.openReports} detail={`${snapshot.metrics.reports} reports in total`} icon={AlertTriangle} accent="bg-rose-100/80" />
+          <StatCard label="Solution library" value={snapshot.metrics.solutions} detail="Goal-based shopping templates" icon={Package} accent="bg-violet-100/80" />
         </section>
 
         <section className={`${view === 'overview' ? '' : 'hidden'} grid gap-5 xl:grid-cols-[1.35fr_1fr]`}>

@@ -8,9 +8,9 @@ export const metadata: Metadata = {
   description: 'Your all-in-one platform for Ghanaian goods and services.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/favicon.png',
-    shortcut: '/favicon.png',
-    apple: '/favicon.png',
+    icon: '/agora-logo.png',
+    shortcut: '/agora-logo.png',
+    apple: '/agora-logo.png',
   },
 };
 

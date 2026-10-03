@@ -27,11 +27,6 @@ const AddPayoutMethodModal = dynamic(() => import('@/components/add-payout-metho
   loading: () => null,
 });
 
-const WithdrawalRequestModal = dynamic(() => import('@/components/withdrawal-request-modal').then((mod) => mod.WithdrawalRequestModal), {
-  ssr: false,
-  loading: () => null,
-});
-
 
 const plans = [
     {
@@ -119,7 +114,6 @@ export default function SubscriptionPage() {
     const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
-    const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
     
     const planToUpgradeTo = plans.find(p => p.id === selectedPlan);
 
@@ -217,14 +211,7 @@ export default function SubscriptionPage() {
         }
     };
 
-    const [transactions] = useState<Transaction[]>([
-        { id: 'txn-1', date: '2024-07-28T10:00:00Z', description: 'Weekly Payout', amount: -4520.50, status: 'Completed' },
-        { id: 'txn-2', date: '2024-07-25T14:30:00Z', description: 'Platform Fee - July', amount: -150.00, status: 'Completed' },
-        { id: 'txn-3', date: '2024-07-21T10:00:00Z', description: 'Weekly Payout', amount: -3890.00, status: 'Completed' },
-        { id: 'txn-4', date: '2024-07-20T09:00:00Z', description: 'Premium Subscription Fee', amount: -50.00, status: 'Completed' },
-    ]);
-    
-    const balance = 585.50;
+    const transactions: Transaction[] = [];
 
     if (loading) {
         return <DashboardSkeleton />;
@@ -261,16 +248,15 @@ export default function SubscriptionPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <Card className="lg:col-span-1">
                         <CardHeader>
-                            <CardTitle>Account Balance</CardTitle>
+                            <CardTitle>Seller earnings</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-4xl font-bold">₵{balance.toFixed(2)}</p>
-                            <p className="text-sm text-muted-foreground">Available for withdrawal.</p>
+                            <p className="text-lg font-semibold">Not available yet</p>
+                            <p className="mt-2 text-sm text-muted-foreground">Agora is not yet calculating ledger-backed pending or available balances. No seller funds are withdrawable from this account.</p>
                         </CardContent>
                         <CardFooter>
-                            <Button onClick={() => setIsWithdrawalModalOpen(true)}>
-                                <ArrowUp className="mr-2 size-5" />
-                                Request Withdrawal
+                            <Button disabled title="Withdrawals will be enabled when ledger-backed balances and provider payouts are available.">
+                                <ArrowUp className="mr-2 size-5" /> Withdrawals unavailable
                             </Button>
                         </CardFooter>
                     </Card>
@@ -477,7 +463,6 @@ export default function SubscriptionPage() {
                 </DialogContent>
             </Dialog>
             <AddPayoutMethodModal isOpen={isPayoutModalOpen} onOpenChange={setIsPayoutModalOpen} />
-            <WithdrawalRequestModal isOpen={isWithdrawalModalOpen} onOpenChange={setIsWithdrawalModalOpen} balance={balance} />
         </>
     );
 }

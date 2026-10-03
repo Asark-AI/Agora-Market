@@ -24,6 +24,11 @@ service cloud.firestore {
         request.auth.token.superAdmin == true;
     }
 
+    function isMarketplaceUser() {
+      return isSignedIn() &&
+        request.auth.token.superAdmin != true;
+    }
+
     function isOwner(uid) {
       return isSignedIn() &&
         request.auth.uid == uid;
@@ -40,13 +45,13 @@ service cloud.firestore {
     }
 
     function isSellerOwner(sellerId) {
-      return isSignedIn() &&
+      return isMarketplaceUser() &&
         exists(/databases/$(database)/documents/sellers/$(sellerId)) &&
         get(/databases/$(database)/documents/sellers/$(sellerId)).data.userId == request.auth.uid;
     }
 
     function isSellerDocumentOwner(documentId) {
-      return isSignedIn() &&
+      return isMarketplaceUser() &&
         exists(/databases/$(database)/documents/sellers/$(documentId)) &&
         get(/databases/$(database)/documents/sellers/$(documentId)).data.userId == request.auth.uid;
     }
@@ -116,11 +121,19 @@ service cloud.firestore {
         && request.auth.token.superAdmin != true
         && request.auth.token.email_verified == true
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'pending';
-      allow update: if isSignedIn()
+        && request.resource.data.status == 'pending'
+        && !request.resource.data.keys().hasAny([
+          'balance', 'availableBalance', 'pendingBalance', 'walletBalance',
+          'totalEarnings', 'withdrawableBalance', 'sellerBalance', 'settlementBalance'
+        ]);
+      allow update: if isMarketplaceUser()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == resource.data.userId
-        && request.resource.data.status == resource.data.status;
+        && request.resource.data.status == resource.data.status
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'balance', 'availableBalance', 'pendingBalance', 'walletBalance',
+          'totalEarnings', 'withdrawableBalance', 'sellerBalance', 'settlementBalance'
+        ]);
       allow delete: if isSignedIn()
         && resource.data.userId == request.auth.uid;
 
@@ -222,10 +235,10 @@ service cloud.firestore {
     */
     match /customers/{customerId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn()
+      allow create: if isMarketplaceUser()
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'pending';
-      allow update: if isSignedIn();
+      allow update: if isMarketplaceUser();
       allow delete: if isSuperAdmin();
     }
 
@@ -241,9 +254,9 @@ service cloud.firestore {
           resource.data.buyerId == request.auth.uid
           || isSellerOwner(resource.data.sellerId)
         );
-      allow create: if isSignedIn()
+      allow create: if isMarketplaceUser()
         && request.resource.data.buyerId == request.auth.uid;
-      allow update: if isSignedIn()
+      allow update: if isMarketplaceUser()
         && (
           resource.data.buyerId == request.auth.uid
           || isSellerOwner(resource.data.sellerId)
@@ -257,14 +270,9 @@ service cloud.firestore {
     ==========================================
     */
     match /withdrawalRequests/{requestId} {
-      allow read: if isSignedIn()
-        && isSellerOwner(resource.data.sellerId);
-      allow create: if isSignedIn()
-        && exists(/databases/$(database)/documents/sellers/$(request.resource.data.sellerId))
-        && get(/databases/$(database)/documents/sellers/$(request.resource.data.sellerId)).data.userId == request.auth.uid;
-      allow update: if isSignedIn()
-        && isSellerOwner(resource.data.sellerId);
-      allow delete: if isSuperAdmin();
+      allow read: if isSuperAdmin()
+        || (isMarketplaceUser() && isSellerOwner(resource.data.sellerId));
+      allow create, update, delete: if false;
     }
 
     /*
@@ -282,10 +290,10 @@ service cloud.firestore {
 
     match /shops/{shopId} {
       allow read: if true;
-      allow create: if isSignedIn()
+      allow create: if isMarketplaceUser()
         && request.resource.data.ownerId ==
            request.auth.uid;
-      allow update: if isSignedIn()
+      allow update: if isMarketplaceUser()
         && resource.data.ownerId ==
            request.auth.uid
         && request.resource.data.ownerId ==
@@ -315,7 +323,7 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if true;
-      allow create: if isSignedIn()
+      allow create: if isMarketplaceUser()
         && request.resource.data.sellerId ==
            request.auth.uid
         && request.resource.data.keys()
@@ -330,7 +338,7 @@ service cloud.firestore {
 
         && request.resource.data.price is number
         && request.resource.data.stock is int;
-      allow update: if isSignedIn()
+      allow update: if isMarketplaceUser()
         && resource.data.sellerId ==
            request.auth.uid
         && request.resource.data.sellerId ==
@@ -427,17 +435,30 @@ service cloud.firestore {
           || isSuperAdmin()
         );
 
-      allow create: if isSignedIn()
+      allow create: if isMarketplaceUser()
         && request.resource.data.total is number
-        && request.resource.data.sellerId is string;
+        && request.resource.data.sellerId is string
+        && isSellerOwner(request.resource.data.sellerId)
+        && !request.resource.data.keys().hasAny([
+          'paymentStatus', 'paymentAmountMinor', 'paymentReference', 'paymentProvider',
+          'settlementStatus', 'payoutStatus', 'financialBreakdown', 'sellerBalance',
+          'availableBalance', 'pendingBalance', 'refundStatus', 'disputeStatus'
+        ]);
 
-      allow update: if isSignedIn()
+      allow update: if isMarketplaceUser()
         && (
           request.auth.uid == resource.data.buyerId
           || isSellerOwner(resource.data.sellerId)
-        );
+        )
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'total', 'subtotal', 'items', 'deliveryFee', 'sellerId', 'buyerId',
+          'paymentMethod', 'transactionId', 'paidAt',
+          'paymentStatus', 'paymentAmountMinor', 'paymentReference', 'paymentProvider',
+          'settlementStatus', 'payoutStatus', 'financialBreakdown', 'sellerBalance',
+          'availableBalance', 'pendingBalance', 'refundStatus', 'disputeStatus'
+        ]);
 
-      allow delete: if isSuperAdmin();
+      allow delete: if false;
     }
 
     /*
@@ -452,9 +473,21 @@ service cloud.firestore {
       allow read: if isSellerOwner(uid)
         || isSellerDocumentOwner(uid)
         || (isSignedIn() && request.auth.uid == resource.data.buyerId);
-      allow create: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
-      allow update: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
-      allow delete: if isSellerOwner(uid) || isSellerDocumentOwner(uid);
+      allow create: if (isSellerOwner(uid) || isSellerDocumentOwner(uid))
+        && !request.resource.data.keys().hasAny([
+          'paymentStatus', 'paymentAmountMinor', 'paymentReference', 'paymentProvider',
+          'settlementStatus', 'payoutStatus', 'financialBreakdown', 'sellerBalance',
+          'availableBalance', 'pendingBalance', 'refundStatus', 'disputeStatus'
+        ]);
+      allow update: if (isSellerOwner(uid) || isSellerDocumentOwner(uid))
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'total', 'subtotal', 'items', 'deliveryFee', 'buyerId',
+          'paymentMethod', 'transactionId', 'paidAt',
+          'paymentStatus', 'paymentAmountMinor', 'paymentReference', 'paymentProvider',
+          'settlementStatus', 'payoutStatus', 'financialBreakdown', 'sellerBalance',
+          'availableBalance', 'pendingBalance', 'refundStatus', 'disputeStatus'
+        ]);
+      allow delete: if false;
     }
     /*
     ==========================================
@@ -506,8 +539,8 @@ service cloud.firestore {
                   || isSuperAdmin();
         
       allow create,
-            update,
-            delete: if isSuperAdmin();
+        update,
+        delete: if false;
     }
         /*
     ==========================================
@@ -521,10 +554,10 @@ service cloud.firestore {
     */
 
     match /chats/{chatId} {
-      allow create: if isSignedIn()
+      allow create: if isMarketplaceUser()
         && request.auth.uid in
            request.resource.data.participants;
-      allow read, update: if isSignedIn()
+      allow read, update: if isMarketplaceUser()
         && request.auth.uid in
            resource.data.participants;
 
@@ -541,14 +574,14 @@ service cloud.firestore {
       */
 
       match /messages/{messageId} {
-        allow read: if isSignedIn()
+        allow read: if isMarketplaceUser()
           && request.auth.uid in
           get(
             /databases/$(database)/documents/chats/$(chatId)
           )
           .data.participants;
 
-        allow create: if isSignedIn()
+        allow create: if isMarketplaceUser()
           && request.resource.data.senderId ==
              request.auth.uid
           && request.auth.uid in
@@ -561,7 +594,7 @@ service cloud.firestore {
         Sender can delete own message
         Editing disabled to prevent abuse
         */
-        allow delete: if isSignedIn()
+        allow delete: if isMarketplaceUser()
           && resource.data.senderId ==
              request.auth.uid;
         allow update: if false;
@@ -584,7 +617,7 @@ service cloud.firestore {
 
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isSignedIn()
+      allow create: if isMarketplaceUser()
         && request.resource.data.buyerId ==
            request.auth.uid
         && request.resource.data.keys()
@@ -597,12 +630,12 @@ service cloud.firestore {
           ])
         && request.resource.data.rating >= 1
         && request.resource.data.rating <= 5;
-      allow update: if isSignedIn()
+      allow update: if isMarketplaceUser()
         && resource.data.buyerId ==
            request.auth.uid
         && request.resource.data.buyerId ==
            resource.data.buyerId;
-      allow delete: if isSignedIn()
+      allow delete: if isMarketplaceUser()
         && resource.data.buyerId ==
            request.auth.uid;
     }
@@ -619,9 +652,9 @@ service cloud.firestore {
     */
 
     match /wishlist/{uid} {
-      allow read, write: if isOwner(uid);
+      allow read, write: if isMarketplaceUser() && isOwner(uid);
       match /items/{productId} {
-        allow read, write: if isOwner(uid);
+        allow read, write: if isMarketplaceUser() && isOwner(uid);
       }
     }
 
@@ -721,7 +754,8 @@ service cloud.firestore {
     */
 
     match /sellerApplications/{applicationId} {
-      allow create: if isSignedIn();
+      allow create: if isMarketplaceUser()
+        && request.resource.data.userId == request.auth.uid;
       allow read: if isSignedIn()
         && (
           resource.data.userId ==
@@ -779,7 +813,7 @@ service cloud.firestore {
     */
 
     match /reports/{reportId} {
-      allow create: if isSignedIn();
+      allow create: if isMarketplaceUser();
       allow read: if isSignedIn()
         && (
           resource.data.reporterId ==
@@ -828,6 +862,16 @@ service cloud.firestore {
     match /adminUsers/{adminId} {
       allow read,
             write: if isSuperAdmin();
+    }
+
+    match /staff/{staffId} {
+      allow read, update, delete: if isSuperAdmin();
+      allow create: if isSignedIn()
+        && request.auth.uid == staffId
+        && request.resource.data.id == staffId
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.status == 'Pending'
+        && request.resource.data.role == 'Pending';
     }
 
     /*

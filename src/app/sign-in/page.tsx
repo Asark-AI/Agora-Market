@@ -42,6 +42,12 @@ export default function SignInPage() {
       router.replace('/sign-in');
     }
   }, [router, searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get('error') === 'client-required') {
+      setAuthError('Sign-in did not initialize. Reload this page and try again.');
+    }
+  }, [searchParams]);
   
   useEffect(() => {
     if (loading) return;
@@ -80,7 +86,7 @@ export default function SignInPage() {
             hasRouted.current = false;
             return;
           }
-          const targetPath = isSuperAdmin ? '/admin' : '/';
+          const targetPath = isSuperAdmin ? '/super/app/dashboard' : '/';
           router.replace(targetPath);
         }
       };
@@ -142,7 +148,7 @@ export default function SignInPage() {
       browseHref="/"
     >
       <Form {...form}>
-        <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4" aria-busy={isFormLoading || isGoogleLoading}>
+        <form method="post" action="/api/auth/sign-in-fallback" noValidate onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4" aria-busy={isFormLoading || isGoogleLoading}>
             <FormField
               control={form.control}
               name="email"

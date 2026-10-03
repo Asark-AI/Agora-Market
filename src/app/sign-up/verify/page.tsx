@@ -60,7 +60,7 @@ export default function VerifySignupEmailPage() {
       const currentSeller = useAuthStore.getState().seller;
       toast({ title: 'Email confirmed', description: 'Your Agora account is ready.' });
       router.replace(tokenResult.claims.superAdmin === true
-        ? '/admin'
+        ? '/super/app/dashboard'
         : currentSeller && ['approved', 'active'].includes(currentSeller.status) ? '/dashboard' : '/');
     } catch (error) {
       console.error('Email verification check failed:', error);

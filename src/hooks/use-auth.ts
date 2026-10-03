@@ -483,6 +483,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       throw new Error('Authentication is unavailable.');
     }
 
+    const activeUser = auth.currentUser;
+    if (activeUser && (await activeUser.getIdTokenResult(true)).claims.superAdmin === true) {
+      throw new Error('Super Admin identities are restricted to the admin workspace and cannot create buyer or seller accounts.');
+    }
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { user } = userCredential;
 
@@ -574,6 +579,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signInWithGoogle: async () => {
     if (!auth || !db) {
       throw new Error('Authentication is unavailable.');
+    }
+
+    const activeUser = auth.currentUser;
+    if (activeUser && (await activeUser.getIdTokenResult(true)).claims.superAdmin === true) {
+      throw new Error('Super Admin accounts cannot create or switch into buyer or seller accounts.');
     }
 
     const provider = new GoogleAuthProvider();
@@ -1180,20 +1190,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
   },
 
-  requestWithdrawal: async (amount, methodId) => {
-    const { seller } = get();
-    if (!seller) throw new Error("Seller not authenticated");
-
-    const withdrawalData = {
-      sellerId: seller.id,
-      amount,
-      payoutMethodId: methodId,
-      status: 'pending',
-      requestedAt: new Date().toISOString(),
-    };
-
-    const docRef = await addDoc(collection(ensureFirestore(), 'withdrawalRequests'), withdrawalData);
-    return docRef.id;
+  requestWithdrawal: async () => {
+    throw new Error('Seller withdrawals are not available until Agora enables ledger-backed balances and provider payouts.');
   },
 }));
 

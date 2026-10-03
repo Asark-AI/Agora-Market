@@ -13,10 +13,11 @@ export type SuperAdminSnapshot = {
   products: AdminRecord[];
   applications: AdminRecord[];
   reports: AdminRecord[];
-  metrics: { users: number; sellers: number; products: number; applications: number; reports: number; activeSellers: number; pendingApplications: number; openReports: number };
+  solutions: AdminRecord[];
+  metrics: { users: number; sellers: number; products: number; applications: number; reports: number; solutions: number; activeSellers: number; pendingApplications: number; openReports: number };
 };
 
-const emptySnapshot: SuperAdminSnapshot = { users: [], sellers: [], products: [], applications: [], reports: [], metrics: { users: 0, sellers: 0, products: 0, applications: 0, reports: 0, activeSellers: 0, pendingApplications: 0, openReports: 0 } };
+const emptySnapshot: SuperAdminSnapshot = { users: [], sellers: [], products: [], applications: [], reports: [], solutions: [], metrics: { users: 0, sellers: 0, products: 0, applications: 0, reports: 0, solutions: 0, activeSellers: 0, pendingApplications: 0, openReports: 0 } };
 
 export function useSuperAdmin() {
   const { user, firebaseUser, loading: authLoading, logOut } = useAuth();
@@ -55,15 +56,16 @@ export function useSuperAdmin() {
     setError(null);
     try {
       if (view === 'overview') {
-        const [metrics, sellers, applications, users, products, reports] = await Promise.all([
+        const [metrics, sellers, applications, users, products, reports, solutions] = await Promise.all([
           getAdminOverview(),
           getAdminData('sellers', '', 100),
           getAdminData('applications'),
           getAdminData('users', '', 100),
           getAdminData('products'),
           getAdminData('reports'),
+          getAdminData('solutions'),
         ]);
-        setSnapshot({ users: users.records as User[], sellers: sellers.records as Seller[], products: products.records, applications: applications.records, reports: reports.records, metrics });
+        setSnapshot({ users: users.records as User[], sellers: sellers.records as Seller[], products: products.records, applications: applications.records, reports: reports.records, solutions: solutions.records, metrics });
       } else {
         const result = await getAdminData(view, search);
         setSnapshot((current) => ({ ...current, [view]: result.records }));

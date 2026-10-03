@@ -10,6 +10,7 @@ import {
   ChevronRight,
   FileCheck2,
   LayoutDashboard,
+  Sparkles,
   LogOut,
   Menu,
   Package,
@@ -29,6 +30,7 @@ const navigation = [
   { href: '/admin?view=products', label: 'Products', icon: Package },
   { href: '/admin/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
   { href: '/admin?view=applications', label: 'Applications', icon: FileCheck2 },
+  { href: '/admin?view=solutions', label: 'Solutions', icon: Sparkles },
   { href: '/admin?view=reports', label: 'Reports', icon: BarChart3 },
   { href: '/admin/settings', label: 'Settings', icon: ShieldCheck },
 ];

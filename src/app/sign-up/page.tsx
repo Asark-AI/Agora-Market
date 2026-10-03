@@ -121,9 +121,15 @@ export default function SignUpPage() {
   const handleGoogleSignUp = async () => {
     setIsGoogleLoading(true);
     try {
-      await signInWithGoogle();
-      toast({ title: 'Account created', description: 'Your Google account is ready to use.' });
-      router.replace('/');
+      const signedInUser = await signInWithGoogle();
+      const token = await signedInUser.getIdTokenResult();
+      if (token.claims.superAdmin === true) {
+        toast({ title: 'Super Admin signed in', description: 'Opening the secure admin workspace.' });
+        router.replace('/super/app/dashboard');
+      } else {
+        toast({ title: 'Account created', description: 'Your Google account is ready to use.' });
+        router.replace('/');
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
