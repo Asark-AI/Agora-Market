@@ -16,6 +16,7 @@ export default function VerifySignupEmailPage() {
   const { toast } = useToast();
   const { firebaseUser, refreshAuthProfile } = useAuth();
   const email = searchParams.get('email') || firebaseUser?.email || auth?.currentUser?.email || '';
+  const sendStatus = searchParams.get('send');
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [checkError, setCheckError] = useState('');
@@ -148,9 +149,11 @@ export default function VerifySignupEmailPage() {
     <AuthShell
       eyebrow="Almost there"
       title="Verify your email"
-      description={searchParams.get('send') === 'failed'
+      description={sendStatus === 'failed'
         ? `Your account exists, but Agora could not send a verification code${email ? ` to ${email}` : ''}. Check the email configuration or try again below.`
-        : `Enter the six-digit code sent to your email${email ? ` (${email})` : ''}.`}
+        : sendStatus === 'needed'
+          ? 'Your email address is not verified yet. Request a six-digit code below to finish signing in.'
+          : `Enter the six-digit code sent to your email${email ? ` (${email})` : ''}.`}
       alternateHref="/sign-in"
       alternateLabel="Sign in"
       alternatePrompt="Already verified?"
@@ -159,7 +162,9 @@ export default function VerifySignupEmailPage() {
         <div className="rounded-[1.75rem] border border-[#edf0ea] bg-[#f8faf8] p-5 shadow-[0_24px_40px_-28px_rgba(23,59,43,0.28)]">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#eaf6ef] text-2xl shadow-inner shadow-[#d9e7dc]">✉️</div>
           <p className="text-sm text-[#5b675f]">
-            We’ve sent a verification code to <span className="font-semibold text-[#173b2b]">{email || 'your email address'}</span>.
+            {sendStatus === 'needed' || sendStatus === 'failed'
+              ? <>Request a verification code for <span className="font-semibold text-[#173b2b]">{email || 'your email address'}</span> below.</>
+              : <>We’ve sent a verification code to <span className="font-semibold text-[#173b2b]">{email || 'your email address'}</span>.</>}
           </p>
           <p className="mt-3 text-xs leading-5 text-[#738079]">
             The six-digit code expires after 10 minutes. Requesting a new code invalidates the previous one.

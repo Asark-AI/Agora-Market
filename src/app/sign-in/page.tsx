@@ -6,7 +6,7 @@ import type { Route } from 'next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAuth } from '@/hooks/use-auth';
+import { EmailVerificationRequiredError, useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
@@ -54,8 +54,7 @@ export default function SignInPage() {
 
     if (user && !hasRouted.current) {
       if (firebaseUser && !firebaseUser.emailVerified) {
-        setAuthError('Please verify your email address before continuing.');
-        router.replace(`/sign-up/verify?email=${encodeURIComponent(firebaseUser.email || '')}`);
+        router.replace(`/sign-up/verify?email=${encodeURIComponent(firebaseUser.email || '')}&send=needed`);
         hasRouted.current = false;
         return;
       }
@@ -112,6 +111,10 @@ export default function SignInPage() {
       toast({ title: 'Logged In Successfully!' });
       // navigation handled by effect when auth state settles
     } catch (error: any) {
+      if (error instanceof EmailVerificationRequiredError) {
+        router.replace(`/sign-up/verify?email=${encodeURIComponent(error.email)}&send=needed`);
+        return;
+      }
       const message = error instanceof Error ? error.message : 'Unable to sign in. Please try again.';
       setAuthError(message);
       toast({ variant: 'destructive', title: 'Login Failed', description: message });
@@ -127,6 +130,10 @@ export default function SignInPage() {
       toast({ title: "Logged In Successfully!" });
       // navigation handled by effect when auth state settles
     } catch (error: any) {
+      if (error instanceof EmailVerificationRequiredError) {
+        router.replace(`/sign-up/verify?email=${encodeURIComponent(error.email)}&send=needed`);
+        return;
+      }
       toast({
         variant: "destructive",
         title: "Google Sign-In Failed",

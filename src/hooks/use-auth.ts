@@ -70,6 +70,13 @@ export interface AuthState extends PublicAuthState {
 
 const UPLOAD_IDLE_TIMEOUT_MS = 120_000;
 
+export class EmailVerificationRequiredError extends Error {
+  constructor(readonly email: string) {
+    super('Verify your email address to finish signing in.');
+    this.name = 'EmailVerificationRequiredError';
+  }
+}
+
 const uploadFile = async (file: File, path: string): Promise<string> => {
   if (!storage) {
     throw new Error('Storage is unavailable.');
@@ -533,7 +540,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ firebaseUser: refreshedUser, user: createFallbackUser(refreshedUser), loading: false, initialized: true });
         await get().refreshAuthProfile(refreshedUser);
         await clearServerSession();
-        throw new Error('Please verify your email before signing in. Check your inbox for the verification link from Firebase.');
+        throw new EmailVerificationRequiredError(refreshedUser?.email || email);
       }
       const fallbackUser = createFallbackUser(refreshedUser);
       set({ firebaseUser: refreshedUser, user: fallbackUser, loading: false, initialized: true });
@@ -550,6 +557,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const invalidCredentialMessage = String(error?.message ?? '').toLowerCase().includes('invalid_login_credentials');
 
+      if (error instanceof EmailVerificationRequiredError) throw error;
       if (invalidCredentialCodes.includes(error?.code) || invalidCredentialMessage) {
         throw new Error('The email or password is incorrect.');
       }
@@ -596,7 +604,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ firebaseUser: user, user: createFallbackUser(user), loading: false, initialized: true });
       await get().refreshAuthProfile(user);
       await clearServerSession();
-      throw new Error('Verify your email before using your Agora account.');
+      throw new EmailVerificationRequiredError(user.email || '');
     }
 
     const tokenResult = await user.getIdTokenResult(true);
