@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
             revenue = sellerOrders.reduce((sum, order) => (order.status === 'fulfilled' || order.status === 'shipped' || order.status === 'completed') ? sum + order.total : sum, 0);
             totalOrders = sellerOrders.length;
             if (pageConfig.isStore) {
-                walkInOrdersCount = sellerOrders.filter(o => o.paymentMethod && o.paymentMethod !== 'flutterwave').length;
+                walkInOrdersCount = sellerOrders.filter(o => o.paymentMethod && o.paymentMethod !== 'paystack').length;
                 onlineOrdersCount = totalOrders - walkInOrdersCount;
             }
         }

@@ -11,11 +11,12 @@ import Link from 'next/link';
 import { SellerFollowButton } from '@/components/seller-follow-button';
 
 interface StorePageProps {
-  params: { sellerId: string };
+  params: Promise<{ sellerId: string }>;
 }
 
 export default async function StorefrontPage({ params }: StorePageProps) {
-  const seller = await getSellerBySlug(params.sellerId);
+  const { sellerId } = await params;
+  const seller = await getSellerBySlug(sellerId);
 
   if (!seller) {
     notFound();

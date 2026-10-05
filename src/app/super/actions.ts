@@ -269,8 +269,8 @@ async function moderateDocument(idToken: string, targetType: ModerationTarget, t
   await writeAuditLog({ admin, action: `${nextStatus === 'approved' ? 'APPROVE' : nextStatus === 'rejected' ? 'REJECT' : nextStatus === 'suspended' ? 'SUSPEND' : nextStatus === 'archived' ? 'ARCHIVE' : 'RESTORE'}_${targetType.toUpperCase()}` as never, targetType, targetId, reason: cleanReason, success: true, metadata: { from: currentStatus, to: nextStatus, sellerId } });
 }
 
-export const moderateSeller = (idToken: string, sellerId: string, nextStatus: string, reason: string) => nextStatus === 'approved'
+export const moderateSeller = async (idToken: string, sellerId: string, nextStatus: string, reason: string) => nextStatus === 'approved'
   ? approveAdminSeller(idToken, sellerId, reason)
   : moderateDocument(idToken, 'seller', sellerId, nextStatus, reason);
-export const moderateProduct = (idToken: string, sellerId: string, productId: string, nextStatus: string, reason: string) => moderateDocument(idToken, 'product', productId, nextStatus, reason, sellerId);
-export const moderateUser = (idToken: string, userId: string, nextStatus: string, reason: string) => moderateDocument(idToken, 'user', userId, nextStatus, reason);
+export const moderateProduct = async (idToken: string, sellerId: string, productId: string, nextStatus: string, reason: string) => moderateDocument(idToken, 'product', productId, nextStatus, reason, sellerId);
+export const moderateUser = async (idToken: string, userId: string, nextStatus: string, reason: string) => moderateDocument(idToken, 'user', userId, nextStatus, reason);

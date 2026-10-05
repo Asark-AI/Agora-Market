@@ -2,16 +2,8 @@ import 'server-only';
 
 import { getAdminDb } from '@/lib/firebase-admin';
 import type { PaystackVerifyResult } from '@/lib/server/paystack';
-
-type StoredCheckoutLine = {
-  sellerId?: unknown;
-  productId?: unknown;
-  quantity?: unknown;
-  unitPrice?: unknown;
-  price?: unknown;
-  productName?: unknown;
-  image?: unknown;
-};
+import { checkoutSubtotalMinor, CheckoutValidationError, currentProductUnitPrice, parseCheckoutLines } from '@/lib/server/checkout-pricing';
+import { paystackPaymentMismatch } from '@/lib/server/paystack-payment-validation';
 
 type FinalizationResult = {
   orderCreated: boolean;
@@ -19,38 +11,29 @@ type FinalizationResult = {
   marketplaceOrderId: string;
   orderIds: Record<string, string>;
   reviewReason?: string;
+  paymentMismatch?: boolean;
 };
 
 function getStoredLines(value: unknown) {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 50) {
-    throw new Error('The verified payment has no valid checkout lines.');
-  }
-
-  return value.map((raw) => {
-    const line = raw as StoredCheckoutLine;
-    const sellerId = typeof line.sellerId === 'string' ? line.sellerId : '';
-    const productId = typeof line.productId === 'string' ? line.productId : '';
-    const quantity = Number(line.quantity);
-    const unitPrice = Number(line.unitPrice ?? line.price);
-    if (!sellerId || !productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 99 || !Number.isFinite(unitPrice) || unitPrice <= 0) {
-      throw new Error('The verified payment contains an invalid checkout line.');
+  const requested = parseCheckoutLines(value);
+  const stored = value as Array<Record<string, unknown>>;
+  return requested.map((line, index) => {
+    const item = stored[index];
+    const unitPrice = item.unitPrice ?? item.price;
+    if (typeof unitPrice !== 'number') {
+      throw new CheckoutValidationError('The verified payment contains an invalid checkout line.');
     }
+    checkoutSubtotalMinor([{ unitPrice, quantity: line.quantity }]);
     return {
-      sellerId,
-      productId,
-      quantity,
+      ...line,
       unitPrice,
-      productName: typeof line.productName === 'string' ? line.productName : 'Marketplace item',
-      image: typeof line.image === 'string' ? line.image : null,
+      productName: typeof item.productName === 'string' ? item.productName : 'Marketplace item',
+      image: typeof item.image === 'string' ? item.image : null,
     };
   });
 }
 
 export async function finalizePaystackOrder(reference: string, verified: PaystackVerifyResult, source: 'buyer_verification' | 'paystack_webhook'): Promise<FinalizationResult> {
-  if (verified.status !== 'success' || verified.reference !== reference) {
-    throw new Error('Paystack did not verify a successful transaction for this reference.');
-  }
-
   const db = getAdminDb();
   const paymentRef = db.collection('payments').doc(reference);
   const ledgerRef = db.collection('financialTransactions').doc(`paystack_${reference}`);
@@ -62,20 +45,73 @@ export async function finalizePaystackOrder(reference: string, verified: Paystac
     const payment = paymentSnapshot.data() || {};
     const draft = payment.orderDraft || {};
     const expectedAmountMinor = Number(payment.amountMinor);
-    if (!Number.isSafeInteger(expectedAmountMinor) || expectedAmountMinor <= 0 || Number(verified.amount) !== expectedAmountMinor) {
-      throw new Error('Payment amount does not match the Agora payment intent.');
+    const marketplaceOrderId = typeof draft.marketplaceOrderId === 'string' && draft.marketplaceOrderId
+      ? draft.marketplaceOrderId
+      : `AGO-${reference.slice(-10).toUpperCase()}`;
+    const mismatch = String(payment.currency || '').toUpperCase() !== 'GHS'
+      ? 'currency'
+      : paystackPaymentMismatch(reference, expectedAmountMinor, 'GHS', verified)
+        || (String(payment.reference || paymentSnapshot.id) !== reference ? 'reference' : null);
+
+    if (payment.status === 'SUCCESS' && mismatch) {
+      return {
+        orderCreated: payment.orderCreationStatus === 'CREATED',
+        orderCreationStatus: payment.orderCreationStatus === 'REVIEW_REQUIRED' ? 'REVIEW_REQUIRED' : 'ALREADY_CREATED',
+        marketplaceOrderId,
+        orderIds: payment.orderIds && typeof payment.orderIds === 'object' ? payment.orderIds as Record<string, string> : {},
+        reviewReason: typeof payment.reviewReason === 'string' ? payment.reviewReason : undefined,
+      };
     }
-    if (String(payment.reference || paymentSnapshot.id) !== reference || String(payment.currency || '').toUpperCase() !== 'GHS' || String(verified.currency || '').toUpperCase() !== 'GHS') {
+    if (mismatch) {
+      const mismatchRef = db.collection('paymentSecurityEvents').doc(reference);
+      const mismatchSnapshot = await transaction.get(mismatchRef);
+      const now = new Date().toISOString();
+      transaction.set(paymentRef, {
+        status: 'MISMATCH',
+        verificationStatus: 'MISMATCH',
+        mismatchReason: mismatch,
+        provider: 'paystack',
+        providerTransactionId: String(verified.id),
+        receivedAmountMinor: Number(verified.amount),
+        receivedCurrency: String(verified.currency || ''),
+        webhookProcessed: source === 'paystack_webhook' || payment.webhookProcessed === true,
+        updatedAt: now,
+      }, { merge: true });
+      if (!mismatchSnapshot.exists) {
+        transaction.create(mismatchRef, {
+          provider: 'paystack',
+          reference,
+          orderId: marketplaceOrderId,
+          buyerId: payment.buyerId || null,
+          mismatch,
+          expectedAmountMinor,
+          expectedCurrency: String(payment.currency || ''),
+          receivedAmountMinor: Number(verified.amount),
+          receivedCurrency: String(verified.currency || ''),
+          createdAt: now,
+          source,
+        });
+      }
+      return {
+        orderCreated: false,
+        orderCreationStatus: 'REVIEW_REQUIRED',
+        marketplaceOrderId,
+        orderIds: {},
+        reviewReason: 'The verified payment did not match the amount, currency, reference, or status expected by Agora. Contact support.',
+        paymentMismatch: true,
+      };
+    }
+    if (String(payment.reference || paymentSnapshot.id) !== reference || String(payment.currency || '').toUpperCase() !== 'GHS') {
       throw new Error('Payment reference or currency does not match the Agora payment intent.');
     }
     if (typeof payment.buyerId !== 'string' || !payment.buyerId || draft.buyerId !== payment.buyerId) {
       throw new Error('The payment intent has invalid buyer ownership data.');
     }
 
-    const marketplaceOrderId = typeof draft.marketplaceOrderId === 'string' && draft.marketplaceOrderId
-      ? draft.marketplaceOrderId
-      : `AGO-${reference.slice(-10).toUpperCase()}`;
     const lines = getStoredLines(draft.items);
+    if (checkoutSubtotalMinor(lines) !== expectedAmountMinor) {
+      throw new Error('The payment intent total does not match its stored order lines.');
+    }
     const sellerIds = [...new Set(lines.map((line) => line.sellerId))];
     const groupedLines = new Map(sellerIds.map((sellerId) => [sellerId, lines.filter((line) => line.sellerId === sellerId)]));
     const orderRefs = new Map(sellerIds.map((sellerId) => [sellerId, db.collection('sellers').doc(sellerId).collection('orders').doc(`${reference}_${sellerId}`)]));
@@ -194,6 +230,20 @@ export async function finalizePaystackOrder(reference: string, verified: Paystac
       const line = lines[unavailableLineIndex];
       const productName = String(productSnapshots[unavailableLineIndex].data()?.name || line.productName);
       return markForReview(`${productName} is no longer available in the quantity paid for.`);
+    }
+
+    const changedPriceIndex = productSnapshots.findIndex((snapshot, index) => {
+      try {
+        return currentProductUnitPrice(snapshot.data() || {}) !== lines[index].unitPrice;
+      } catch (error) {
+        if (error instanceof CheckoutValidationError) return true;
+        throw error;
+      }
+    });
+    if (changedPriceIndex >= 0) {
+      const line = lines[changedPriceIndex];
+      const productName = String(productSnapshots[changedPriceIndex].data()?.name || line.productName);
+      return markForReview(`${productName} changed price after payment was initialized.`);
     }
 
     if (!ledgerSnapshot.exists) transaction.create(ledgerRef, ledgerRecord);

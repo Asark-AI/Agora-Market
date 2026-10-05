@@ -7,6 +7,7 @@
 !package-lock.json
 !tsconfig.json
 !manifest.webmanifest
+!firestore.indexes.json
 dist/
 build/
 coverage/

@@ -23,7 +23,7 @@ const orderTabs = ['To Pay', 'To Ship', 'Shipped', 'To Receive', 'Completed'] as
 type OrderTab = typeof orderTabs[number];
 
 function getOrderTab(order: Order): OrderTab {
-    if (order.paymentMethod !== 'cash' && order.status === 'pending' && !order.transactionId && order.paymentStatus !== 'SUCCESS') return 'To Pay';
+    if (order.paymentMethod !== 'cash' && order.status === 'pending' && order.paymentStatus !== 'SUCCESS') return 'To Pay';
     if (order.status === 'pending' || order.status === 'fulfilled') return 'To Ship';
     if (order.status === 'shipped') return 'Shipped';
     if (order.status === 'delivered') return 'To Receive';
@@ -35,7 +35,7 @@ function getDeliveryLabel(order: Order) {
     if (order.status === 'shipped') return 'In transit';
     if (order.status === 'fulfilled') return 'Preparing shipment';
     if (order.status === 'completed') return 'Completed';
-    return order.transactionId ? 'Payment confirmed' : 'Awaiting payment';
+    return order.paymentStatus === 'SUCCESS' ? 'Payment confirmed' : 'Awaiting payment';
 }
 
 function getOrderItem(item: Order['items'][number]) {

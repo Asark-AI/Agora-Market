@@ -1,8 +1,10 @@
 'use client';
 
 import { EditProductForm } from "@/components/edit-product-form";
+import { useParams } from "next/navigation";
 
-export default function EditProductPage({ params }: { params: { productId: string } }) {
+export default function EditProductPage() {
+  const params = useParams<{ productId: string }>();
   const { productId } = params;
   return (
     <div className="max-w-3xl">

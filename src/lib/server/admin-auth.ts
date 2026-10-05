@@ -12,7 +12,7 @@ export type AdminIdentity = Pick<DecodedIdToken, 'uid' | 'email' | 'name'> & {
 };
 
 export async function verifySession(): Promise<DecodedIdToken | null> {
-  const session = cookies().get(SESSION_COOKIE)?.value;
+  const session = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!session) return null;
 
   try {

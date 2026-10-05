@@ -38,7 +38,7 @@ export const createDemoDeliveryState = (): DemoDeliveryState => {
     total: 170,
     status: 'pending',
     items: [{ productId: 'demo-product', quantity: 1, price: 150 }],
-    paymentMethod: 'flutterwave',
+    paymentMethod: 'cash',
     shipmentIds: ['SHP-DEMO-10482'],
   };
   const pickup: PickupLocation = { sellerName: 'Agora Seller', address: 'Oxford Street, Osu, Accra', regionId: 'Greater Accra', mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Oxford+Street+Osu+Accra', contactPhone: '024 000 0000' };

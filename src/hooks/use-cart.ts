@@ -2,18 +2,18 @@
 "use client";
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import type { Product, ServiceProduct } from '@/lib/types';
+import type { CatalogCartProduct, Product, ServiceProduct } from '@/lib/types';
 import { toast } from '@/hooks/use-toast';
 import { indexedDbStorage } from '@/lib/offline/storage';
 
 type CartItem = {
-  product: Product | ServiceProduct;
+  product: Product | ServiceProduct | CatalogCartProduct;
   quantity: number;
 };
 
 interface CartState {
   items: CartItem[];
-  addToCart: (product: Product | ServiceProduct, quantity?: number) => void;
+  addToCart: (product: Product | ServiceProduct | CatalogCartProduct, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;

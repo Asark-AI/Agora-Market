@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArrowRight, Cpu, Sparkles } from 'lucide-react';
+import { AiShoppingPlanner } from '@/components/ai-shopping-planner';
 import { PublicShell } from '@/components/public-shell';
 import { getPublicSolutionDefinitions } from '@/lib/server/solutions';
 
@@ -19,6 +20,10 @@ export default async function SolutionsPage() {
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
             Discover curated shopping journeys built on the real Agora marketplace catalog, so customers can move from goal to products without starting from scratch.
           </p>
+        </div>
+
+        <div className="mb-8">
+          <AiShoppingPlanner />
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

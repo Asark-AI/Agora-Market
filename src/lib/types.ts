@@ -138,6 +138,31 @@ export type Product = {
   createdAt?: Date | string | null;
 };
 
+export type CatalogCartProduct = Pick<
+  Product,
+  | 'id'
+  | 'name'
+  | 'description'
+  | 'price'
+  | 'discountPrice'
+  | 'images'
+  | 'videos'
+  | 'productMedia'
+  | 'categoryId'
+  | 'sellerId'
+  | 'regionId'
+  | 'stock'
+  | 'status'
+  | 'specifications'
+  | 'views'
+  | 'favorites'
+  | 'ratingAverage'
+  | 'ratingCount'
+  | 'ratingTotal'
+  | 'soldCount'
+  | 'createdAt'
+>;
+
 export type ProductMedia = {
   type: 'image' | 'video';
   role: 'primary' | 'gallery' | 'product_demo';
@@ -176,8 +201,8 @@ export type Seller = {
   businessType: BusinessType;
   subscriptionPlan: 'basic' | 'premium' | 'enterprise';
   regionId: string;
-  lastPaymentDate?: string;
-  nextPaymentDate?: string;
+  lastPaymentDate?: string | null;
+  nextPaymentDate?: string | null;
   notifications: Partial<SellerNotifications>;
   description?: string;
   productCategoryIds?: string[];
@@ -208,9 +233,8 @@ export type Seller = {
         description: string;
     },
     paymentGateway?: {
-        provider?: 'flutterwave';
+        provider?: 'paystack';
         publicKey?: string;
-        secretKey?: string;
         testMode?: boolean;
     };
     features?: {
@@ -317,7 +341,7 @@ export type Order = {
     total: number;
     status: OrderStatus;
     items: OrderItem[];
-    paymentMethod?: 'cash' | 'mobile_money' | 'card' | 'other' | 'flutterwave' | 'paystack';
+    paymentMethod?: 'cash' | 'mobile_money' | 'card' | 'other' | 'paystack';
     transactionId?: string;
     createdAt?: Date | string | null;
     shipmentIds?: string[];
@@ -326,7 +350,7 @@ export type Order = {
     paymentStatus?: PaymentStatus;
     paymentAmountMinor?: number;
     paymentCurrency?: 'GHS';
-    paymentProvider?: 'paystack' | 'flutterwave' | 'other';
+    paymentProvider?: 'paystack' | 'other';
     paidAt?: string | null;
     payoutStatus?: PayoutStatus;
     fulfillmentStatus?: FulfillmentStatus;
@@ -702,7 +726,6 @@ export interface AuthState {
   updateRepairRequest: (repairId: string, updates: Partial<RepairRequest>) => Promise<void>;
   addOrder: (sellerId: string, orderData: Omit<Order, 'id' | 'date' | 'status' | 'buyerId'>, customerDetails: { name: string, email: string, phone: string, regionId: string }) => Promise<void>;
   addWalkInOrder: (items: OrderItem[], total: number, customerId: string, paymentMethod: 'cash' | 'mobile_money' | 'card' | 'other') => Promise<string>;
-  addOrderFromCart: (sellerId: string, items: CartItem[], total: number, transactionId: string) => Promise<void>;
   addPurchaseOrder: (po: Omit<PurchaseOrder, 'id'>) => void;
   followSeller: (sellerId: string) => Promise<boolean>;
   rateProduct: (sellerId: string, productId: string, rating: number, review?: string) => Promise<{ ratingAverage: number; ratingCount: number; ratingTotal: number }>;

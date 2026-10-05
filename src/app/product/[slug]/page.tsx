@@ -6,12 +6,13 @@ import { notFound } from 'next/navigation';
 export const dynamic = 'force-dynamic';
 
 interface ProductPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
+  const { slug } = await params;
   const products = await getActiveProducts();
-  const product = await getProductBySlug(params.slug, products);
+  const product = await getProductBySlug(slug, products);
 
   if (!product) {
     notFound();

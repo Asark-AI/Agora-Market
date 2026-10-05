@@ -1,35 +1,14 @@
 import 'server-only';
 
 import { getAdminDb } from '@/lib/firebase-admin';
+import { CheckoutValidationError, checkoutSubtotal, currentProductUnitPrice, parseCheckoutLines, type RequestedCheckoutLine } from '@/lib/server/checkout-pricing';
 
-type RequestedLine = { sellerId: string; productId: string; quantity: number };
-export type ValidatedCheckoutLine = RequestedLine & { unitPrice: number; productName: string; image: string | null };
+export { CheckoutValidationError } from '@/lib/server/checkout-pricing';
 
-export class CheckoutValidationError extends Error {
-  constructor(message: string, public readonly status = 400) {
-    super(message);
-    this.name = 'CheckoutValidationError';
-  }
-}
+export type ValidatedCheckoutLine = RequestedCheckoutLine & { unitPrice: number; productName: string; image: string | null };
 
 export async function validateCheckoutLines(input: unknown): Promise<{ lines: ValidatedCheckoutLine[]; subtotal: number }> {
-  if (!Array.isArray(input) || input.length === 0 || input.length > 50) {
-    throw new CheckoutValidationError('Select at least one item to continue.');
-  }
-
-  const seen = new Set<string>();
-  const requested: RequestedLine[] = input.map((raw: unknown) => {
-    const line = raw as Record<string, unknown>;
-    const sellerId = typeof line?.sellerId === 'string' ? line.sellerId.trim() : '';
-    const productId = typeof line?.productId === 'string' ? line.productId.trim() : '';
-    const quantity = Number(line?.quantity);
-    const key = `${sellerId}/${productId}`;
-    if (!sellerId || !productId || !Number.isInteger(quantity) || quantity < 1 || quantity > 99 || seen.has(key)) {
-      throw new CheckoutValidationError('One or more cart items are invalid. Review your cart and try again.');
-    }
-    seen.add(key);
-    return { sellerId, productId, quantity };
-  });
+  const requested = parseCheckoutLines(input);
 
   const db = getAdminDb();
   const sellers = [...new Set(requested.map((line) => line.sellerId))];
@@ -48,14 +27,11 @@ export async function validateCheckoutLines(input: unknown): Promise<{ lines: Va
     if (!productSnapshot.exists || product?.status !== 'active') {
       throw new CheckoutValidationError('A product in your cart is no longer available. Review your cart.', 409);
     }
-    const stock = Number(product.stock ?? 0);
-    if (!Number.isInteger(stock) || stock < line.quantity) {
+    const stock = product.stock;
+    if (typeof stock !== 'number' || !Number.isSafeInteger(stock) || stock < line.quantity) {
       throw new CheckoutValidationError(`${String(product.name || 'A product')} does not have enough stock.`, 409);
     }
-    const unitPrice = Number(product.discountPrice ?? product.price);
-    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-      throw new CheckoutValidationError('A product in your cart has an invalid price.', 409);
-    }
+    const unitPrice = currentProductUnitPrice(product);
     return {
       ...line,
       unitPrice,
@@ -64,5 +40,5 @@ export async function validateCheckoutLines(input: unknown): Promise<{ lines: Va
     };
   });
 
-  return { lines, subtotal: Number(lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0).toFixed(2)) };
+  return { lines, subtotal: checkoutSubtotal(lines) };
 }

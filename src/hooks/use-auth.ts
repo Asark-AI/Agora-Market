@@ -31,7 +31,6 @@ import {
   type User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
-  sendEmailVerification,
 } from 'firebase/auth';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import type {
@@ -49,7 +48,6 @@ import type {
   OrderItem,
   PurchaseOrder,
   StockAdjustment,
-  CartItem,
   PayoutMethod,
   ProductMedia,
 } from '@/lib/types';
@@ -491,14 +489,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const { user } = userCredential;
 
-    let verificationEmailSent = true;
-    try {
-      await sendEmailVerification(user);
-    } catch (emailError) {
-      verificationEmailSent = false;
-      console.warn('Firebase verification email could not be sent:', emailError);
-    }
-
     const nameParts = name.trim().split(/\s+/);
     const newUser: User = {
       id: user.uid,
@@ -514,6 +504,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: newUser, firebaseUser: user, loading: false, initialized: true });
     await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
     await get().refreshAuthProfile(user);
+    let verificationEmailSent = false;
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/auth/email-otp/send', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      verificationEmailSent = response.ok;
+      if (!response.ok) console.warn('Agora email verification code could not be sent.', { status: response.status });
+    } catch (emailError) {
+      console.warn('Agora email verification request failed.', emailError instanceof Error ? emailError.name : 'Unknown error');
+    }
     return { user, verificationEmailSent };
   },
 
@@ -818,81 +820,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await updateDoc(repairRef, updates);
   },
   
-  addOrderFromCart: async (sellerId, items, total, transactionId) => {
-    const user = get().user;
-    if (!user) throw new Error('User not authenticated');
-
-    const sellerSnapshot = await getDoc(doc(ensureFirestore(), 'sellers', sellerId));
-    const sellerData = sellerSnapshot.exists() ? sellerSnapshot.data() as Seller : null;
-    const pickup = sellerData ? {
-      sellerName: sellerData.name,
-      address: sellerData.pickupLocation || sellerData.regionId || 'Pickup address pending',
-      regionId: sellerData.regionId,
-      mapsUrl: sellerData.googleMapsUrl,
-      contactPhone: sellerData.phone,
-    } : undefined;
-
-    const customerRef = doc(ensureFirestore(), 'sellers', sellerId, 'customers', user.id);
-    const customerSnap = await getDoc(customerRef);
-    if (!customerSnap.exists()) {
-        await setDoc(customerRef, {
-            userId: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone || '',
-            avatar: `https://i.pravatar.cc/150?u=${user.id}`,
-            lastOrderDate: new Date().toISOString(),
-            totalOrders: 1,
-            totalSpent: total,
-            regionId: get().seller?.regionId || '',
-        });
-    } else {
-        await updateDoc(customerRef, {
-            totalOrders: increment(1),
-            totalSpent: increment(total),
-            lastOrderDate: new Date().toISOString(),
-        });
-    }
-    
-    const orderData: Omit<Order, 'id'> = {
-        buyerId: user.id,
-        userId: user.id,
-        date: new Date().toISOString(),
-        total,
-        status: 'pending',
-        items: items.map(item => ({
-            productId: item.product.id,
-            quantity: item.quantity,
-          price: (item.product as Product).discountPrice ?? (item.product as Product).price,
-          productName: item.product.name,
-          image: item.product.images?.[0],
-          variant: 'Standard',
-        })),
-        paymentMethod: 'flutterwave',
-          transactionId: transactionId,
-          pickup,
-    };
-    
-    await addDoc(collection(ensureFirestore(), 'sellers', sellerId, 'orders'), orderData);
-    
-    for (const item of items) {
-        if ('stock' in item.product) {
-            const productRef = doc(ensureFirestore(), 'sellers', sellerId, 'products', item.product.id);
-            await updateDoc(productRef, {
-              stock: increment(-item.quantity),
-              soldCount: increment(item.quantity),
-            });
-        }
-    }
-  },
-
   addOrder: async (sellerId, orderData, customerDetails) => {
     let customerId;
-    const q = query(collection(ensureFirestore(), 'customers'), where('email', '==', customerDetails.email));
+    const customers = collection(ensureFirestore(), 'sellers', sellerId, 'customers');
+    const q = query(customers, where('email', '==', customerDetails.email));
     const customerSnapshot = await getDocs(q);
 
     if (customerSnapshot.empty) {
-      const customerDoc = await addDoc(collection(ensureFirestore(), 'customers'), {
+      const customerDoc = await addDoc(customers, {
         ...customerDetails,
         totalOrders: 1,
         totalSpent: orderData.total,

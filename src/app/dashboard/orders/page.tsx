@@ -108,8 +108,8 @@ const OnlineOrdersTab: FC = () => {
     }
     
     const getPaymentStatus = (order: Order): 'paid' | 'pending' | 'refunded' => {
-        if(order.paymentMethod && order.paymentMethod !== 'flutterwave' && (order.status === 'fulfilled' || order.status === 'completed' || order.status === 'delivered')) return 'paid';
-        if (order.transactionId) return 'paid';
+        if (order.paymentStatus === 'SUCCESS') return 'paid';
+        if (order.paymentStatus === 'REFUNDED' || order.paymentStatus === 'PARTIALLY_REFUNDED' || order.paymentStatus === 'REVERSED') return 'refunded';
         return 'pending';
     }
     
@@ -339,4 +339,3 @@ export default function OrdersPage() {
         </Tabs>
     );
 }
-

@@ -27,12 +27,13 @@ function belongsToBroadCategory(categoryId: string, broadCategory: typeof broadC
   return broadCategory.match.some((term) => parent.includes(term));
 }
 
-export default async function SearchPage({ searchParams }: { searchParams: { q?: string; category?: string; sort?: string } }) {
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; sort?: string }> }) {
+  const resolvedSearchParams = await searchParams;
   const products = await getActiveProducts();
   const categories = getCategoryOptions();
-  const query = searchParams.q?.trim().toLowerCase() || '';
-  const selectedCategory = broadCategories.find((category) => category.id === searchParams.category);
-  const sort = searchParams.sort || '';
+  const query = resolvedSearchParams.q?.trim().toLowerCase() || '';
+  const selectedCategory = broadCategories.find((category) => category.id === resolvedSearchParams.category);
+  const sort = resolvedSearchParams.sort || '';
   const currentPrice = (product: (typeof products)[number]) => product.discountPrice != null && product.discountPrice < product.price ? product.discountPrice : product.price;
 
   const filteredProducts = products.filter((product) => {
@@ -83,7 +84,7 @@ export default async function SearchPage({ searchParams }: { searchParams: { q?:
         <div className="max-w-3xl">
           <form action="/search" className="relative">
             <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-            <Input defaultValue={searchParams.q || ''} name="q" placeholder="Search products or categories" aria-label="Search products or categories" className="h-11 rounded-md border-border/80 bg-background pl-12" />
+            <Input defaultValue={resolvedSearchParams.q || ''} name="q" placeholder="Search products or categories" aria-label="Search products or categories" className="h-11 rounded-md border-border/80 bg-background pl-12" />
             {selectedCategory && <input type="hidden" name="category" value={selectedCategory.id} />}
           </form>
         </div>

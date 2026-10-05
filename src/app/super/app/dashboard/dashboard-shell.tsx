@@ -13,12 +13,12 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from '@/app/super/components/ui/dropdown-menu';
-import { LogOut, User, Settings, LayoutGrid, BarChart, MessageCircle, CreditCard, Search, Users as UsersIcon, Building, ShoppingCart, Megaphone, FileText, Gift, Bot, Target, Eye, PenSquare, Link as LinkIcon, Star, Mic, History } from 'lucide-react';
+import { LogOut, User, Settings, LayoutGrid, BarChart, MessageCircle, CreditCard, Search, Users as UsersIcon, Building, ShoppingCart, Megaphone, FileText, Gift, Bot, Target, Eye, PenSquare, Link as LinkIcon, Star, Mic, History, FileCheck2, Flag, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/app/super/components/theme-toggle';
 import { Logo } from '@/app/super/components/icons';
 import { Button } from '@/app/super/components/ui/button';
 import { appConfig } from '@/app/super/lib/config';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { MobileNav } from '@/app/super/components/mobile-nav';
 import { useAuth, useUser } from '@/app/super/firebase';
 import { useEffect } from 'react';
@@ -28,9 +28,12 @@ const dashboardPath = '/super/app/dashboard';
 const navItems = [
   { href: dashboardPath, label: 'Dashboard', icon: LayoutGrid },
   { href: `${dashboardPath}/activity`, label: 'Activity', icon: History },
-  { href: `${dashboardPath}/users`, label: 'Users', icon: UsersIcon },
-  { href: `${dashboardPath}/sellers`, label: 'Sellers', icon: Building },
-  { href: `${dashboardPath}/products`, label: 'Products', icon: ShoppingCart },
+  { href: `${dashboardPath}?view=users`, label: 'Users', icon: UsersIcon },
+  { href: `${dashboardPath}?view=sellers`, label: 'Sellers', icon: Building },
+  { href: `${dashboardPath}?view=products`, label: 'Products', icon: ShoppingCart },
+  { href: `${dashboardPath}?view=applications`, label: 'Applications', icon: FileCheck2 },
+  { href: `${dashboardPath}?view=reports`, label: 'Reports', icon: Flag },
+  { href: `${dashboardPath}?view=solutions`, label: 'Solutions', icon: Sparkles },
   {
     href: `${dashboardPath}/marketing`,
     label: 'Marketing',
@@ -62,6 +65,7 @@ const mainSettingsItems = [
 export function SuperDashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, loading } = useUser();
   const auth = useAuth();
 
@@ -80,6 +84,16 @@ export function SuperDashboardShell({ children }: { children: React.ReactNode })
   }
 
   const isMarketingPage = pathname.startsWith(`${dashboardPath}/marketing`);
+  const isNavItemActive = (href: string) => {
+    if (href === dashboardPath) {
+      return pathname === dashboardPath && (!searchParams.get('view') || searchParams.get('view') === 'overview');
+    }
+    if (href.startsWith(`${dashboardPath}?view=`)) {
+      const itemView = new URL(href, 'http://localhost').searchParams.get('view');
+      return pathname === dashboardPath && (searchParams.get('view') || 'overview') === itemView;
+    }
+    return pathname === href;
+  };
 
   return (
     <div className="min-h-screen w-full bg-background">
@@ -113,7 +127,7 @@ export function SuperDashboardShell({ children }: { children: React.ReactNode })
                 ) : (
                   <Button
                     key={item.label}
-                    variant={pathname === item.href ? 'secondary' : 'ghost'}
+                    variant={isNavItemActive(item.href) ? 'secondary' : 'ghost'}
                     className="shrink-0 gap-2 whitespace-nowrap"
                     onClick={() => router.push(item.href)}
                   >
@@ -130,7 +144,7 @@ export function SuperDashboardShell({ children }: { children: React.ReactNode })
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="h-9 w-9 cursor-pointer">
-                  <AvatarImage src={user.photoURL || 'https://picsum.photos/seed/10/100/100'} alt={user.displayName || 'User'} />
+                  {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
                   <AvatarFallback>{user.email?.substring(0, 1).toUpperCase()}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>

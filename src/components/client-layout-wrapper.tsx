@@ -26,7 +26,7 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         let active = true;
-        if (!firebaseUser || !authState || pathname.startsWith('/admin') || pathname.startsWith('/super/app')) return;
+        if (!firebaseUser || !authState || pathname.startsWith('/super/app')) return;
 
         void firebaseUser.getIdTokenResult().then((token) => {
             if (active && token.claims.superAdmin === true) router.replace('/super/app/dashboard');

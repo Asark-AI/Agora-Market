@@ -5,8 +5,7 @@ import { getAuth, type Auth } from "firebase/auth";
 import { initializeFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
-const getFirebaseEnvValue = (key: keyof NodeJS.ProcessEnv, fallback: string) => {
-  const value = process.env[key];
+const getFirebaseEnvValue = (value: string | undefined, fallback: string) => {
   if (typeof value === 'string' && value.trim()) {
     return value.trim();
   }
@@ -15,13 +14,13 @@ const getFirebaseEnvValue = (key: keyof NodeJS.ProcessEnv, fallback: string) => 
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_API_KEY', 'AIzaSyCgXWI7AkBhlfMjX0VDG4ETp-63jI3dyqE'),
-  authDomain: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 'ghana-trade-37f20.firebaseapp.com'),
-  projectId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'ghana-trade-37f20'),
-  storageBucket: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'ghana-trade-37f20.firebasestorage.app'),
-  messagingSenderId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', '15751349335'),
-  appId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_APP_ID', '1:15751349335:web:5ee881e5b0fc4996c80f12'),
-  measurementId: getFirebaseEnvValue('NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID', 'G-DRDCSJG8N2'),
+  apiKey: getFirebaseEnvValue(process.env.NEXT_PUBLIC_FIREBASE_API_KEY, ''),
+  authDomain: getFirebaseEnvValue(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, ''),
+  projectId: getFirebaseEnvValue(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID, ''),
+  storageBucket: getFirebaseEnvValue(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, ''),
+  messagingSenderId: getFirebaseEnvValue(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID, ''),
+  appId: getFirebaseEnvValue(process.env.NEXT_PUBLIC_FIREBASE_APP_ID, ''),
+  measurementId: getFirebaseEnvValue(process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID, ''),
 };
 
 let app: FirebaseApp | null = null;

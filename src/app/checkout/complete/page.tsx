@@ -32,6 +32,7 @@ export default function CheckoutCompletePage() {
   const started = useRef(false);
   const [status, setStatus] = useState<ViewState>('loading');
   const [message, setMessage] = useState('Confirming your order...');
+  const [paymentMismatch, setPaymentMismatch] = useState(false);
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
   useEffect(() => {
@@ -66,7 +67,14 @@ export default function CheckoutCompletePage() {
             body: JSON.stringify({ reference }),
           });
           const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.verified) throw new Error(result.error || 'Payment verification failed.');
+          if (!response.ok) throw new Error(result.error || 'Payment verification failed.');
+          if (result.paymentMismatch) {
+            setPaymentMismatch(true);
+            setConfirmation((current) => current ? { ...current, paymentReference: reference } : { orderId: result.marketplaceOrderId, paymentReference: reference, subtotal: 0, total: 0, itemCount: 0, items: [], paymentMethod: 'paystack' });
+            setMessage('The verified payment details did not match the amount expected by Agora. Your order is not confirmed; contact support with this reference before trying again.');
+            setStatus('review');
+            return;
+          }
           if (result.orderCreationStatus === 'REVIEW_REQUIRED') {
             setConfirmation((current) => current ? { ...current, paymentReference: reference } : { orderId: result.marketplaceOrderId, paymentReference: reference, subtotal: 0, total: 0, itemCount: 0, items: [], paymentMethod: 'paystack' });
             setMessage('Your payment was received. The order needs a stock review before it can be confirmed.');
@@ -75,6 +83,7 @@ export default function CheckoutCompletePage() {
             setStatus('review');
             return;
           }
+          if (!result.verified) throw new Error(result.error || 'Payment verification failed.');
           orderId = result.marketplaceOrderId || orderId;
           setMessage('Your payment has been confirmed and your order is being processed.');
           toast({ title: 'Payment confirmed', description: 'Your order is being prepared by the seller.' });
@@ -102,7 +111,7 @@ export default function CheckoutCompletePage() {
           {status === 'loading' ? (
             <section className="grid min-h-[55vh] place-items-center text-center"><div><LiquidLoader /><p className="mt-4 text-sm text-[#667482]">{message}</p></div></section>
           ) : status === 'review' ? (
-            <section className="border-y border-amber-200 bg-white px-5 py-10 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-full border border-amber-300 bg-amber-50 text-amber-800"><Package className="size-6" /></div><p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800">Payment received</p><h1 className="mt-2 text-xl font-semibold">Order confirmation is pending review</h1><p role="status" className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#667482]">{message} Your payment is recorded, but do not pay again for these items. Contact Agora support with this reference.</p><p className="mt-5 text-sm font-medium text-[#41505f]">Payment reference</p><p className="mt-1 break-all font-mono text-sm">{confirmation?.paymentReference}</p><Link href="/profile?tab=orders" className="mt-6 inline-flex h-12 items-center justify-center bg-[#1769aa] px-5 text-sm font-semibold text-white">View my orders</Link></section>
+            <section className="border-y border-amber-200 bg-white px-5 py-10 text-center"><div className="mx-auto flex size-12 items-center justify-center rounded-full border border-amber-300 bg-amber-50 text-amber-800"><Package className="size-6" /></div><p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800">{paymentMismatch ? 'Payment mismatch' : 'Payment received'}</p><h1 className="mt-2 text-xl font-semibold">{paymentMismatch ? 'Order not confirmed' : 'Order confirmation is pending review'}</h1><p role="status" className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#667482]">{paymentMismatch ? message : `${message} Your payment is recorded, but do not pay again for these items. Contact Agora support with this reference.`}</p><p className="mt-5 text-sm font-medium text-[#41505f]">Payment reference</p><p className="mt-1 break-all font-mono text-sm">{confirmation?.paymentReference}</p><Link href="/profile?tab=orders" className="mt-6 inline-flex h-12 items-center justify-center bg-[#1769aa] px-5 text-sm font-semibold text-white">View my orders</Link></section>
           ) : status === 'failed' ? (
             <section className="border-y border-[#e1e6eb] bg-white px-5 py-10 text-center"><div className="mx-auto flex size-12 items-center justify-center border border-[#e6b8b4] bg-[#fff5f4] text-[#b42318]"><span className="text-xl font-semibold">!</span></div><h1 className="mt-4 text-xl font-semibold">We couldn&apos;t confirm the order</h1><p role="alert" className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#667482]">{message}</p><Link href="/profile?tab=orders" className="mt-6 inline-flex h-12 items-center justify-center bg-[#1769aa] px-5 text-sm font-semibold text-white">View my orders</Link></section>
           ) : (

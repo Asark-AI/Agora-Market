@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { approveAdminSeller, deleteAdminProduct, deleteAdminSeller, deleteAdminUser, deleteAdminUsers, moderateProduct, moderateSeller, moderateUser } from '@/app/admin/actions';
-import { getAdminData, getAdminOverview, type AdminDataRecord, type AdminView } from '@/app/admin/data-actions';
+import { approveAdminSeller, deleteAdminProduct, deleteAdminSeller, deleteAdminUser, deleteAdminUsers, moderateProduct, moderateSeller, moderateUser } from '@/app/super/actions';
+import { getAdminData, getAdminOverview, type AdminDataRecord, type AdminView } from '@/app/super/data-actions';
 import type { Seller, User } from '@/lib/types';
 
 export type AdminRecord = AdminDataRecord;
@@ -24,7 +24,7 @@ export function useSuperAdmin() {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [claimsLoading, setClaimsLoading] = useState(true);
   const [snapshot, setSnapshot] = useState<SuperAdminSnapshot>(emptySnapshot);
-  const [dataLoading, setDataLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

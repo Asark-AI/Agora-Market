@@ -1,6 +1,7 @@
 'use server';
 
 import type { Query, QuerySnapshot } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { requireSuperAdmin } from '@/lib/server/admin-auth';
 
@@ -119,9 +120,20 @@ export async function getAdminOverview() {
   };
 }
 
+export async function getAdminActivity() {
+  await requireSuperAdmin();
+  const snapshot = await getAdminDb()
+    .collection('adminAuditLogs')
+    .orderBy('timestamp', 'desc')
+    .limit(100)
+    .get();
+  return serializeDocs(snapshot);
+}
+
 export async function getAdminAnalytics(period: AdminAnalyticsPeriod = '30d') {
   await requireSuperAdmin();
   const db = getAdminDb();
+  if (!['30d', '90d', '12m'].includes(period)) throw new Error('Unsupported analytics period.');
   const now = new Date();
   const start = new Date(now);
   if (period === '12m') start.setUTCFullYear(start.getUTCFullYear() - 1);
@@ -129,10 +141,16 @@ export async function getAdminAnalytics(period: AdminAnalyticsPeriod = '30d') {
 
   const startIso = start.toISOString();
   const ordersByPath = new Map<string, { data: Record<string, unknown>; sellerId: string }>();
-  for (const dateField of ['createdAt', 'date']) {
+  const dateQueries = [
+    { field: 'createdAt', minimum: Timestamp.fromDate(start) },
+    { field: 'createdAt', minimum: startIso },
+    { field: 'date', minimum: Timestamp.fromDate(start) },
+    { field: 'date', minimum: startIso },
+  ] as const;
+  for (const { field, minimum } of dateQueries) {
     const query = db.collectionGroup('orders')
-      .where(dateField, '>=', startIso)
-      .orderBy(dateField, 'asc');
+      .where(field, '>=', minimum)
+      .orderBy(field, 'asc');
     let page = await query.limit(500).get();
     while (!page.empty) {
       for (const document of page.docs) {

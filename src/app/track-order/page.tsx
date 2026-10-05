@@ -20,6 +20,7 @@ type MarketplaceOrder = {
   deliveryFee?: number | null;
   deliveryFeeStatus?: string;
   paymentMethod?: string;
+  paymentStatus?: string;
   items: Array<{ productId: string; quantity: number; price: number; productName?: string; image?: string | null }>;
   deliveryAddress?: { name?: string; phone?: string; address?: string; city?: string; instructions?: string | null };
   shipmentIds?: string[];
@@ -70,7 +71,9 @@ function MarketplaceOrderTracking({ orderId }: { orderId: string }) {
   const itemCount = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
   const total = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
   const deliveryAddress = firstOrder.deliveryAddress;
-  const paymentMethod = firstOrder.paymentMethod === 'cash' ? 'Cash on delivery' : 'Paid through Paystack';
+  const paymentMethod = firstOrder.paymentStatus === 'SUCCESS'
+    ? 'Paid through Paystack'
+    : firstOrder.paymentMethod === 'cash' ? 'Cash on delivery' : 'Awaiting payment';
   const deliveryInProgress = orders.some((order) => ['shipped', 'delivered', 'completed'].includes(order.status.toLowerCase()));
   const deliveryIds = orders.flatMap((order) => order.shipmentIds || []);
   if (deliveryIds.length > 0) return <LiveDeliveryTracking deliveryId={deliveryIds[0]} />;

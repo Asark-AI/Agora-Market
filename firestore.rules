@@ -56,6 +56,22 @@ service cloud.firestore {
         get(/databases/$(database)/documents/sellers/$(documentId)).data.userId == request.auth.uid;
     }
 
+    function hasValidChatParticipants() {
+      return request.resource.data.participants is list
+        && request.resource.data.participants.size() == 2
+        && request.resource.data.participants.toSet().size() == 2
+        && request.resource.data.participants[0] is string
+        && request.resource.data.participants[1] is string
+        && request.auth.uid in request.resource.data.participants;
+    }
+
+    function hasNoSellerSecretCredential(data) {
+      return !(data.customization is map)
+        || !data.customization.keys().hasAny(['paymentGateway'])
+        || !(data.customization.paymentGateway is map)
+        || !('secretKey' in data.customization.paymentGateway);
+    }
+
     /*
     ==========================================
     USERS
@@ -122,6 +138,10 @@ service cloud.firestore {
         && request.auth.token.email_verified == true
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'pending'
+        && hasNoSellerSecretCredential(request.resource.data)
+        && (!('subscriptionPlan' in request.resource.data) || request.resource.data.subscriptionPlan == 'basic')
+        && !request.resource.data.keys().hasAny(['lastPaymentDate', 'nextPaymentDate'])
+        && (!('isVerifiedArtisan' in request.resource.data) || request.resource.data.isVerifiedArtisan != true)
         && !request.resource.data.keys().hasAny([
           'balance', 'availableBalance', 'pendingBalance', 'walletBalance',
           'totalEarnings', 'withdrawableBalance', 'sellerBalance', 'settlementBalance'
@@ -130,6 +150,13 @@ service cloud.firestore {
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == resource.data.userId
         && request.resource.data.status == resource.data.status
+        && hasNoSellerSecretCredential(request.resource.data)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'subscriptionPlan', 'lastPaymentDate', 'nextPaymentDate'
+        ])
+        && (!('isVerifiedArtisan' in request.resource.data)
+          || ('isVerifiedArtisan' in resource.data
+            && request.resource.data.isVerifiedArtisan == resource.data.isVerifiedArtisan))
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
           'balance', 'availableBalance', 'pendingBalance', 'walletBalance',
           'totalEarnings', 'withdrawableBalance', 'sellerBalance', 'settlementBalance'
@@ -234,12 +261,9 @@ service cloud.firestore {
     ==========================================
     */
     match /customers/{customerId} {
-      allow read: if isSignedIn();
-      allow create: if isMarketplaceUser()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.status == 'pending';
-      allow update: if isMarketplaceUser();
-      allow delete: if isSuperAdmin();
+      // Customer CRM records are scoped to sellers/{sellerId}/customers/{customerId}.
+      // Retire the legacy shared directory to prevent cross-customer data access.
+      allow read, write: if false;
     }
 
     /*
@@ -260,7 +284,9 @@ service cloud.firestore {
         && (
           resource.data.buyerId == request.auth.uid
           || isSellerOwner(resource.data.sellerId)
-        );
+        )
+        && unchanged("buyerId")
+        && unchanged("sellerId");
       allow delete: if isSuperAdmin();
     }
 
@@ -555,11 +581,13 @@ service cloud.firestore {
 
     match /chats/{chatId} {
       allow create: if isMarketplaceUser()
-        && request.auth.uid in
-           request.resource.data.participants;
-      allow read, update: if isMarketplaceUser()
+        && hasValidChatParticipants();
+      allow read: if isMarketplaceUser()
         && request.auth.uid in
            resource.data.participants;
+      allow update: if isMarketplaceUser()
+        && request.auth.uid in resource.data.participants
+        && request.resource.data.participants == resource.data.participants;
 
       /*
       Chats cannot be deleted by users
@@ -629,12 +657,24 @@ service cloud.firestore {
             "createdAt"
           ])
         && request.resource.data.rating >= 1
-        && request.resource.data.rating <= 5;
+        && request.resource.data.rating <= 5
+        && request.resource.data.rating is int
+        && request.resource.data.productId is string
+        && request.resource.data.productId.size() > 0
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() <= 2000;
       allow update: if isMarketplaceUser()
         && resource.data.buyerId ==
            request.auth.uid
         && request.resource.data.buyerId ==
-           resource.data.buyerId;
+           resource.data.buyerId
+        && unchanged("productId")
+        && unchanged("createdAt")
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() <= 2000;
       allow delete: if isMarketplaceUser()
         && resource.data.buyerId ==
            request.auth.uid;
@@ -685,7 +725,8 @@ service cloud.firestore {
         || isSuperAdmin();
       allow update: if isSignedIn()
         && request.auth.uid ==
-           resource.data.userId;
+           resource.data.userId
+        && unchanged("userId");
       allow delete: if isSuperAdmin();
     }
 

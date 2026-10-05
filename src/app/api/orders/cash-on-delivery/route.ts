@@ -3,12 +3,15 @@ import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { verifyMarketplaceSession } from '@/lib/server/admin-auth';
 import { CheckoutValidationError, validateCheckoutLines } from '@/lib/server/checkout-validation';
+import { checkoutSubtotal, currentProductUnitPrice } from '@/lib/server/checkout-pricing';
+import { enforceActorRateLimit, RateLimitError } from '@/lib/server/rate-limit';
 
 export async function POST(request: Request) {
   const identity = await verifyMarketplaceSession();
   if (!identity) return NextResponse.json({ error: 'Sign in to place your order.' }, { status: 401 });
 
   try {
+    await enforceActorRateLimit({ scope: 'checkout-cash-on-delivery', actorId: identity.uid, limit: 5, windowMs: 60_000 });
     const body = await request.json().catch(() => null);
     const customerName = typeof body?.customerName === 'string' ? body.customerName.trim() : '';
     const phone = typeof body?.phone === 'string' ? body.phone.trim() : '';
@@ -42,14 +45,15 @@ export async function POST(request: Request) {
         const snapshot = productSnapshots[index];
         const product = snapshot.data();
         if (!snapshot.exists || product?.status !== 'active') throw new CheckoutValidationError('A product in your cart is no longer available.', 409);
-        const stock = Number(product.stock ?? 0);
-        if (stock < line.quantity) throw new CheckoutValidationError(`${String(product.name || 'A product')} does not have enough stock.`, 409);
-        const unitPrice = Number(product.discountPrice ?? product.price);
-        if (!Number.isFinite(unitPrice) || unitPrice <= 0) throw new CheckoutValidationError('A product has an invalid price.', 409);
+        const stock = product.stock;
+        if (typeof stock !== 'number' || !Number.isSafeInteger(stock) || stock < line.quantity) {
+          throw new CheckoutValidationError(`${String(product.name || 'A product')} does not have enough stock.`, 409);
+        }
+        const unitPrice = currentProductUnitPrice(product);
         return { ...line, unitPrice, productName: String(product.name || line.productName), image: Array.isArray(product.images) ? product.images[0] || null : null, index, stockBefore: stock };
       });
-      const currentSubtotal = liveLines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
-      if (Math.abs(currentSubtotal - subtotal) > 0.01) throw new CheckoutValidationError('A product price changed. Review your order and try again.', 409);
+      const currentSubtotal = checkoutSubtotal(liveLines);
+      if (currentSubtotal !== subtotal) throw new CheckoutValidationError('A product price changed. Review your order and try again.', 409);
 
       for (const line of liveLines) {
         const product = productSnapshots[line.index].data();
@@ -89,8 +93,19 @@ export async function POST(request: Request) {
       subtotal,
     });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: 429, headers: { 'Retry-After': String(error.retryAfterSeconds) } });
+    }
     const status = error instanceof CheckoutValidationError ? error.status : 500;
-    const message = error instanceof Error ? error.message : 'Unable to place your order.';
+    if (!(error instanceof CheckoutValidationError)) {
+      console.error(JSON.stringify({
+        event: 'checkout_request_failure',
+        requestId: randomUUID(),
+        scope: 'cash_on_delivery',
+        errorCategory: error instanceof Error ? error.name : 'unknown_error',
+      }));
+    }
+    const message = error instanceof CheckoutValidationError ? error.message : 'Unable to place your order.';
     return NextResponse.json({ error: message }, { status });
   }
 }

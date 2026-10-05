@@ -2,9 +2,9 @@
 
 ## Current application
 
-Agora is currently a single Next.js 14 App Router application backed by Firebase Authentication, Cloud Firestore, Firebase Storage, and Firebase Admin SDK. Buyer, seller, and Super Admin experiences share one web application. Capacitor currently packages one marketplace Android application.
+Agora is currently a single Next.js 15 App Router application backed by Firebase Authentication, Cloud Firestore, Firebase Storage, and Firebase Admin SDK. Buyer, seller, and Super Admin experiences share one web application. Capacitor currently packages one marketplace Android application.
 
-The existing seller model is stored under `sellers/{sellerId}` with nested products, orders, customers, messages, and payout methods. Existing checkout writes seller-scoped orders from the client after a Flutterwave callback. That flow remains in place during migration.
+The existing seller model is stored under `sellers/{sellerId}` with nested products, orders, customers, messages, and payout methods. Paystack is Agora's payment provider. Order and Premium subscription payments are initialized and verified by server routes; the browser never decides whether payment succeeded or activates a paid plan.
 
 ## Identity and capabilities
 
@@ -101,15 +101,16 @@ The profiles should control app name, icon, splash, permissions, deep links, and
 
 ## Paystack payment foundation
 
-The shared payment domain types, integer money helpers, and server-only Paystack client are now available. The current Flutterwave/client-side checkout remains unchanged until the server-side order and payment migration is implemented as a controlled phase.
+Buyer orders and seller Premium subscriptions use Paystack. The server calculates the expected amount and currency, initializes the transaction, verifies its status and reference with Paystack, and finalizes fulfillment or subscription activation idempotently. Signed Paystack webhooks use the same finalizers as authenticated buyer verification. Client-side seller writes cannot grant a paid subscription; Basic-plan changes also go through an authenticated server route.
 
 Required server environment variables:
 
 ```text
+AGORA_ENVIRONMENT=development|staging|production
+PAYSTACK_MODE=test|live
+AGORA_APP_URL=https://...
 PAYSTACK_SECRET_KEY=...
 NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY=...
-PAYSTACK_WEBHOOK_SECRET=...
 ```
 
-The Paystack secret must never use a `NEXT_PUBLIC_` prefix, appear in Firestore, or be returned from an API route. The authenticated `/api/payments/paystack/status` route only returns safe configuration presence and currency information.
-
+The webhook signature is verified using `PAYSTACK_SECRET_KEY`. Paystack key prefixes must match `PAYSTACK_MODE`; development/staging accepts test keys only, and production accepts live keys only. The Paystack secret must never use a `NEXT_PUBLIC_` prefix, appear in Firestore, or be returned from an API route. The authenticated `/api/payments/paystack/status` route only returns safe configuration presence and currency information. Configure the Paystack dashboard webhook to target `/api/payments/paystack/webhook`; see [staging and production readiness](./paystack-staging-readiness.md) for the preflight, deployment checklist, and gates.

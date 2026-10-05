@@ -24,11 +24,12 @@ async function getIdentity(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest, { params }: { params: { deliveryId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ deliveryId: string }> }) {
   const identity = await getIdentity(request);
   if (!identity) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
 
-  const deliveryRef = getAdminDb().collection('deliveries').doc(params.deliveryId);
+  const { deliveryId } = await params;
+  const deliveryRef = getAdminDb().collection('deliveries').doc(deliveryId);
   const snapshot = await deliveryRef.get();
   if (!snapshot.exists) return NextResponse.json({ error: 'Delivery not found.' }, { status: 404 });
   const delivery = snapshot.data() as Record<string, unknown>;
@@ -46,16 +47,17 @@ export async function GET(request: NextRequest, { params }: { params: { delivery
   return NextResponse.json({ delivery: response });
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { deliveryId: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ deliveryId: string }> }) {
   const identity = await getIdentity(request);
   if (!identity) return NextResponse.json({ error: 'Authentication is required.' }, { status: 401 });
 
+  const { deliveryId } = await params;
   const body = await request.json() as { status?: DeliveryStatus; code?: string };
   const nextStatus = body.status;
   if (!nextStatus) return NextResponse.json({ error: 'A delivery status is required.' }, { status: 400 });
 
   const db = getAdminDb();
-  const deliveryRef = db.collection('deliveries').doc(params.deliveryId);
+  const deliveryRef = db.collection('deliveries').doc(deliveryId);
   const snapshot = await deliveryRef.get();
   if (!snapshot.exists) return NextResponse.json({ error: 'Delivery not found.' }, { status: 404 });
   const delivery = snapshot.data() as Record<string, unknown>;
@@ -85,6 +87,5 @@ export async function PATCH(request: NextRequest, { params }: { params: { delive
   }
   await deliveryRef.update(updates);
   await deliveryRef.collection('events').add({ type: `DELIVERY_${nextStatus}`, status: nextStatus, actorId: identity.uid, createdAt: new Date() });
-  return NextResponse.json({ delivery: { id: params.deliveryId, ...delivery, ...updates } });
+  return NextResponse.json({ delivery: { id: deliveryId, ...delivery, ...updates } });
 }
-

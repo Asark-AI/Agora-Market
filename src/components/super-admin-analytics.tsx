@@ -5,9 +5,7 @@ import { Activity, ArrowDownRight, ArrowUpRight, ChartNoAxesCombined, Clock3, Cr
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SuperAdminShell } from '@/components/super-admin-shell';
-import { useAuth } from '@/hooks/use-auth';
-import { getAdminAnalytics, type AdminAnalyticsPeriod } from '@/app/admin/data-actions';
+import { getAdminAnalytics, type AdminAnalyticsPeriod } from '@/app/super/data-actions';
 
 type AnalyticsData = Awaited<ReturnType<typeof getAdminAnalytics>>;
 
@@ -53,7 +51,6 @@ function Breakdown({ title, icon: Icon, items }: { title: string; icon: typeof A
 }
 
 export function SuperAdminAnalytics() {
-  const { user, logOut, loading: authLoading } = useAuth();
   const [period, setPeriod] = useState<AdminAnalyticsPeriod>('30d');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,7 +77,6 @@ export function SuperAdminAnalytics() {
   };
 
   return (
-    <SuperAdminShell userName={user?.name || user?.email || 'Super Admin'} onLogOut={logOut}>
       <div className="space-y-6">
         <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
           <div><div className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800"><ChartNoAxesCombined className="size-4" /> Marketplace intelligence</div><h2 className="font-headline text-3xl font-semibold tracking-tight text-slate-950">Platform analytics</h2><p className="mt-2 max-w-2xl text-sm text-slate-600">Order volume, sales value, fulfilment, and payment activity from marketplace records.</p></div>
@@ -90,7 +86,7 @@ export function SuperAdminAnalytics() {
           </div>
         </header>
 
-        {authLoading || (isLoading && !data) ? <AnalyticsLoading /> : error ? <div role="alert" className="flex flex-col gap-3 border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><Button variant="outline" onClick={refresh}>Retry</Button></div> : data ? <>
+        {isLoading ? <AnalyticsLoading /> : error ? <div role="alert" className="flex flex-col gap-3 border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 sm:flex-row sm:items-center sm:justify-between"><span>{error}</span><Button variant="outline" onClick={refresh}>Retry</Button></div> : data ? <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric title="Orders placed" value={data.orderCount.toLocaleString()} detail={`${data.cancelledOrders.toLocaleString()} cancelled or refunded`} icon={ShoppingBag} accent="bg-sky-50 text-sky-800" />
             <Metric title="Order value" value={currency.format(data.orderValue)} detail="Excludes cancelled and refunded orders" icon={Activity} accent="bg-emerald-50 text-emerald-800" />
@@ -116,6 +112,5 @@ export function SuperAdminAnalytics() {
           <p className="text-right text-xs text-slate-500">Updated {new Intl.DateTimeFormat('en-GH', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(data.generatedAt))}{isLoading ? ' · Refreshing' : ''}</p>
         </> : null}
       </div>
-    </SuperAdminShell>
   );
 }

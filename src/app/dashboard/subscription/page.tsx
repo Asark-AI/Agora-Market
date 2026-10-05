@@ -2,19 +2,17 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, Wallet, Landmark, ArrowDown, ArrowUp, MoreHorizontal, Check, Star, ShieldAlert } from 'lucide-react';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -106,75 +104,79 @@ function AccessDeniedPrompt() {
 }
 
 export default function SubscriptionPage() {
-    const { user, seller, updateSeller, loading, sellerPayoutMethods, removePayoutMethod, setDefaultPayoutMethod } = useAuth();
+    const { user, seller, loading, sellerPayoutMethods, removePayoutMethod, setDefaultPayoutMethod } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
     
     const [isPaymentLoading, setIsPaymentLoading] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<PlanId | null>(null);
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
+    const verifiedReference = useRef<string | null>(null);
     
-    const planToUpgradeTo = plans.find(p => p.id === selectedPlan);
+    useEffect(() => {
+        const reference = searchParams.get('reference') || searchParams.get('trxref');
+        if (!reference || verifiedReference.current === reference) return;
+        verifiedReference.current = reference;
+        let current = true;
 
-    const flutterwaveConfig = {
-        public_key: process.env.NEXT_PUBLIC_FLUTTERWAVE_PUBLIC_KEY || '',
-        tx_ref: (new Date()).getTime().toString(),
-        amount: planToUpgradeTo?.priceValue || 0,
-        currency: 'GHS',
-        payment_options: 'card,mobilemoneyghana,ussd,banktransfer',
-        customer: {
-          email: user?.email || '',
-          phone_number: user?.phone || '',
-          name: user?.name || '',
-        },
-        customizations: {
-          title: 'Agora Seller Subscription',
-          description: `Payment for ${planToUpgradeTo?.name} Plan`,
-          logo: '/agora-logo.png',
-        },
-    };
-    
-    const handleFlutterwavePayment = useFlutterwave(flutterwaveConfig);
-    
-    const completeUpgrade = async () => {
-        if (!seller || !selectedPlan || selectedPlan === 'basic') return;
-        
+        const verifySubscription = async () => {
+            setIsPaymentLoading(true);
+            try {
+                const response = await fetch('/api/payments/paystack/subscription/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    cache: 'no-store',
+                    body: JSON.stringify({ reference }),
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || 'Unable to verify the subscription payment.');
+                if (result.verified) {
+                    toast({ title: 'Premium subscription confirmed', description: 'Paystack verified your payment and your seller plan is now Premium.' });
+                } else if (result.paymentMismatch) {
+                    toast({ variant: 'destructive', title: 'Payment needs support review', description: 'The payment did not match the expected amount. Your plan was not changed; contact Agora support with your reference.' });
+                } else if (result.status === 'REVIEW_REQUIRED') {
+                    toast({ variant: 'destructive', title: 'Subscription needs support review', description: result.message || 'Contact Agora support before retrying payment.' });
+                } else {
+                    toast({ variant: 'destructive', title: 'Payment not confirmed', description: 'Your plan was not changed. Check your Paystack payment status and retry when ready.' });
+                }
+            } catch (error) {
+                if (current) toast({ variant: 'destructive', title: 'Payment status unavailable', description: error instanceof Error ? error.message : 'Your subscription status could not be confirmed.' });
+            } finally {
+                if (current) {
+                    setIsPaymentLoading(false);
+                    setSelectedPlan(null);
+                    router.replace('/dashboard/subscription');
+                }
+            }
+        };
+
+        void verifySubscription();
+        return () => { current = false; };
+    }, [router, searchParams, toast]);
+
+    const beginPremiumPayment = async () => {
+        if (!seller) return;
         setIsPaymentLoading(true);
-        const now = new Date();
-        const nextPaymentDate = addDays(now, 30);
-        
         try {
-            await updateSeller(seller.id, { 
-                subscriptionPlan: selectedPlan,
-                lastPaymentDate: now.toISOString(),
-                nextPaymentDate: nextPaymentDate.toISOString(),
+            const response = await fetch('/api/payments/paystack/subscription/initialize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                cache: 'no-store',
+                body: JSON.stringify({ sellerId: seller.id }),
             });
-            
-            toast({
-                title: 'Upgrade Successful!',
-                description: `Your subscription has been upgraded to the ${selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)} plan.`,
-            });
-    
-            setIsPaymentModalOpen(false);
-            setSelectedPlan(null);
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || typeof result.authorizationUrl !== 'string') {
+                throw new Error(result.error || 'Unable to start Paystack checkout.');
+            }
+            window.location.assign(result.authorizationUrl);
         } catch (error) {
-            console.error("Could not update plan", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not update your subscription plan.' });
-        } finally {
+            toast({ variant: 'destructive', title: 'Could not start payment', description: error instanceof Error ? error.message : 'Please try again.' });
             setIsPaymentLoading(false);
+            setSelectedPlan(null);
         }
-    };
-    
-    const onPaymentSuccess = (response: any) => {
-        console.log(response);
-        closePaymentModal();
-        completeUpgrade();
-    };
-
-    const onPaymentClose = () => {
-        setIsPaymentLoading(false);
-        setSelectedPlan(null);
     };
 
     const handlePlanChange = async (planId: PlanId) => {
@@ -183,25 +185,25 @@ export default function SubscriptionPage() {
         setSelectedPlan(planId);
 
         if (planId === 'premium') {
-             handleFlutterwavePayment({
-                callback: onPaymentSuccess,
-                onClose: onPaymentClose,
-            });
+             await beginPremiumPayment();
         } else if (planId === 'basic') {
             setIsPaymentLoading(true);
             try {
-                await updateSeller(seller.id, { 
-                    subscriptionPlan: planId,
-                    lastPaymentDate: undefined,
-                    nextPaymentDate: undefined
+                const response = await fetch('/api/payments/paystack/subscription/basic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    cache: 'no-store',
+                    body: JSON.stringify({ sellerId: seller.id }),
                 });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || 'Could not change your subscription plan.');
                 toast({
                     title: 'Plan Updated!',
                     description: 'Your subscription has been changed to the Basic plan.',
                 });
             } catch (error) {
-                console.error("Could not update plan", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not update your subscription plan.' });
+                toast({ variant: 'destructive', title: 'Error', description: error instanceof Error ? error.message : 'Could not update your subscription plan.' });
             } finally {
                 setIsPaymentLoading(false);
                 setSelectedPlan(null);
@@ -434,34 +436,6 @@ export default function SubscriptionPage() {
                 </Card>
             </div>
             
-            <Dialog open={isPaymentModalOpen} onOpenChange={(open) => { if(!isPaymentLoading) setIsPaymentModalOpen(open); }}>
-                 <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Complete Your Upgrade</DialogTitle>
-                        <DialogDescription>
-                            You are about to pay {planToUpgradeTo?.price} for the {planToUpgradeTo?.name} plan.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Button
-                            size="lg"
-                            className="w-full p-6"
-                            onClick={() => {
-                                handleFlutterwavePayment({
-                                    callback: onPaymentSuccess,
-                                    onClose: onPaymentClose,
-                                });
-                            }}
-                            disabled={!flutterwaveConfig.public_key || isPaymentLoading}
-                        >
-                            {isPaymentLoading ? <LiquidLoader /> : 'Proceed to Payment'}
-                        </Button>
-                         {!flutterwaveConfig.public_key && (
-                            <p className="text-xs text-center text-destructive mt-2">Flutterwave public key is not configured.</p>
-                        )}
-                    </div>
-                </DialogContent>
-            </Dialog>
             <AddPayoutMethodModal isOpen={isPayoutModalOpen} onOpenChange={setIsPayoutModalOpen} />
         </>
     );

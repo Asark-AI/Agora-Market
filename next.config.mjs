@@ -4,9 +4,6 @@ process.env.NEXT_DISABLE_FONT_DOWNLOAD = process.env.NEXT_DISABLE_FONT_DOWNLOAD 
 
 const nextConfig = {
   reactStrictMode: true,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     remotePatterns: [
       {

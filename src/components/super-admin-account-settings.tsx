@@ -5,7 +5,6 @@ import { EmailAuthProvider, reauthenticateWithCredential, sendEmailVerification 
 import { CheckCircle2, KeyRound, Mail, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { SuperAdminShell } from '@/components/super-admin-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,7 +26,7 @@ function friendlyError(error: unknown) {
 }
 
 export function SuperAdminAccountSettings() {
-  const { firebaseUser, user, logOut, sendPasswordReset } = useAuth();
+  const { firebaseUser, logOut, sendPasswordReset } = useAuth();
   const { toast } = useToast();
   const [account, setAccount] = useState<AccountDetails | null>(null);
   const [mode, setMode] = useState<Mode>(null);
@@ -152,7 +151,6 @@ export function SuperAdminAccountSettings() {
   };
 
   return (
-    <SuperAdminShell userName={user?.name || account?.email || 'Super Admin'} onLogOut={logOut}>
       <div className="mx-auto max-w-4xl space-y-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700">Settings</p>
@@ -202,6 +200,5 @@ export function SuperAdminAccountSettings() {
 
         <div className="flex items-start gap-2 text-xs text-slate-500"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" /><p>Administrative changes are verified server-side using the Firebase Super Admin custom claim and recorded without storing passwords or tokens.</p></div>
       </div>
-    </SuperAdminShell>
   );
 }

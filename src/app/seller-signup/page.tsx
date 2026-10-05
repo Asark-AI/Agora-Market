@@ -20,7 +20,7 @@ export default function SellerSignupPage() {
     }
 
     if (user.role === 'Admin' || user.roles?.admin) {
-      router.replace('/admin');
+      router.replace('/super/app/dashboard');
       return;
     }
 

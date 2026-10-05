@@ -1,6 +1,9 @@
 import 'server-only';
 
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import {
+  paystackCredentialsMatchEnvironment,
+  verifyPaystackWebhookSignature,
+} from '@/lib/server/paystack-payment-validation';
 
 const PAYSTACK_API_BASE = 'https://api.paystack.co';
 
@@ -26,36 +29,26 @@ function isPlaceholderValue(value?: string): boolean {
 export function isPaystackConfigured(): boolean {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY;
-  const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET;
+  const mode = process.env.PAYSTACK_MODE;
+  const environment = process.env.AGORA_ENVIRONMENT;
 
-  return !isPlaceholderValue(secret)
-    && !isPlaceholderValue(publicKey)
-    && (!webhookSecret || !isPlaceholderValue(webhookSecret));
+  if (isPlaceholderValue(secret) || isPlaceholderValue(publicKey)) return false;
+  return paystackCredentialsMatchEnvironment(environment, mode, secret || '', publicKey || '');
 }
 
 export function getPaystackSecretKey(): string {
-  const mainSecret = process.env.PAYSTACK_SECRET_KEY;
-  const fallbackSecret = process.env.PAYSTACK_WEBHOOK_SECRET;
-  const secret = !isPlaceholderValue(mainSecret) ? mainSecret : fallbackSecret;
+  const secret = process.env.PAYSTACK_SECRET_KEY;
 
-  if (!secret || isPlaceholderValue(secret)) {
-    throw new PaystackError('Paystack is not configured. Add valid local keys to .env.local.');
+  if (!isPaystackConfigured() || !secret) {
+    throw new PaystackError('Paystack keys or deployment mode are missing or inconsistent.');
   }
 
   return secret;
 }
 
-export function getWebhookSecret(): string {
-  return getPaystackSecretKey();
-}
-
 export function verifyWebhookSignature(rawBody: string, signature: string | null): boolean {
-  if (!signature || !rawBody) return false;
-
   try {
-    const expected = createHmac('sha512', getPaystackSecretKey()).update(rawBody).digest('hex');
-    if (expected.length !== signature.length) return false;
-    return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+    return verifyPaystackWebhookSignature(rawBody, signature, getPaystackSecretKey());
   } catch {
     return false;
   }

@@ -1,0 +1,18 @@
+export const regions = [
+  { id: 'reg-1', name: 'Ashanti' },
+  { id: 'reg-2', name: 'Greater Accra' },
+  { id: 'reg-3', name: 'Central' },
+  { id: 'reg-4', name: 'Eastern' },
+  { id: 'reg-5', name: 'Western' },
+  { id: 'reg-6', name: 'Volta' },
+  { id: 'reg-7', name: 'Northern' },
+  { id: 'reg-8', name: 'Upper East' },
+  { id: 'reg-9', name: 'Upper West' },
+  { id: 'reg-10', name: 'Bono' },
+  { id: 'reg-11', name: 'Bono East' },
+  { id: 'reg-12', name: 'Ahafo' },
+  { id: 'reg-13', name: 'Savannah' },
+  { id: 'reg-14', name: 'North East' },
+  { id: 'reg-15', name: 'Oti' },
+  { id: 'reg-16', name: 'Western North' },
+] as const;
