@@ -23,7 +23,7 @@ Options:
   --email <email>   Look up a Firebase user by email
   --uid <uid>       Grant/reset access directly by UID
   --dry-run         Show the target but do not write changes
-  --reset           Remove the superAdmin claim and downgrade the user role
+  --reset             Remove the Super Admin role claim and downgrade the user role
   --help            Show this message
 
 Environment:
@@ -114,6 +114,9 @@ async function main() {
     const uid = options.uid || (await resolveUidByEmail(options.email));
     const auth = getAuth();
     const user = await auth.getUser(uid);
+    if (!options.reset && (user.disabled || !user.emailVerified)) {
+      throw new Error('Grant Super Admin access only to an active account with a verified email address.');
+    }
     const userEmail = user.email || options.email || 'unknown@example.com';
 
     console.log(`Target user: ${user.displayName || 'Unnamed user'} (${userEmail})`);
@@ -126,20 +129,20 @@ async function main() {
 
     const nextCustomClaims = { ...user.customClaims };
     if (options.reset) {
+      if (nextCustomClaims.role === 'super_admin') delete nextCustomClaims.role;
       delete nextCustomClaims.superAdmin;
     } else {
-      nextCustomClaims.superAdmin = true;
+      nextCustomClaims.role = 'super_admin';
+      delete nextCustomClaims.superAdmin;
     }
 
     await auth.setCustomUserClaims(uid, nextCustomClaims);
-    if (options.reset) {
-      await auth.revokeRefreshTokens(uid);
-    }
+    await auth.revokeRefreshTokens(uid);
 
     const verifiedUser = await auth.getUser(uid);
     const claimMatches = options.reset
-      ? verifiedUser.customClaims?.superAdmin !== true
-      : verifiedUser.customClaims?.superAdmin === true;
+      ? verifiedUser.customClaims?.role !== 'super_admin' && verifiedUser.customClaims?.superAdmin !== true
+      : verifiedUser.customClaims?.role === 'super_admin' && verifiedUser.customClaims?.superAdmin !== true;
     if (!claimMatches) {
       throw new Error('The Firebase custom claim could not be verified after the update.');
     }
@@ -152,12 +155,12 @@ async function main() {
     }, { merge: true });
 
     if (options.reset) {
-      console.log('Success: superAdmin custom claim was removed and the Firestore role was reset to Owner.');
+      console.log('Success: Super Admin role claim was removed and the Firestore role was reset to Owner.');
       console.log('Next: sign the user out and back in so the claim is refreshed.');
       return;
     }
 
-    console.log('Success: superAdmin custom claim was granted and the Firestore role was updated to Admin.');
+    console.log('Success: Super Admin role claim was granted and the Firestore role was updated to Admin.');
     console.log('Next: sign the user out and back in so the new claim is refreshed.');
   } catch (error) {
     console.error(options.reset ? 'Unable to reset super-admin access.' : 'Unable to grant super-admin access.');

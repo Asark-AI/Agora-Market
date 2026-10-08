@@ -707,7 +707,7 @@ export interface AuthState {
   authListenerStarted: boolean;
   
   // Auth methods
-  signUp: (email: string, pass: string, name: string) => Promise<{ user: FirebaseUser; verificationEmailSent: boolean }>;
+  signUp: (email: string, pass: string, name: string) => Promise<{ user: FirebaseUser; verificationEmailSent: boolean; verificationMethod: 'code' | 'link' | null }>;
   logIn: (email: string, pass: string) => Promise<FirebaseUser>;
   signInWithGoogle: () => Promise<FirebaseUser>;
   sendPasswordReset: (email: string) => Promise<void>;

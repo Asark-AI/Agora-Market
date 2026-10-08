@@ -27,7 +27,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignInPage() {
-  const { logIn, signInWithGoogle, user, firebaseUser, loading, seller } = useAuth();
+  const { logIn, signInWithGoogle, user, firebaseUser, loading, seller, logOut } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -66,7 +66,12 @@ export default function SignInPage() {
         let secureSessionReady = false;
         try {
           const token = await firebaseUser?.getIdTokenResult(true);
-          isSuperAdmin = token?.claims.superAdmin === true;
+          isSuperAdmin = token?.claims.role === 'super_admin' || token?.claims.superAdmin === true;
+          if (isSuperAdmin) {
+            await logOut();
+            if (active) router.replace('/admin/sign-in');
+            return;
+          }
           const idToken = await firebaseUser?.getIdToken();
           if (idToken) {
             const sessionResponse = await fetch('/api/auth/session', {
@@ -80,20 +85,19 @@ export default function SignInPage() {
         }
 
         if (active) {
-          if (isSuperAdmin && !secureSessionReady) {
-            setAuthError('Your credentials were accepted, but the secure Admin session could not be created. Restart the local server and try again.');
+          if (!secureSessionReady) {
+            setAuthError('Your secure session could not be created. Please sign in again.');
             hasRouted.current = false;
             return;
           }
-          const targetPath = isSuperAdmin ? '/super/app/dashboard' : '/';
-          router.replace(targetPath);
+          router.replace('/');
         }
       };
 
       void routeUser();
       return () => { active = false; };
     }
-  }, [user, firebaseUser, seller, loading, router, searchParams]);
+  }, [user, firebaseUser, seller, loading, router, searchParams, logOut]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -161,13 +165,13 @@ export default function SignInPage() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-[#24332c]">Email address</FormLabel>
+                  <FormLabel className="text-sm font-medium text-foreground">Email address</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
                       placeholder="you@example.com"
                       autoComplete="email"
-                      className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
+                      className="h-14 rounded-xl border-border bg-card px-4 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                     />
                   </FormControl>
                   <FormMessage />
@@ -180,10 +184,10 @@ export default function SignInPage() {
               render={({ field }) => (
                 <FormItem>
                   <div className="flex items-center">
-                    <FormLabel className="text-sm font-medium text-[#24332c]">Password</FormLabel>
+                    <FormLabel className="text-sm font-medium text-foreground">Password</FormLabel>
                     <Link
                       href={"/forgot-password" as Route}
-                        className="ml-auto inline-block text-sm font-medium text-[#173b2b] underline-offset-4 hover:underline"
+                        className="ml-auto inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
                     >
                       Forgot password?
                     </Link>
@@ -196,9 +200,9 @@ export default function SignInPage() {
                           placeholder="Enter your password"
                           autoComplete="current-password"
                           aria-invalid={Boolean(authError)}
-                          className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 pr-12 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
+                          className="h-14 rounded-xl border-border bg-card px-4 pr-12 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                         />
-                        <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center text-[#66736a] hover:text-[#173b2b]" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                        <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-3 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-primary" aria-label={showPassword ? 'Hide password' : 'Show password'}>
                           {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
                         </button>
                       </div>
@@ -207,16 +211,16 @@ export default function SignInPage() {
                 </FormItem>
               )}
             />
-            {authError && <p role="alert" className="border-l-2 border-[#b42318] bg-[#fff6f5] px-3 py-2 text-sm font-medium text-[#b42318]">{authError}</p>}
-            <Button type="submit" className="h-14 w-full rounded-md bg-[#173b2b] text-base font-semibold text-white transition hover:bg-[#102d22] focus-visible:ring-2 focus-visible:ring-[#d7a84a]" disabled={isFormLoading || isGoogleLoading}>
+            {authError && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">{authError}</p>}
+            <Button type="submit" className="h-14 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground transition hover:brightness-110 focus-visible:ring-2 focus-visible:ring-primary" disabled={isFormLoading || isGoogleLoading}>
               {isFormLoading ? <><LiquidLoader className="mr-2" />Signing in...</> : <>Sign in <ArrowRight className="ml-2 size-4" /></>}
             </Button>
             <div className="relative flex items-center">
-              <div className="h-px flex-1 bg-[#dfe6df]" />
-              <span className="px-3 text-xs text-[#78847b]">or</span>
-              <div className="h-px flex-1 bg-[#dfe6df]" />
+              <div className="h-px flex-1 bg-border" />
+              <span className="px-3 text-xs text-muted-foreground">or</span>
+              <div className="h-px flex-1 bg-border" />
             </div>
-            <Button type="button" variant="outline" className="h-14 w-full rounded-md border-[#cfd8d0] bg-white text-base font-medium text-[#18382d] hover:bg-[#f7f9f7]" onClick={handleGoogleSignIn} disabled={isFormLoading || isGoogleLoading}>
+            <Button type="button" variant="outline" className="h-14 w-full rounded-xl border-border bg-card text-base font-medium text-foreground hover:border-primary/50 hover:bg-accent hover:text-primary" onClick={handleGoogleSignIn} disabled={isFormLoading || isGoogleLoading}>
               {isGoogleLoading ? <><LiquidLoader className="mr-2" />Connecting...</> : <><GoogleMark className="mr-3 size-5" />Continue with Google</>}
             </Button>
         </form>

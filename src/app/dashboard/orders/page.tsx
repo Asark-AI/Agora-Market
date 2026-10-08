@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { 
     MoreHorizontal, 
     FileText, 
@@ -44,29 +43,10 @@ import { OrdersSkeleton } from '@/components/loading-skeletons';
 import React from 'react';
 
 
-const paymentStatusVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
-  paid: 'default',
-  pending: 'secondary',
-  refunded: 'destructive',
-};
 const paymentStatusText: Record<string, string> = {
   paid: 'Paid',
   pending: 'Pending',
   refunded: 'Refunded',
-};
-
-const fulfillmentStatusVariant: Record<Order['status'], 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  fulfilled: 'default',
-  pending: 'secondary',
-  cancelled: 'destructive',
-  shipped: 'outline',
-  upcoming: 'secondary',
-  completed: 'default',
-  'in-progress': 'outline',
-  'awaiting-quote': 'outline',
-  'awaiting-parts': 'outline',
-  'ready-for-pickup': 'default',
-  'delivered': 'default',
 };
 
 const fulfillmentStatusText: Record<Order['status'], string> = {
@@ -82,6 +62,19 @@ const fulfillmentStatusText: Record<Order['status'], string> = {
     'ready-for-pickup': 'Ready for Pickup',
     'delivered': 'Delivered',
 };
+
+function statusTone(status: string) {
+    const normalized = status.toLowerCase();
+    if (['paid', 'fulfilled', 'completed', 'delivered', 'success'].includes(normalized)) return 'dashboard-status--green';
+    if (['shipped', 'processing', 'in progress', 'in-progress', 'out for delivery'].includes(normalized)) return 'dashboard-status--blue';
+    if (['pending', 'upcoming', 'awaiting quote', 'awaiting-quote', 'ready for pickup'].includes(normalized)) return 'dashboard-status--amber';
+    if (['cancelled', 'refunded', 'failed'].includes(normalized)) return 'dashboard-status--red';
+    return 'dashboard-status--neutral';
+}
+
+function getDeliveryStatus(order: Order) {
+    return order.fulfillmentStatus?.replaceAll('_', ' ').toLowerCase() || 'not updated';
+}
 
 const OnlineOrdersTab: FC = () => {
     const { seller, sellerOrders, sellerCustomers, loading } = useAuth();
@@ -174,15 +167,15 @@ const OnlineOrdersTab: FC = () => {
                 <div className="flex flex-col md:flex-row gap-2">
                     <div className="relative flex-grow">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search by Order ID, customer name..." 
-                            className="pl-10" 
+                        <Input
+                            placeholder="Search by Order ID, customer name..."
+                            className="h-11 border-border bg-[#171b1f] pl-10"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-full md:w-[200px]">
+                        <SelectTrigger className="h-11 w-full border-border bg-[#171b1f] md:w-[200px]">
                             <SelectValue placeholder="Filter by status..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -206,7 +199,8 @@ const OnlineOrdersTab: FC = () => {
                                 <TableHead>Customer</TableHead>
                                 <TableHead className="text-center">Items</TableHead>
                                 <TableHead>Payment</TableHead>
-                                <TableHead>Fulfillment</TableHead>
+                                <TableHead>Order status</TableHead>
+                                <TableHead>Delivery</TableHead>
                                 <TableHead className="text-right">Total</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -224,14 +218,15 @@ const OnlineOrdersTab: FC = () => {
                                                 <p className="text-xs text-muted-foreground">{format(new Date(order.date), 'dd MMM, yyyy')}</p>
                                             </TableCell>
                                             <TableCell>{getCustomerName(order)}</TableCell>
-                                            <TableCell className="text-center">{order.items.length}</TableCell>
+                                            <TableCell className="text-center">{order.items.reduce((sum, item) => sum + item.quantity, 0)}</TableCell>
                                             <TableCell>
-                                                <Badge variant={paymentStatusVariant[paymentStatus]}>{paymentStatusText[paymentStatus]}</Badge>
+                                                <span className={`dashboard-status ${statusTone(paymentStatus)}`}>{paymentStatusText[paymentStatus]}</span>
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant={fulfillmentStatusVariant[order.status]}>
-                                                    {fulfillmentStatusText[order.status]}
-                                                </Badge>
+                                                <span className={`dashboard-status ${statusTone(order.status)}`}>{fulfillmentStatusText[order.status]}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className={`dashboard-status ${statusTone(getDeliveryStatus(order))}`}>{getDeliveryStatus(order)}</span>
                                             </TableCell>
                                             <TableCell className="text-right font-semibold">
                                                 ₵{order.total.toFixed(2)}
@@ -251,7 +246,7 @@ const OnlineOrdersTab: FC = () => {
                                 })
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-48 text-center">
+                                    <TableCell colSpan={8} className="h-48 text-center">
                                         No orders found for the selected filters.
                                     </TableCell>
                                 </TableRow>
@@ -266,7 +261,7 @@ const OnlineOrdersTab: FC = () => {
                         filteredOrders.map(order => {
                             const paymentStatus = getPaymentStatus(order);
                             return (
-                                <Card key={order.id}>
+                                            <Card key={order.id} className="border-border">
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
                                             <div>
@@ -290,16 +285,24 @@ const OnlineOrdersTab: FC = () => {
                                     </CardHeader>
                                     <CardContent className="space-y-2">
                                         <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">Items</span>
+                                            <span>{order.items.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                                        </div>
+                                            <div className="flex justify-between items-center text-sm">
                                             <span className="text-muted-foreground">Total</span>
                                             <span className="font-semibold">₵{order.total.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
                                             <span className="text-muted-foreground">Payment</span>
-                                            <Badge variant={paymentStatusVariant[paymentStatus]}>{paymentStatusText[paymentStatus]}</Badge>
+                                            <span className={`dashboard-status ${statusTone(paymentStatus)}`}>{paymentStatusText[paymentStatus]}</span>
                                         </div>
                                         <div className="flex justify-between items-center text-sm">
-                                            <span className="text-muted-foreground">Fulfillment</span>
-                                            <Badge variant={fulfillmentStatusVariant[order.status]}>{fulfillmentStatusText[order.status]}</Badge>
+                                            <span className="text-muted-foreground">Order status</span>
+                                            <span className={`dashboard-status ${statusTone(order.status)}`}>{fulfillmentStatusText[order.status]}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-muted-foreground">Delivery</span>
+                                            <span className={`dashboard-status ${statusTone(getDeliveryStatus(order))}`}>{getDeliveryStatus(order)}</span>
                                         </div>
                                     </CardContent>
                                 </Card>

@@ -2,15 +2,25 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { after, before, beforeEach, test } from 'node:test';
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 let environment: RulesTestEnvironment;
 
 function userDb(uid: string) {
   return environment.authenticatedContext(uid, {
     email_verified: true,
+    role: 'buyer',
     superAdmin: false,
     admin: false,
+  }).firestore();
+}
+
+function superAdminDb(uid: string, claims: Record<string, unknown> = {}) {
+  return environment.authenticatedContext(uid, {
+    email_verified: true,
+    role: 'super_admin',
+    firebase: { sign_in_second_factor: 'totp' },
+    ...claims,
   }).firestore();
 }
 
@@ -108,6 +118,7 @@ beforeEach(async () => {
       }),
       setDoc(doc(db, 'aiShoppingToolAudit', 'audit-entry'), { actorId: 'user-b' }),
       setDoc(doc(db, 'apiRateLimits', 'limit-entry'), { scope: 'checkout', count: 1 }),
+      setDoc(doc(db, 'adminAuditLogs', 'audit-entry'), { adminUid: 'admin-a' }),
     ]);
   });
 });
@@ -119,11 +130,68 @@ test('users cannot read or update another user profile', async () => {
   await assertFails(updateDoc(doc(db, 'users', 'user-b'), { email: 'changed@example.test' }));
 });
 
+test('Super Admin Firestore access requires the trusted role, verified email and TOTP factor', async () => {
+  const admin = superAdminDb('admin-a');
+  const missingMfa = environment.authenticatedContext('admin-no-mfa', {
+    email_verified: true,
+    role: 'super_admin',
+    admin: true,
+  }).firestore();
+  const legacyClaim = environment.authenticatedContext('admin-legacy', {
+    email_verified: true,
+    superAdmin: true,
+    firebase: { sign_in_second_factor: 'totp' },
+  }).firestore();
+  const unverified = environment.authenticatedContext('admin-unverified', {
+    email_verified: false,
+    role: 'super_admin',
+    firebase: { sign_in_second_factor: 'totp' },
+  }).firestore();
+
+  await assertSucceeds(getDoc(doc(admin, 'adminAuditLogs', 'audit-entry')));
+  await assertFails(setDoc(doc(admin, 'adminAuditLogs', 'client-forgery'), { adminUid: 'admin-a' }));
+  await assertFails(getDoc(doc(missingMfa, 'adminAuditLogs', 'audit-entry')));
+  await assertFails(getDoc(doc(missingMfa, 'users', 'user-b')));
+  await assertFails(getDoc(doc(legacyClaim, 'adminAuditLogs', 'audit-entry')));
+  await assertFails(getDoc(doc(unverified, 'adminAuditLogs', 'audit-entry')));
+});
+
+test('users cannot grant themselves the Super Admin profile role', async () => {
+  const db = userDb('user-a');
+  await assertFails(updateDoc(doc(db, 'users', 'user-a'), {
+    role: 'Admin',
+    superAdmin: true,
+    roles: { admin: true, seller: false, rider: false },
+  }));
+});
+
+test('Super Admin accounts cannot create marketplace seller profiles', async () => {
+  const db = environment.authenticatedContext('admin-without-mfa', {
+    email_verified: true,
+    role: 'super_admin',
+  }).firestore();
+
+  await assertFails(setDoc(doc(db, 'sellers', 'admin-without-mfa'), {
+    userId: 'admin-without-mfa',
+    status: 'pending',
+  }));
+});
+
 test('buyers cannot read another buyer order or saved plan data', async () => {
   const db = userDb('user-a');
 
   await assertFails(getDoc(doc(db, 'orders', 'order-b')));
   await assertFails(getDoc(doc(db, 'wishlist', 'user-b', 'items', 'product-b')));
+});
+
+test('buyers can query their own legacy and seller-scoped orders', async () => {
+  const db = userDb('user-b');
+  const [legacyOrders, sellerOrders] = await Promise.all([
+    assertSucceeds(getDocs(query(collection(db, 'orders'), where('buyerId', '==', 'user-b')))),
+    assertSucceeds(getDocs(query(collection(db, 'sellers', 'seller-a', 'orders'), where('buyerId', '==', 'user-b')))),
+  ]);
+
+  assert.deepEqual([...legacyOrders.docs, ...sellerOrders.docs].map((order) => order.id).sort(), ['order-a', 'order-b']);
 });
 
 test('buyers can only read their payment records and cannot create or modify payment state', async () => {

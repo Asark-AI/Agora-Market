@@ -17,6 +17,7 @@ import { animateProductToFloatingCart } from '@/lib/cart-fly-animation';
 import { ProductCard } from '@/components/product-card';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { orderContainsProduct } from '@/lib/order-purchase';
 
 export function ProductDetailView({ product, relatedProducts }: { product: StorefrontProduct; relatedProducts: StorefrontProduct[] }) {
   const { addToCart } = useCart();
@@ -57,13 +58,13 @@ export function ProductDetailView({ product, relatedProducts }: { product: Store
 
     setCheckingPurchase(true);
     const ordersQuery = query(collection(db, 'orders'), where('buyerId', '==', user.id));
-    void getDocs(ordersQuery)
-      .then((snapshot) => {
+    const sellerOrdersQuery = query(collection(db, 'sellers', product.sellerId, 'orders'), where('buyerId', '==', user.id));
+    void Promise.all([getDocs(ordersQuery), getDocs(sellerOrdersQuery)])
+      .then(([legacyOrders, sellerOrders]) => {
         if (!active) return;
-        setHasPurchased(snapshot.docs.some((orderDoc) => {
-          const order = orderDoc.data() as { sellerId?: string; items?: Array<{ productId?: string }> };
-          return order.sellerId === product.sellerId && order.items?.some((item) => item.productId === product.id);
-        }));
+        setHasPurchased([...legacyOrders.docs, ...sellerOrders.docs].some((orderDoc) =>
+          orderContainsProduct(orderDoc.data(), product.sellerId, product.id, orderDoc.ref.parent.parent?.id)
+        ));
       })
       .catch(() => {
         if (active) setHasPurchased(false);

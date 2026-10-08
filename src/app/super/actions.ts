@@ -29,7 +29,7 @@ async function verifySuperAdmin(idToken: string, targetUserId?: string) {
   if (targetUserId) {
     try {
       const target = await getAdminAuth().getUser(targetUserId);
-      if (target.customClaims?.superAdmin === true) throw new Error('Privileged Super Admin accounts cannot be modified.');
+      if (target.customClaims?.role === 'super_admin' || target.customClaims?.superAdmin === true) throw new Error('Privileged Super Admin accounts cannot be modified.');
     } catch (error) {
       if ((error as { code?: string }).code !== 'auth/user-not-found') throw error;
     }
@@ -79,7 +79,7 @@ export async function deleteAdminUsers(idToken: string, userIds: string[], reaso
       throw error;
     }
   }));
-  if (targets.some(({ target }) => target?.customClaims?.superAdmin === true)) {
+  if (targets.some(({ target }) => target?.customClaims?.role === 'super_admin' || target?.customClaims?.superAdmin === true)) {
     throw new Error('Selection includes a protected Super Admin account. No accounts were deleted.');
   }
 
@@ -131,7 +131,7 @@ export async function deleteAdminSeller(idToken: string, sellerId: string, reaso
     } catch (error) {
       if ((error as { code?: string }).code !== 'auth/user-not-found') throw error;
     }
-    if (owner?.customClaims?.superAdmin === true) {
+    if (owner?.customClaims?.role === 'super_admin' || owner?.customClaims?.superAdmin === true) {
       throw new Error('This seller belongs to a protected Super Admin account.');
     }
   }
@@ -183,7 +183,7 @@ export async function approveAdminSeller(idToken: string, sellerId: string, reas
   if (ownerId === admin.uid) throw new Error('You cannot approve a seller profile linked to your own Super Admin account.');
 
   const owner = await auth.getUser(ownerId);
-  if (owner.customClaims?.superAdmin === true) throw new Error('Seller profiles belonging to a Super Admin cannot be approved through marketplace review.');
+  if (owner.customClaims?.role === 'super_admin' || owner.customClaims?.superAdmin === true) throw new Error('Seller profiles belonging to a Super Admin cannot be approved through marketplace review.');
   const applications = await db.collection('sellerApplications').where('sellerId', '==', sellerId).get();
   const previousClaims = owner.customClaims || {};
   await auth.setCustomUserClaims(ownerId, { ...previousClaims, seller: true });
@@ -262,7 +262,7 @@ async function moderateDocument(idToken: string, targetType: ModerationTarget, t
   assertTransition(currentStatus, nextStatus, transitions);
   if (targetType === 'user') {
     const target = await getAdminAuth().getUser(targetId);
-    if (target.customClaims?.superAdmin === true) throw new Error('Privileged Super Admin accounts cannot be modified.');
+    if (target.customClaims?.role === 'super_admin' || target.customClaims?.superAdmin === true) throw new Error('Privileged Super Admin accounts cannot be modified.');
     await getAdminAuth().updateUser(targetId, { disabled: nextStatus === 'suspended' });
   }
   await ref.update({ status: nextStatus, moderationReason: cleanReason, moderatedBy: admin.uid, moderatedAt: new Date() });

@@ -200,7 +200,7 @@ export function SettingsForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
+        <Card id="account-settings-profile">
           <CardHeader>
             <CardTitle>Business Profile</CardTitle>
             <CardDescription>Update your public business name and contact email.</CardDescription>
@@ -250,7 +250,7 @@ export function SettingsForm() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="account-settings-store">
             <CardHeader>
                 <CardTitle>Store Status</CardTitle>
                 <CardDescription>Control the visibility of your storefront to customers.</CardDescription>
@@ -278,7 +278,7 @@ export function SettingsForm() {
             </CardContent>
         </Card>
 
-        <Card>
+        <Card id="account-settings-password">
           <CardHeader>
             <CardTitle>Password Management</CardTitle>
             <CardDescription>Change your password here. Leave blank to keep it unchanged.</CardDescription>
@@ -343,7 +343,7 @@ export function SettingsForm() {
           </CardContent>
         </Card>
 
-         <Card>
+        <Card id="account-settings-notifications">
             <CardHeader>
                 <CardTitle>Notification Preferences</CardTitle>
                 <CardDescription>Choose how you want to be notified.</CardDescription>

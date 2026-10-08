@@ -247,21 +247,33 @@ export default function SubscriptionPage() {
                     <p className="text-muted-foreground mt-1">Manage your subscription, payout methods, and view transaction history.</p>
                 </div>
             
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <Card className="lg:col-span-1">
-                        <CardHeader>
-                            <CardTitle>Seller earnings</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-lg font-semibold">Not available yet</p>
-                            <p className="mt-2 text-sm text-muted-foreground">Agora is not yet calculating ledger-backed pending or available balances. No seller funds are withdrawable from this account.</p>
-                        </CardContent>
-                        <CardFooter>
-                            <Button disabled title="Withdrawals will be enabled when ledger-backed balances and provider payouts are available.">
-                                <ArrowUp className="mr-2 size-5" /> Withdrawals unavailable
-                            </Button>
-                        </CardFooter>
-                    </Card>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    <div className="space-y-4 lg:col-span-1">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                            {[
+                                { label: 'Available balance', detail: 'Ledger balance not available' },
+                                { label: 'Pending balance', detail: 'Ledger balance not available' },
+                                { label: 'Total earnings', detail: 'Ledger total not available' },
+                            ].map((balance) => (
+                                <Card key={balance.label} className="p-4">
+                                    <p className="text-xs font-medium text-muted-foreground">{balance.label}</p>
+                                    <p className="mt-3 text-lg font-semibold text-muted-foreground">Unavailable</p>
+                                    <p className="mt-1 text-xs text-muted-foreground">{balance.detail}</p>
+                                </Card>
+                            ))}
+                        </div>
+                        <Card className="border-primary/20">
+                            <CardHeader>
+                                <CardTitle>Withdrawals</CardTitle>
+                                <CardDescription>Withdrawals require verified ledger balances and provider payouts.</CardDescription>
+                            </CardHeader>
+                            <CardFooter>
+                                <Button disabled className="w-full" title="Withdrawals will be enabled when ledger-backed balances and provider payouts are available.">
+                                    <ArrowUp className="mr-2 size-5" /> Withdrawals unavailable
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </div>
                     <Card className="lg:col-span-2">
                         <CardHeader>
                             <CardTitle>Current Plan</CardTitle>
@@ -426,7 +438,7 @@ export default function SubscriptionPage() {
                                 )) : (
                                     <TableRow>
                                         <TableCell colSpan={4} className="text-center h-24">
-                                            No transactions yet.
+                                            Transaction history will appear when ledger-backed transaction data is available.
                                         </TableCell>
                                     </TableRow>
                                 )}

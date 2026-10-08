@@ -26,10 +26,13 @@ export function ClientLayoutWrapper({ children }: { children: React.ReactNode })
 
     useEffect(() => {
         let active = true;
-        if (!firebaseUser || !authState || pathname.startsWith('/super/app')) return;
+        if (!firebaseUser || !authState || pathname.startsWith('/super/app') || pathname.startsWith('/admin')) return;
 
         void firebaseUser.getIdTokenResult().then((token) => {
-            if (active && token.claims.superAdmin === true) router.replace('/super/app/dashboard');
+            if (
+                active
+                && (token.claims.role === 'super_admin' || token.claims.superAdmin === true)
+            ) router.replace('/admin/sign-in');
         }).catch((error) => {
             console.warn('Unable to check super-admin route access:', error);
         });

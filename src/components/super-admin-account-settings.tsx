@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { EmailAuthProvider, reauthenticateWithCredential, sendEmailVerification } from 'firebase/auth';
 import { CheckCircle2, KeyRound, Mail, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
@@ -26,7 +27,8 @@ function friendlyError(error: unknown) {
 }
 
 export function SuperAdminAccountSettings() {
-  const { firebaseUser, logOut, sendPasswordReset } = useAuth();
+  const { firebaseUser, logOut } = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [account, setAccount] = useState<AccountDetails | null>(null);
   const [mode, setMode] = useState<Mode>(null);
@@ -48,8 +50,14 @@ export function SuperAdminAccountSettings() {
 
     setBusy(true);
     try {
-      await sendPasswordReset(email);
-      toast({ title: 'Password reset email sent', description: `Check ${email} for a secure link to choose a new password.` });
+      const response = await fetch('/api/admin/auth/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        cache: 'no-store',
+      });
+      if (!response.ok) throw new Error('We could not submit the password reset request. Please try again.');
+      toast({ title: 'Password reset request submitted', description: 'If the address belongs to an eligible Super Admin, a reset email will be sent.' });
     } catch (error) {
       toast({ variant: 'destructive', title: 'Could not send reset email', description: friendlyError(error) });
     } finally {
@@ -110,17 +118,21 @@ export function SuperAdminAccountSettings() {
         await firebaseUser?.reload();
         if (firebaseUser && !firebaseUser.emailVerified) await sendEmailVerification(firebaseUser);
         setAccount({ email: normalizedEmail, emailVerified: false });
-        toast({ title: 'Email address updated', description: 'Your Super Admin email address has been successfully updated.' });
+        toast({ title: 'Verify your new email', description: 'Your admin session has ended. Verify the new address, then sign in again with MFA.' });
         setMode(null);
+        await logOut();
+        router.replace('/admin/sign-in');
       } else if (mode === 'password') {
         if (!passwordPattern.test(newPassword)) throw new Error('Your new password does not meet the security requirements.');
         if (newPassword !== confirmPassword) throw new Error('Your new passwords do not match.');
         await callAccountApi({ action: 'change-password', password: newPassword });
-        toast({ title: 'Password updated', description: 'Your Super Admin password has been successfully changed.' });
+        toast({ title: 'Password updated', description: 'All sessions have been revoked. Sign in again and complete TOTP verification.' });
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setMode(null);
+        await logOut();
+        router.replace('/admin/sign-in');
       } else if (mode === 'replace') {
         const normalizedEmail = newEmail.trim().toLowerCase();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error('Enter a valid email address.');

@@ -59,7 +59,7 @@ function OrderHistory({ orders, activeTab }: { orders: Order[]; activeTab: Order
         const copy = emptyCopy[activeTab];
         return (
             <div className="flex min-h-[360px] flex-col items-center justify-center px-5 py-12 text-center">
-                <div className="flex size-14 items-center justify-center rounded-full bg-[#eef4ef] text-[#397253]"><Package className="size-6" /></div>
+                <div className="flex size-14 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary"><Package className="size-6" /></div>
                 <h2 className="mt-5 text-lg font-semibold">{copy.title}</h2>
                 <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">{copy.description}</p>
                 <Button asChild className="mt-6">
@@ -85,7 +85,7 @@ function OrderHistory({ orders, activeTab }: { orders: Order[]; activeTab: Order
                             return <div key={`${item.productId}-${index}`} className="flex items-center gap-3"><div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">{product.image ? <img src={product.image} alt="" loading="lazy" decoding="async" className="size-full object-cover" /> : <Package className="size-6 text-muted-foreground" />}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{product.name}</p><p className="mt-1 text-xs text-muted-foreground">{product.variant} · Qty {item.quantity}</p></div><p className="text-sm font-semibold">GH₵{(item.price * item.quantity).toFixed(2)}</p></div>;
                         })}
                         {order.items.length > 2 && <p className="text-xs text-muted-foreground">+ {order.items.length - 2} more item(s)</p>}
-                        <div className="flex items-center justify-between border-t border-border/70 pt-3"><div className="flex items-center gap-2 text-xs text-muted-foreground"><Truck className="size-4" /><span>{order.status === 'shipped' || order.status === 'delivered' ? 'Estimated delivery update available' : 'Delivery estimate after dispatch'}</span></div><p className="text-base font-semibold">GH₵{Number(order.total || 0).toFixed(2)}</p></div>
+                        <div className="flex items-center justify-between border-t border-border/70 pt-3">                        <div className="flex items-center gap-2 text-xs text-muted-foreground"><Truck className="size-4 text-primary" /><span>{order.status === 'shipped' || order.status === 'delivered' ? 'Estimated delivery update available' : 'Delivery estimate after dispatch'}</span></div><p className="text-base font-semibold">GH₵{Number(order.total || 0).toFixed(2)}</p></div>
                         <div className="flex gap-2"><Button asChild className="flex-1"><Link href={order.shipmentIds?.[0] ? `/track-order?deliveryId=${order.shipmentIds[0]}` : `/profile?tab=orders&order=${order.id}`}><Truck className="mr-2 size-4" />Track Order</Link></Button><Button asChild variant="outline" className="flex-1"><Link href={`/profile?tab=orders&order=${order.id}`}>View Details<ChevronRight className="ml-1 size-4" /></Link></Button></div>
                     </CardContent>
                 </Card>
@@ -160,24 +160,27 @@ export default function ProfilePage() {
             {ordersTab ? (
                 <div className="space-y-5">
                     <div className="border-b border-border pb-4">
+                        <p className="agora-pill mb-3">Your Agora activity</p>
                         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
+                        <p className="mt-1 text-sm text-muted-foreground">Follow purchases from payment through delivery.</p>
                     </div>
                     <div className="-mx-4 flex gap-6 overflow-x-auto border-b border-border px-4 text-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Order status">
-                        {orderTabs.map((status) => <button key={status} type="button" role="tab" aria-selected={status === orderFilter} onClick={() => setOrderFilter(status)} className={`shrink-0 border-b-2 px-1 pb-3 font-medium ${status === orderFilter ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground'}`}>{status}</button>)}
+                        {orderTabs.map((status) => <button key={status} type="button" role="tab" aria-selected={status === orderFilter} onClick={() => setOrderFilter(status)} className={`shrink-0 border-b-2 px-1 pb-3 font-medium transition ${status === orderFilter ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>{status}</button>)}
                     </div>
                     <OrderHistory activeTab={orderFilter} orders={visibleOrders} />
                 </div>
             ) : (
                 <>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-5">
                     <Avatar className="size-24">
                         <AvatarImage src={`https://placehold.co/96x96/E2E8F0/475569?text=${nameInitial}`} />
                         <AvatarFallback>{nameInitial}</AvatarFallback>
                     </Avatar>
                     <div>
-                        <h1 className="text-3xl font-bold font-headline">{displayName}</h1>
-                        <p className="text-muted-foreground">{user.email}</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Agora member</p>
+                        <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">{displayName}</h1>
+                        <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
                     </div>
                 </div>
                 <Button variant="outline" onClick={logOut}>
@@ -189,7 +192,7 @@ export default function ProfilePage() {
             <section className="mb-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-start gap-4">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#eef4ef] text-[#397253]"><Store className="size-5" /></div>
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary"><Store className="size-5" /></div>
                         <div>
                             <p className="text-sm font-semibold text-primary">{seller ? 'Your store is ready' : 'One account, two capabilities'}</p>
                             <h2 className="mt-1 text-2xl font-semibold tracking-tight">{seller ? 'Seller Center' : 'Start selling on Agora'}</h2>
@@ -205,7 +208,7 @@ export default function ProfilePage() {
             <section className="mb-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-start gap-4">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#eef4ef] text-[#397253]"><Bike className="size-5" /></div>
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/10 text-primary"><Bike className="size-5" /></div>
                         <div>
                             <p className="text-sm font-semibold text-primary">Deliver with Agora</p>
                             <h2 className="mt-1 text-xl font-semibold tracking-tight">Rider Center</h2>

@@ -6,75 +6,105 @@
 @layer base {
   :root {
     --font-headline: "Aptos", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
-    --background: 210 20% 98%;
-    --foreground: 215 24% 16%;
-    --card: 0 0% 100%;
-    --card-foreground: 215 24% 16%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 215 24% 16%;
-    --primary: 205 75% 38%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 18% 94%;
-    --secondary-foreground: 215 24% 22%;
-    --muted: 210 18% 95%;
-    --muted-foreground: 215 12% 44%;
-    --accent: 205 65% 95%;
-    --accent-foreground: 205 75% 30%;
-    --destructive: 0 84.2% 60.2%;
+    --background: 210 11% 7%;
+    --foreground: 0 0% 98%;
+    --card: 210 11% 13%;
+    --card-foreground: 0 0% 98%;
+    --popover: 210 11% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 43 76% 54%;
+    --primary-foreground: 210 11% 7%;
+    --secondary: 210 12% 17%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 210 12% 16%;
+    --muted-foreground: 210 8% 75%;
+    --accent: 210 12% 18%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 75% 58%;
     --destructive-foreground: 0 0% 98%;
-    --success: 142.1 76.2% 36.3%;
+    --success: 150 63% 44%;
     --success-foreground: 0 0% 98%;
-    --border: 214 18% 88%;
-    --input: 214 18% 82%;
-    --ring: 205 75% 38%;
-    --radius: 1rem;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 340 75% 55%;
-    --chart-4: 40 80% 55%;
-    --chart-5: 280 65% 60%;
-    --sidebar-background: 240 10% 3.9%;
+    --border: 210 8% 24%;
+    --input: 210 11% 14%;
+    --ring: 43 76% 54%;
+    --radius: 1.1rem;
+    --chart-1: 43 76% 54%;
+    --chart-2: 30 89% 48%;
+    --chart-3: 197 68% 62%;
+    --chart-4: 150 60% 45%;
+    --chart-5: 330 70% 64%;
+    --sidebar-background: 210 11% 7%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 240 5.9% 10%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-primary: 43 76% 54%;
+    --sidebar-primary-foreground: 210 11% 7%;
+    --sidebar-accent: 210 12% 17%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 240 3.7% 15.9%;
+    --sidebar-border: 210 8% 24%;
+    --sidebar-ring: 43 76% 54%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 210 11% 7%;
     --foreground: 0 0% 98%;
-    --card: 240 3.7% 15.9%;
+    --card: 210 11% 13%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 210 11% 10%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
+    --primary: 43 76% 54%;
+    --primary-foreground: 210 11% 7%;
+    --secondary: 210 12% 17%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --muted: 210 12% 16%;
+    --muted-foreground: 210 8% 75%;
+    --accent: 210 12% 18%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 75% 58%;
     --destructive-foreground: 0 0% 98%;
-    --success: 142.1 76.2% 36.3%;
+    --success: 150 63% 44%;
     --success-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 0 0% 98%;
-    --sidebar-background: 240 10% 3.9%;
+    --border: 210 8% 24%;
+    --input: 210 11% 14%;
+    --ring: 43 76% 54%;
+    --sidebar-background: 210 11% 7%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 240 5.9% 10%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-primary: 43 76% 54%;
+    --sidebar-primary-foreground: 210 11% 7%;
+    --sidebar-accent: 210 12% 17%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 240 3.7% 15.9%;
+    --sidebar-border: 210 8% 24%;
+    --sidebar-ring: 43 76% 54%;
   }
 }
+
+@layer components {
+  .agora-panel {
+    background: linear-gradient(135deg, rgba(212, 167, 44, 0.14), rgba(16, 19, 22, 0.96) 38%, rgba(16, 19, 22, 1));
+    border: 1px solid rgba(212, 167, 44, 0.24);
+    box-shadow: 0 30px 80px -42px rgba(212, 167, 44, 0.45);
+  }
+
+  .agora-card {
+    background: linear-gradient(180deg, rgba(23, 27, 31, 1), rgba(32, 37, 42, 1));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 18px 44px -30px rgba(0, 0, 0, 0.72);
+  }
+
+  .agora-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(212, 167, 44, 0.3);
+    background: rgba(212, 167, 44, 0.08);
+    color: #f0c75e;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+}
+
 
 @layer base {
   * {
@@ -280,6 +310,172 @@
     100% {
       transform: translateX(120%);
     }
+  }
+}
+
+.seller-center-shell,
+html[data-seller-center="true"] {
+  --agora-base: #0b0d0f;
+  --agora-background: #101316;
+  --agora-surface: #171b1f;
+  --agora-elevated: #1d2227;
+  --agora-card: #20252a;
+  --agora-gold: #d4a72c;
+  --agora-gold-highlight: #f0c75e;
+  --agora-gold-deep: #b88918;
+  --agora-glass-border: rgba(255, 255, 255, 0.065);
+  --agora-inner-highlight: rgba(255, 255, 255, 0.035);
+  --agora-card-shadow: 0 14px 34px -26px rgba(0, 0, 0, 0.8);
+  --agora-card-radius: 14px;
+  --agora-space-1: 4px;
+  --agora-space-2: 8px;
+  --agora-space-3: 12px;
+  --agora-space-4: 16px;
+  --agora-space-6: 24px;
+  --agora-space-8: 32px;
+  --background: 210 15% 5%;
+  --foreground: 210 12% 94%;
+  --card: 210 11% 13%;
+  --card-foreground: 210 12% 94%;
+  --popover: 210 12% 10%;
+  --popover-foreground: 210 12% 94%;
+  --primary: 43 66% 50%;
+  --primary-foreground: 210 14% 8%;
+  --secondary: 210 10% 16%;
+  --secondary-foreground: 210 12% 92%;
+  --muted: 210 9% 15%;
+  --muted-foreground: 215 8% 63%;
+  --accent: 43 28% 16%;
+  --accent-foreground: 43 72% 72%;
+  --destructive: 0 62% 48%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 210 8% 21%;
+  --input: 210 8% 24%;
+  --ring: 43 66% 50%;
+  --sidebar-background: 210 15% 6%;
+  --sidebar-foreground: 210 12% 91%;
+  --sidebar-primary: 43 28% 16%;
+  --sidebar-primary-foreground: 43 72% 72%;
+  --sidebar-accent: 43 24% 14%;
+  --sidebar-accent-foreground: 43 72% 72%;
+  --sidebar-border: 210 8% 17%;
+  --sidebar-ring: 43 66% 50%;
+  min-height: 100vh;
+  color: hsl(var(--foreground));
+  background-color: var(--agora-base);
+  background-image:
+    radial-gradient(ellipse at 18% 0%, rgba(212, 167, 44, 0.055), transparent 34rem),
+    linear-gradient(145deg, #101316 0%, #0b0d0f 55%, #101316 100%);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html[data-seller-center="true"] body {
+  color: hsl(var(--foreground));
+  background: #0b0d0f;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.seller-center-shell .agora-glass-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--agora-glass-border);
+  border-radius: var(--agora-card-radius);
+  background: linear-gradient(145deg, var(--agora-card) 0%, var(--agora-surface) 100%);
+  box-shadow: var(--agora-card-shadow), inset 0 1px 0 var(--agora-inner-highlight);
+}
+
+.seller-center-shell .bg-card {
+  background-image: linear-gradient(145deg, var(--agora-card) 0%, var(--agora-surface) 100%);
+  box-shadow: 0 12px 30px -26px rgba(0, 0, 0, 0.82), inset 0 1px 0 var(--agora-inner-highlight);
+}
+
+.seller-center-shell .agora-glass-card::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.seller-center-shell .dashboard-nav-link {
+  position: relative;
+  min-height: 44px;
+  border-radius: 0.625rem;
+  padding-inline: 0.75rem;
+}
+
+.seller-center-shell .dashboard-nav-link[data-active="true"]::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--agora-gold);
+  content: "";
+}
+
+.seller-center-shell .dashboard-status {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.2rem 0.625rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+.seller-center-shell .dashboard-status--amber { color: #f0c75e; background: rgba(212, 167, 44, 0.1); border-color: rgba(212, 167, 44, 0.24); }
+.seller-center-shell .dashboard-status--blue { color: #93c5fd; background: rgba(59, 130, 246, 0.1); border-color: rgba(96, 165, 250, 0.22); }
+.seller-center-shell .dashboard-status--green { color: #86efac; background: rgba(34, 197, 94, 0.1); border-color: rgba(74, 222, 128, 0.2); }
+.seller-center-shell .dashboard-status--red { color: #fca5a5; background: rgba(239, 68, 68, 0.1); border-color: rgba(248, 113, 113, 0.2); }
+.seller-center-shell .dashboard-status--neutral { color: #cbd5e1; background: rgba(148, 163, 184, 0.08); border-color: rgba(148, 163, 184, 0.18); }
+
+.seller-center-shell :focus-visible {
+  outline: 2px solid #d4a72c;
+  outline-offset: 2px;
+}
+
+.seller-center-shell input:focus-visible,
+.seller-center-shell select:focus-visible,
+.seller-center-shell textarea:focus-visible {
+  border-color: var(--agora-gold);
+  box-shadow: 0 0 0 1px rgba(212, 167, 44, 0.18);
+}
+
+.seller-center-shell [role="tablist"] {
+  border: 1px solid hsl(var(--border));
+  background: #101316;
+}
+
+.seller-center-shell [role="tab"][data-state="active"] {
+  color: hsl(var(--primary));
+  background: #20252a;
+  box-shadow: inset 0 -2px 0 var(--agora-gold), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+@media (hover: hover) {
+  .seller-center-shell .agora-glass-card {
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .seller-center-shell .agora-glass-card:hover {
+    border-color: rgba(212, 167, 44, 0.2);
+    box-shadow: 0 17px 36px -28px rgba(0, 0, 0, 0.84), inset 0 1px 0 var(--agora-inner-highlight);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .seller-center-shell .dashboard-enter {
+    animation: dashboard-enter 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+  }
+
+  @keyframes dashboard-enter {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 

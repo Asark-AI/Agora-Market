@@ -111,8 +111,8 @@ export default function MessagesPage() {
                     <button
                         key={conv.id}
                         className={cn(
-                        'flex w-full items-start gap-3 border-b border-border/70 px-3 py-3 text-left text-sm transition-colors hover:bg-muted/40',
-                        selectedConversationId === conv.id && 'bg-muted/60'
+                        'flex min-h-[68px] w-full items-start gap-3 border-b border-border/70 border-l-2 border-l-transparent px-3 py-3 text-left text-sm transition-colors hover:bg-muted/50',
+                        selectedConversationId === conv.id && 'border-l-primary bg-accent'
                         )}
                         onClick={() => setSelectedConversationId(conv.id)}
                     >
@@ -153,7 +153,7 @@ export default function MessagesPage() {
                                 >
                                     <Star className={cn('size-3.5', starredConversationIds.includes(conv.id) && 'fill-current text-foreground')} />
                                 </span>
-                                {conv.unreadCount > 0 && <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-foreground px-1 text-[11px] font-medium text-background">{conv.unreadCount}</span>}
+                                {conv.unreadCount > 0 && <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground">{conv.unreadCount}</span>}
                             </div>
                         </div>
                     </button>
@@ -200,7 +200,7 @@ export default function MessagesPage() {
                             key={filter}
                             type="button"
                             onClick={() => setActiveFilter(filter)}
-                            className={cn('border-b-2 px-3 py-2 text-xs font-medium capitalize transition-colors', activeFilter === filter ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}
+                            className={cn('min-h-11 border-b-2 px-3 py-2 text-xs font-medium capitalize transition-colors', activeFilter === filter ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}
                         >
                             {filter}
                         </button>
@@ -328,7 +328,7 @@ const ChatViewHeader = ({ conversation, onBack, onOpenContactInfo }: { conversat
     if (!conversation) return null;
     
     return (
-        <div className="flex items-center p-2 border-b bg-card">
+                <div className="flex items-center border-b border-border bg-card p-2">
             {onBack && <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack}><ArrowLeft/></Button>}
             <div className="flex items-center gap-3 cursor-pointer" onClick={onOpenContactInfo}>
                 <Avatar>
@@ -369,13 +369,13 @@ const ChatMessage = ({ message, currentUserId, conversation }: { message: Messag
                 </Avatar>
             )}
             <div className={cn(
-                "rounded-lg px-3 py-2 text-sm shadow-sm",
-                isUser ? "bg-primary text-primary-foreground" : "bg-muted"
+                "rounded-xl border px-3 py-2 text-sm shadow-sm",
+                isUser ? "border-primary/25 bg-accent text-foreground" : "border-border bg-[#1d2227] text-foreground"
             )}>
                 <p>{message.text}</p>
                 <p className={cn(
-                    "text-xs mt-1 text-right", 
-                    isUser ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
+                    "text-xs mt-1 text-right",
+                    isUser ? "text-muted-foreground" : "text-muted-foreground")}>
                         {format(new Date(message.timestamp), 'p')}
                 </p>
             </div>

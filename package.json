@@ -10,8 +10,12 @@
     "test:ai-shopping": "node --experimental-strip-types --test tests/ai-shopping-state.test.mts",
     "test:checkout-security": "node --experimental-strip-types --test tests/checkout-security.test.mts tests/trusted-app-origin.test.mts tests/paystack-payment-validation.test.mts tests/payment-environment.test.mts",
     "test:email-otp": "node --experimental-strip-types --test tests/email-otp-crypto.test.mts",
+    "test:password-reset-email": "node --experimental-strip-types --test tests/password-reset-email.test.mts",
+    "test:admin-password-reset": "node --experimental-strip-types --test tests/admin-password-reset-email.test.mts",
+    "test:marketing": "node --experimental-strip-types --test tests/marketing-crypto.test.mts",
     "test:firestore-rules": "node --experimental-strip-types --test tests/firestore-rules.test.mts",
-    "test:security": "npm run test:ai-shopping && npm run test:checkout-security && npm run test:email-otp && firebase emulators:exec --only firestore --project demo-agora-security-tests \"npm run test:firestore-rules\"",
+    "test:storage-rules": "node --experimental-strip-types --test tests/storage-rules.test.mts",
+    "test:security": "npm run test:ai-shopping && npm run test:checkout-security && npm run test:email-otp && npm run test:admin-password-reset && firebase emulators:exec --only firestore,storage --project demo-agora-security-tests \"npm run test:firestore-rules && npm run test:storage-rules\"",
     "check:staging-env": "node scripts/check-staging-payment-env.mjs",
     "admin:grant": "node ./scripts/grant-super-admin.mjs",
     "admin:promote": "node ./scripts/grant-super-admin.mjs --email",
@@ -58,7 +62,7 @@
     "date-fns": "^4.0.0",
     "dotenv": "^17.4.2",
     "embla-carousel-react": "^8.0.0",
-    "firebase": "^10.0.0",
+    "firebase": "^11.10.0",
     "firebase-admin": "^14.3.0",
     "genkit": "^1.0.0",
     "lucide-react": "^0.469.0",
@@ -77,7 +81,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",
-    "@firebase/rules-unit-testing": "^3.0.4",
+    "@firebase/rules-unit-testing": "^4.0.1",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -86,5 +90,8 @@
     "tailwindcss": "3.4.19",
     "tailwindcss-animate": "1.0.7",
     "typescript": "^5.7.3"
+  },
+  "overrides": {
+    "proxy-addr": "2.0.8"
   }
 }

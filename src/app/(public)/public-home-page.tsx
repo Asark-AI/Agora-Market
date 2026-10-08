@@ -2,7 +2,7 @@ import { getActiveProducts } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import Link from 'next/link';
-import { ArrowRight, ShieldCheck, Store, Zap } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Sparkles, Store, TrendingUp, Zap } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,51 +28,99 @@ export default async function PublicHomePage() {
 
   return (
     <PublicShell>
-      <main className="mx-auto max-w-7xl px-3 pb-8 sm:px-4">
-        <nav className="-mx-3 flex gap-1 overflow-x-auto border-b border-border/60 bg-background px-3 py-2 sm:-mx-4 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Shop categories">
-          <Link href="/" aria-current="page" className="shrink-0 border-b-2 border-[#d65a24] px-3 py-2 text-xs font-semibold text-foreground">All</Link>
+      <main className="mx-auto max-w-7xl px-3 pb-12 sm:px-4">
+        <nav className="-mx-3 mt-4 flex gap-1 overflow-x-auto border-b border-[#1d2227] bg-[#0B0D0F]/80 px-3 py-2 sm:-mx-4 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Shop categories">
+          <Link href="/" aria-current="page" className="shrink-0 border-b-2 border-[#D4A72C] px-3 py-2 text-xs font-semibold text-white">All</Link>
           {homeCategories.map((category) => (
-            <Link key={category.id} href={`/search?category=${category.id}`} className="shrink-0 px-3 py-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground">
+            <Link key={category.id} href={`/search?category=${category.id}`} className="shrink-0 px-3 py-2 text-xs font-semibold text-[#B7BCC3] transition hover:text-white">
               {category.label}
             </Link>
           ))}
-          <Link href="/categories" className="flex shrink-0 items-center gap-1 px-3 py-2 text-xs font-semibold text-muted-foreground">More <ArrowRight className="size-3.5" /></Link>
+          <Link href="/categories" className="flex shrink-0 items-center gap-1 px-3 py-2 text-xs font-semibold text-[#B7BCC3] transition hover:text-white">
+            More <ArrowRight className="size-3.5" />
+          </Link>
         </nav>
 
-        <div className="flex items-center gap-5 border-b border-border/60 py-2 text-[11px] font-medium text-muted-foreground" aria-label="Agora marketplace benefits">
-          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5 text-emerald-700" /> Buyer protection</span>
-          <span className="inline-flex items-center gap-1.5"><Store className="size-3.5 text-emerald-700" /> Local sellers</span>
-          <Link href="/products" className="ml-auto inline-flex shrink-0 items-center gap-1 font-semibold text-primary">All products <ArrowRight className="size-3.5" /></Link>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-[#1d2227] py-3 text-[11px] font-medium text-[#B7BCC3]" aria-label="Agora marketplace benefits">
+          <span className="inline-flex items-center gap-1.5"><ShieldCheck className="size-3.5 text-[#F0C75E]" /> Buyer protection</span>
+          <span className="inline-flex items-center gap-1.5"><Store className="size-3.5 text-[#F0C75E]" /> Local sellers</span>
+          <Link href="/products" className="ml-auto inline-flex shrink-0 items-center gap-1 font-semibold text-[#F0C75E]">All products <ArrowRight className="size-3.5" /></Link>
         </div>
 
-        <section className="mt-4 rounded-3xl border border-[#f1d6c6] bg-gradient-to-r from-[#fff9f4] to-[#fff3eb] p-4 sm:p-5" aria-labelledby="solutions-title">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <section className="agora-panel mt-4 overflow-hidden rounded-[28px] p-4 sm:p-6 lg:p-7" aria-labelledby="solutions-title">
+          <div className="grid gap-5 lg:grid-cols-[1.4fr_0.6fr] lg:items-center">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#d65a24]">Goal-based shopping</p>
-              <h2 id="solutions-title" className="mt-1 text-xl font-bold text-slate-900">Need a complete setup instead of a single item?</h2>
-            </div>
-            <Link href="/solutions" className="inline-flex items-center gap-1 self-start rounded-full bg-[#d65a24] px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#b94e1d] sm:self-center">
-              Explore solutions <ArrowRight className="size-3.5" />
-            </Link>
-          </div>
-          <div className="mt-4 rounded-2xl border border-[#f1d6c6] bg-white/80 p-3 sm:p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Build a Gaming PC</p>
-                <p className="mt-1 text-sm text-slate-600">Match real products to a complete gaming build without forcing a bundle purchase.</p>
+              <span className="agora-pill">Premium marketplace</span>
+              <h1 id="solutions-title" className="mt-4 max-w-xl text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl">
+                Discover the next favorite thing for your life.
+              </h1>
+              <p className="mt-4 max-w-xl text-sm text-[#B7BCC3] sm:text-base">
+                Thoughtful essentials, standout tech, and trusted sellers curated for premium everyday living.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <Link href="/products" className="inline-flex items-center gap-2 rounded-full bg-[#D4A72C] px-5 py-2.5 text-sm font-semibold text-[#0B0D0F] shadow-[0_12px_28px_-16px_rgba(212,167,44,0.8)] transition hover:bg-[#E2BE56]">
+                  Shop now <ArrowRight className="size-4" />
+                </Link>
+                <Link href="/solutions" className="inline-flex items-center gap-2 rounded-full border border-[#2a2f34] bg-[#101316] px-5 py-2.5 text-sm font-semibold text-white transition hover:border-[#D4A72C]/50 hover:text-[#F0C75E]">
+                  Explore solutions
+                </Link>
               </div>
-              <Link href="/solutions/gaming-pc" className="inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                Open builder <ArrowRight className="size-3.5" />
-              </Link>
+              <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-[#B7BCC3]">
+                <span className="inline-flex items-center gap-2"><Sparkles className="size-3.5 text-[#D4A72C]" /> Curated picks</span>
+                <span className="inline-flex items-center gap-2"><TrendingUp className="size-3.5 text-[#D4A72C]" /> Trending now</span>
+              </div>
+            </div>
+
+            <div className="agora-card rounded-[24px] p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#D4A72C]">This week</p>
+                <span className="rounded-full border border-[#D4A72C]/30 bg-[#D4A72C]/10 px-2 py-1 text-[10px] font-semibold text-[#F0C75E]">Live</span>
+              </div>
+              <div className="mt-4 space-y-3">
+                <div className="rounded-2xl border border-[#2a2f34] bg-[#101316] p-3">
+                  <p className="text-xs text-[#B7BCC3]">Fast movers</p>
+                  <p className="mt-1 text-xl font-bold text-white">4.8k</p>
+                  <p className="mt-1 text-[11px] text-[#9aa3ab]">Orders processed this week</p>
+                </div>
+                <div className="rounded-2xl border border-[#2a2f34] bg-[#101316] p-3">
+                  <p className="text-xs text-[#B7BCC3]">Buyer favorites</p>
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between text-sm"><span className="text-white">Audio gear</span><span className="text-[#F0C75E]">+21%</span></div>
+                    <div className="flex items-center justify-between text-sm"><span className="text-white">Home setup</span><span className="text-[#F0C75E]">+18%</span></div>
+                    <div className="flex items-center justify-between text-sm"><span className="text-white">Travel gear</span><span className="text-[#F0C75E]">+12%</span></div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
+        <section className="mt-5 rounded-[24px] border border-[#1d2227] bg-[#101316] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#D4A72C]">Built for shoppers</p>
+              <h2 className="mt-1 text-lg font-bold text-white">Browse by lifestyle</h2>
+            </div>
+            <Link href="/categories" className="inline-flex items-center gap-1 text-xs font-semibold text-[#F0C75E]">
+              View all <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {homeCategories.map((category) => (
+              <Link key={category.id} href={`/search?category=${category.id}`} className="rounded-2xl border border-[#2a2f34] bg-[#171B1F] px-3 py-3 text-sm font-medium text-[#E8EEF4] transition hover:border-[#D4A72C]/50 hover:text-[#F0C75E]">
+                {category.label}
+              </Link>
+            ))}
+          </div>
+        </section>
+
         {flashDeals.length > 0 && (
-          <section className="border-b border-border/70 py-3" aria-labelledby="flash-deals-title">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="flex items-baseline gap-2"><h2 id="flash-deals-title" className="inline-flex items-center gap-1.5 text-base font-bold text-foreground"><Zap className="size-4 text-[#d65a24]" />Flash Deals</h2><p className="hidden text-[11px] text-muted-foreground sm:block">Discounted prices on selected products</p></div>
-              <Link href="/flash-deals" className="shrink-0 text-xs font-semibold text-primary">See all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
+          <section className="mt-5" aria-labelledby="flash-deals-title">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <h2 id="flash-deals-title" className="inline-flex items-center gap-2 text-lg font-bold text-white"><Zap className="size-4 text-[#D4A72C]" /> Flash Deals</h2>
+              </div>
+              <Link href="/flash-deals" className="text-xs font-semibold text-[#F0C75E]">See all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
             </div>
             <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {flashDeals.map((product) => (
@@ -84,32 +132,31 @@ export default async function PublicHomePage() {
           </section>
         )}
 
-        <section className="mt-3" aria-labelledby="for-you-title">
-          <div className="mb-2 flex items-end justify-between gap-3">
-            <h2 id="for-you-title" className="text-base font-bold text-foreground">Popular right now</h2>
-            <Link href="/products" className="text-xs font-semibold text-primary">See all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
+        <section className="mt-5" aria-labelledby="for-you-title">
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <h2 id="for-you-title" className="text-lg font-bold text-white">Popular right now</h2>
+            <Link href="/products" className="text-xs font-semibold text-[#F0C75E]">See all <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
           </div>
           {popular.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
               {popular.map((product, index) => <ProductCard key={product.id} product={product} priority={index < 4} />)}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">New products are arriving soon.</div>
+            <div className="rounded-2xl border border-dashed border-[#2a2f34] bg-[#101316] p-8 text-center text-sm text-[#B7BCC3]">New products are arriving soon.</div>
           )}
         </section>
 
         {newArrivals.length > 0 && (
-          <section className="mt-4" aria-labelledby="trending-title">
-            <div className="mb-2 flex items-end justify-between gap-3">
-              <h2 id="trending-title" className="text-base font-bold text-foreground">New Arrivals</h2>
-              <Link href="/products" className="text-xs font-semibold text-primary">Explore <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
+          <section className="mt-5" aria-labelledby="trending-title">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <h2 id="trending-title" className="text-lg font-bold text-white">New arrivals</h2>
+              <Link href="/products" className="text-xs font-semibold text-[#F0C75E]">Explore <ArrowRight className="ml-0.5 inline size-3.5" /></Link>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {newArrivals.map((product) => <ProductCard key={product.id} product={product} />)}
             </div>
           </section>
         )}
-
       </main>
     </PublicShell>
   );

@@ -53,7 +53,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function SignUpPage() {
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, logOut } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const isMounted = useRef(true);
@@ -102,9 +102,10 @@ export default function SignUpPage() {
     try {
       const result = await signUp(data.email, data.password, data.fullName);
       toast(result.verificationEmailSent
-        ? { title: 'Account created', description: 'Check your inbox to verify your email before shopping or applying to sell.' }
+        ? { title: 'Account created', description: result.verificationMethod === 'link' ? 'Check your inbox for a Firebase verification link.' : 'Check your inbox for a six-digit verification code.' }
         : { variant: 'destructive', title: 'Account created, email not sent', description: 'Use the resend option on the verification screen to request another email.' });
-      router.replace(`/sign-up/verify?email=${encodeURIComponent(data.email)}${result.verificationEmailSent ? '' : '&send=failed'}`);
+      const methodParam = result.verificationMethod === 'link' ? '&method=link' : '';
+      router.replace(`/sign-up/verify?email=${encodeURIComponent(data.email)}${result.verificationEmailSent ? methodParam : '&send=failed'}`);
     } catch (error: unknown) {
       const errMsg = getErrorMessage(error);
       const code = (error as any)?.code;
@@ -123,9 +124,10 @@ export default function SignUpPage() {
     try {
       const signedInUser = await signInWithGoogle();
       const token = await signedInUser.getIdTokenResult();
-      if (token.claims.superAdmin === true) {
-        toast({ title: 'Super Admin signed in', description: 'Opening the secure admin workspace.' });
-        router.replace('/super/app/dashboard');
+      if (token.claims.role === 'super_admin' || token.claims.superAdmin === true) {
+        await logOut();
+        toast({ title: 'Use Admin sign in', description: 'Super Admin accounts must sign in through the separate Admin portal.' });
+        router.replace('/admin/sign-in');
       } else {
         toast({ title: 'Account created', description: 'Your Google account is ready to use.' });
         router.replace('/');
@@ -162,14 +164,14 @@ export default function SignUpPage() {
                 name="fullName"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel className="text-sm font-medium text-[#24332c]">Full name</FormLabel>
+                    <FormLabel className="text-sm font-medium text-foreground">Full name</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="Ama Serwaa"
                         autoComplete="name"
                         aria-label="Full name"
-                        className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
+                        className="h-14 rounded-xl border-border bg-card px-4 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                       />
                     </FormControl>
                     <FormMessage />
@@ -182,7 +184,7 @@ export default function SignUpPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel className="text-sm font-medium text-[#24332c]">Email</FormLabel>
+                    <FormLabel className="text-sm font-medium text-foreground">Email</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -190,7 +192,7 @@ export default function SignUpPage() {
                         placeholder="you@example.com"
                         autoComplete="email"
                         aria-label="Email address"
-                        className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
+                        className="h-14 rounded-xl border-border bg-card px-4 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                       />
                     </FormControl>
                     <FormMessage />
@@ -203,7 +205,7 @@ export default function SignUpPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel className="text-sm font-medium text-[#24332c]">Password</FormLabel>
+                    <FormLabel className="text-sm font-medium text-foreground">Password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -213,12 +215,12 @@ export default function SignUpPage() {
                           autoComplete="new-password"
                           aria-label="Password"
                           aria-describedby="password-strength-label password-suggestions"
-                          className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 pr-12 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
+                          className="h-14 rounded-xl border-border bg-card px-4 pr-12 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword((s) => !s)}
-                          className="absolute right-2 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center text-[#66736a] hover:text-[#173b2b]"
+                          className="absolute right-2 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-primary"
                           aria-pressed={showPassword}
                           aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
@@ -232,7 +234,7 @@ export default function SignUpPage() {
                         ['8+ characters', passwordValue.length >= 8],
                         ['One number', /\d/.test(passwordValue)],
                         ['One special character', /[^A-Za-z0-9]/.test(passwordValue)],
-                      ].map(([label, passed]) => <span key={String(label)} className={passed ? 'text-[#1d7d57]' : 'text-[#69776e'}><Check className="mr-1 inline size-3.5" />{label}</span>)}
+                      ].map(([label, passed]) => <span key={String(label)} className={passed ? 'text-emerald-400' : 'text-muted-foreground'}><Check className="mr-1 inline size-3.5" />{label}</span>)}
                     </div>}
                     <FormMessage />
                   </FormItem>
@@ -244,7 +246,7 @@ export default function SignUpPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem className="sm:col-span-2">
-                    <FormLabel className="text-sm font-medium text-[#24332c]">Confirm password</FormLabel>
+                    <FormLabel className="text-sm font-medium text-foreground">Confirm password</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input
@@ -253,9 +255,9 @@ export default function SignUpPage() {
                           placeholder="Re-enter your password"
                           autoComplete="new-password"
                           aria-label="Confirm password"
-                          className="h-14 rounded-md border-[#cfd8d0] bg-white px-4 pr-12 text-base shadow-none focus-visible:border-[#173b2b] focus-visible:ring-2 focus-visible:ring-[#173b2b]/15"
+                          className="h-14 rounded-xl border-border bg-card px-4 pr-12 text-base text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
                         />
-                        <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-2 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center text-[#66736a] hover:text-[#173b2b]" aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}>
+                        <button type="button" onClick={() => setShowConfirmPassword((value) => !value)} className="absolute right-2 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-primary" aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'}>
                           {showConfirmPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
                         </button>
                       </div>
@@ -268,9 +270,9 @@ export default function SignUpPage() {
 
             <FormField control={form.control} name="termsAccepted" render={({ field }) => (
               <FormItem className="pt-2">
-                <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-[#536158]">
-                  <input type="checkbox" checked={field.value} onChange={field.onChange} className="mt-0.5 size-4 accent-[#173b2b]" />
-                  <span>I agree to the <a href="/terms" className="font-medium text-[#173b2b] underline-offset-4 hover:underline">Terms of Service</a> and <a href="/privacy" className="font-medium text-[#173b2b] underline-offset-4 hover:underline">Privacy Policy</a>.</span>
+                <label className="flex cursor-pointer items-start gap-3 text-sm leading-5 text-muted-foreground">
+                  <input type="checkbox" checked={field.value} onChange={field.onChange} className="mt-0.5 size-4 accent-primary" />
+                  <span>I agree to the <a href="/terms" className="font-medium text-primary underline-offset-4 hover:underline">Terms of Service</a> and <a href="/privacy" className="font-medium text-primary underline-offset-4 hover:underline">Privacy Policy</a>.</span>
                 </label>
                 <FormMessage />
               </FormItem>
@@ -278,7 +280,7 @@ export default function SignUpPage() {
 
             <Button
               type="submit"
-              className="h-14 w-full rounded-md bg-[#173b2b] text-base font-semibold text-white transition hover:bg-[#102d22] focus-visible:ring-2 focus-visible:ring-[#d7a84a]"
+              className="h-14 w-full rounded-xl bg-primary text-base font-semibold text-primary-foreground transition hover:brightness-110 focus-visible:ring-2 focus-visible:ring-primary"
               disabled={!isValid || isLoading || isGoogleLoading}
               aria-disabled={!isValid || isLoading || isGoogleLoading}
             >
@@ -293,15 +295,15 @@ export default function SignUpPage() {
             </Button>
 
             <div className="relative flex items-center">
-              <div className="h-px flex-1 bg-[#dfe6df]" />
-              <span className="px-3 text-xs text-[#78847b]">or</span>
-              <div className="h-px flex-1 bg-[#dfe6df]" />
+              <div className="h-px flex-1 bg-border" />
+              <span className="px-3 text-xs text-muted-foreground">or</span>
+              <div className="h-px flex-1 bg-border" />
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="h-14 w-full rounded-md border-[#cfd8d0] bg-white text-base font-medium text-[#18382d] hover:bg-[#f7f9f7]"
+              className="h-14 w-full rounded-xl border-border bg-card text-base font-medium text-foreground hover:border-primary/50 hover:bg-accent hover:text-primary"
               onClick={handleGoogleSignUp}
               disabled={isLoading || isGoogleLoading}
             >

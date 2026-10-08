@@ -9,7 +9,7 @@ import { DashboardNav } from '@/components/dashboard-nav';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { PageLoader } from '@/components/page-loader';
 import Link from 'next/link';
-import { LayoutDashboard, Package, ShoppingCart, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, MoreHorizontal } from 'lucide-react';
 
 const AppTour = dynamic(() => import('@/components/app-tour').then((mod) => mod.AppTour), {
   ssr: false,
@@ -59,6 +59,13 @@ export default function AppDashboardLayout({
     setMobileNavOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    document.documentElement.dataset.sellerCenter = 'true';
+    return () => {
+      delete document.documentElement.dataset.sellerCenter;
+    };
+  }, []);
+
   if (loading && !fallbackTimer) {
     return <PageLoader />;
   }
@@ -79,7 +86,7 @@ export default function AppDashboardLayout({
   
   return (
     <SidebarProvider>
-      <div className="flex min-h-[100svh] w-full bg-background lg:h-[100dvh]">
+      <div className="seller-center-shell flex min-h-[100svh] w-full lg:h-[100dvh]">
         <DashboardNav mobileOpen={mobileNavOpen} onMobileOpenChange={setMobileNavOpen} />
         <div className="flex min-h-[100svh] flex-1 flex-col overflow-x-hidden lg:h-[100dvh]">
           <DashboardHeader
@@ -95,27 +102,27 @@ export default function AppDashboardLayout({
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 md:hidden border-t border-border/70 bg-background/95 backdrop-blur-xl shadow-[0_-10px_30px_-20px_rgba(15,23,42,0.28)]">
-        <div className="grid grid-cols-4 gap-1 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-          <Link href="/dashboard" className="flex flex-col items-center justify-center rounded-xl py-3 transition-colors hover:bg-muted" title="Overview">
-            <LayoutDashboard className={`h-5 w-5 mb-1 ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`} />
+      <nav aria-label="Seller Center quick navigation" className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-[#101316] md:hidden">
+        <div className="grid grid-cols-4 gap-1 px-2 py-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <Link href="/dashboard" aria-current={isActive('/dashboard') ? 'page' : undefined} className={`flex min-h-12 flex-col items-center justify-center rounded-lg transition-colors hover:bg-accent ${isActive('/dashboard') ? 'bg-accent text-primary' : 'text-muted-foreground'}`} title="Overview">
+            <LayoutDashboard className="mb-0.5 h-5 w-5" />
             <span className={`text-[11px] font-medium ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground'}`}>Home</span>
           </Link>
 
-          <Link href="/dashboard/products" className="flex flex-col items-center justify-center rounded-xl py-3 transition-colors hover:bg-muted" title="Products">
-            <Package className={`h-5 w-5 mb-1 ${isActive('/dashboard/products') ? 'text-primary' : 'text-muted-foreground'}`} />
+          <Link href="/dashboard/products" aria-current={isActive('/dashboard/products') ? 'page' : undefined} className={`flex min-h-12 flex-col items-center justify-center rounded-lg transition-colors hover:bg-accent ${isActive('/dashboard/products') ? 'bg-accent text-primary' : 'text-muted-foreground'}`} title="Products">
+            <Package className="mb-0.5 h-5 w-5" />
             <span className={`text-[11px] font-medium ${isActive('/dashboard/products') ? 'text-primary' : 'text-muted-foreground'}`}>Products</span>
           </Link>
 
-          <Link href="/dashboard/orders" className="flex flex-col items-center justify-center rounded-xl py-3 transition-colors hover:bg-muted" title="Orders">
-            <ShoppingCart className={`h-5 w-5 mb-1 ${isActive('/dashboard/orders') ? 'text-primary' : 'text-muted-foreground'}`} />
+          <Link href="/dashboard/orders" aria-current={isActive('/dashboard/orders') ? 'page' : undefined} className={`flex min-h-12 flex-col items-center justify-center rounded-lg transition-colors hover:bg-accent ${isActive('/dashboard/orders') ? 'bg-accent text-primary' : 'text-muted-foreground'}`} title="Orders">
+            <ShoppingCart className="mb-0.5 h-5 w-5" />
             <span className={`text-[11px] font-medium ${isActive('/dashboard/orders') ? 'text-primary' : 'text-muted-foreground'}`}>Orders</span>
           </Link>
 
-          <Link href="/dashboard/messages" className="flex flex-col items-center justify-center rounded-xl py-3 transition-colors hover:bg-muted" title="Messages">
-            <MessageSquare className={`h-5 w-5 mb-1 ${isActive('/dashboard/messages') ? 'text-primary' : 'text-muted-foreground'}`} />
-            <span className={`text-[11px] font-medium ${isActive('/dashboard/messages') ? 'text-primary' : 'text-muted-foreground'}`}>Messages</span>
-          </Link>
+          <button type="button" onClick={() => setMobileNavOpen(true)} className="flex min-h-12 flex-col items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-primary" aria-label="Open more Seller Center navigation">
+            <MoreHorizontal className="mb-0.5 h-5 w-5" />
+            <span className="text-[11px] font-medium">More</span>
+          </button>
         </div>
       </nav>
 

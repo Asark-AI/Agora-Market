@@ -20,7 +20,7 @@ async function authenticate(request: Request): Promise<DecodedIdToken> {
   } catch {
     throw new RiderAuthenticationError('Authentication is required.', 401);
   }
-  if (identity.superAdmin === true) {
+  if (identity.role === 'super_admin' || identity.superAdmin === true) {
     throw new RiderAuthenticationError('Super Admin accounts cannot access Rider Center.', 403);
   }
   if (identity.email_verified !== true) {

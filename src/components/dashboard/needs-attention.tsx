@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
-import { Card } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2, MessageSquare, Package, FileText, AlertTriangle } from 'lucide-react';
+import { GlassCard } from '@/components/ui/glass-card';
+import { CheckCircle2, MessageSquare, Package, FileText, AlertTriangle } from 'lucide-react';
 import type { Order, Product, ServiceProduct } from '@/lib/types';
 
 interface AttentionItem {
@@ -32,7 +32,7 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
       type: 'order',
       text: `${pendingOrders.length} order${pendingOrders.length > 1 ? 's' : ''} waiting for processing`,
       href: '/dashboard/orders',
-      icon: <Package className="size-4 text-amber-700" />,
+      icon: <Package className="size-4 text-amber-300" />,
       priority: 'high',
     });
   }
@@ -44,7 +44,7 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
       type: 'message',
       text: `${unreadMessages.length} unread message${unreadMessages.length > 1 ? 's' : ''}`,
       href: '/dashboard/messages',
-      icon: <MessageSquare className="size-4 text-sky-700" />,
+      icon: <MessageSquare className="size-4 text-sky-300" />,
       priority: 'high',
     });
   }
@@ -57,7 +57,7 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
       type: 'stock',
       text: `${lowStockProducts.length} product${lowStockProducts.length > 1 ? 's' : ''} running low`,
       href: '/dashboard/products',
-      icon: <AlertTriangle className="size-4 text-orange-700" />,
+      icon: <AlertTriangle className="size-4 text-orange-300" />,
       priority: 'medium',
     });
   }
@@ -76,15 +76,15 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
 
   if (items.length === 0) {
     return (
-      <Card className="border-emerald-200 bg-emerald-50/50 p-4">
+      <GlassCard className="border-emerald-400/20 p-4">
         <div className="flex items-center gap-3">
           <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
           <div>
-            <p className="font-medium text-emerald-900">You're all caught up</p>
-            <p className="text-sm text-emerald-700">No actions requiring your attention right now.</p>
+            <p className="font-medium text-emerald-300">You&apos;re all caught up</p>
+            <p className="text-sm text-muted-foreground">No actions requiring your attention right now.</p>
           </div>
         </div>
-      </Card>
+      </GlassCard>
     );
   }
 
@@ -94,16 +94,16 @@ export function NeedsAttention({ orders, messages, products, userId }: NeedsAtte
       <div className="space-y-2">
         {items.map((item) => (
           <Link key={item.id} href={item.href}>
-            <Card className={`p-3 transition cursor-pointer hover:border-primary/50 hover:shadow-sm ${
-              item.priority === 'high' ? 'border-orange-200 bg-orange-50/50' : 'border-border'
+            <GlassCard className={`p-3 transition-colors hover:border-primary/30 ${
+              item.priority === 'high' ? 'border-amber-500/20' : 'border-border'
             }`}>
               <div className="flex items-center gap-3">
-                <span className="flex size-8 items-center justify-center bg-muted">{item.icon}</span>
+                <span className="flex size-9 items-center justify-center rounded-lg border border-border bg-[#171b1f]">{item.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium line-clamp-1">{item.text}</p>
                 </div>
               </div>
-            </Card>
+            </GlassCard>
           </Link>
         ))}
       </div>

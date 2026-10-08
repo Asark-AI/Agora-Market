@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function hasSuperAdminRole() {
+      return request.auth != null
+        && request.auth.token.keys().hasAny(['role'])
+        && request.auth.token.role == 'super_admin';
+    }
+
+    function hasLegacySuperAdminClaim() {
+      return request.auth != null
+        && request.auth.token.keys().hasAny(['superAdmin'])
+        && request.auth.token.superAdmin == true;
+    }
+
+    function isSellerOwner(sellerId) {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && !hasSuperAdminRole()
+        && !hasLegacySuperAdminClaim()
+        && firestore.get(/databases/(default)/documents/sellers/$(sellerId)).data.userId == request.auth.uid;
+    }
+
+    function validSellerMedia() {
+      return request.resource != null
+        && (
+          (request.resource.contentType.matches('image/.*') && request.resource.size <= 20 * 1024 * 1024)
+          || (request.resource.contentType.matches('video/.*') && request.resource.size <= 200 * 1024 * 1024)
+        );
+    }
+
+    match /sellers/{sellerId}/{filePath=**} {
+      allow read: if true;
+      allow create, update: if isSellerOwner(sellerId) && validSellerMedia();
+      allow delete: if isSellerOwner(sellerId);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

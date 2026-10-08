@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminAuth } from '@/lib/firebase-admin';
-import { SESSION_COOKIE } from '@/lib/server/admin-auth';
+import { hasSuperAdminRole, SESSION_COOKIE } from '@/lib/server/admin-auth';
 
 const cookieOptions = {
   httpOnly: true,
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     if (!idToken) return NextResponse.json({ error: 'Authentication token is required.' }, { status: 401 });
 
     const decodedToken = await getAdminAuth().verifyIdToken(idToken, true);
-    if (decodedToken.email_verified !== true) {
+    if (decodedToken.email_verified !== true || hasSuperAdminRole(decodedToken) || decodedToken.superAdmin === true) {
       return NextResponse.json({ error: 'Verify your email before creating a secure session.' }, { status: 403 });
     }
     const sessionCookie = await getAdminAuth().createSessionCookie(idToken, { expiresIn: 5 * 24 * 60 * 60 * 1000 });

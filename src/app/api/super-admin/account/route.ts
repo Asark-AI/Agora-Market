@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase-admin';
-import { requireSuperAdminToken, type AdminIdentity } from '@/lib/server/admin-auth';
+import { ADMIN_SESSION_COOKIE, requireSuperAdminToken, type AdminIdentity } from '@/lib/server/admin-auth';
 import { writeAuditLog } from '@/lib/server/admin-audit';
+import { enforceActorRateLimit, RateLimitError } from '@/lib/server/rate-limit';
 
 const RECENT_AUTH_WINDOW_SECONDS = 10 * 60;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -18,6 +19,17 @@ type AccountRequest = {
 
 function errorResponse(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
+}
+
+function clearAdminSession(response: NextResponse) {
+  response.cookies.set(ADMIN_SESSION_COOKIE, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 0,
+  });
+  return response;
 }
 
 function getBearerToken(request: Request) {
@@ -61,7 +73,8 @@ async function getActiveSuperAdmins() {
   do {
     const page = await getAdminAuth().listUsers(1000, pageToken);
     for (const user of page.users) {
-      if (!user.disabled && user.customClaims?.superAdmin === true) result.push(user.uid);
+      const hasTotp = user.multiFactor?.enrolledFactors.some((factor) => factor.factorId === 'totp') === true;
+      if (!user.disabled && user.emailVerified && user.customClaims?.role === 'super_admin' && hasTotp) result.push(user.uid);
     }
     pageToken = page.pageToken;
   } while (pageToken);
@@ -71,7 +84,13 @@ async function getActiveSuperAdmins() {
 async function promoteUser(uid: string) {
   const auth = getAdminAuth();
   const user = await auth.getUser(uid);
-  await auth.setCustomUserClaims(uid, { ...user.customClaims, superAdmin: true });
+  if (user.disabled || !user.emailVerified) {
+    throw new Error('A verified, active Firebase account is required before granting Super Admin access.');
+  }
+  const claims: Record<string, unknown> = { ...user.customClaims, role: 'super_admin' };
+  delete claims.superAdmin;
+  await auth.setCustomUserClaims(uid, claims);
+  await auth.revokeRefreshTokens(uid);
   await getAdminDb().collection('users').doc(uid).set({
     id: uid,
     email: user.email || '',
@@ -85,7 +104,10 @@ export async function GET(request: Request) {
   try {
     const { identity } = await authorize(request, false);
     const user = await getAdminAuth().getUser(identity.uid);
-    return NextResponse.json({ email: user.email || null, emailVerified: user.emailVerified, uid: user.uid });
+    return NextResponse.json(
+      { email: user.email || null, emailVerified: user.emailVerified, uid: user.uid },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
   } catch {
     return errorResponse('Unable to load Super Admin account information.', 403);
   }
@@ -95,12 +117,25 @@ export async function POST(request: Request) {
   let identity: AdminIdentity | undefined;
   let action: AccountAction | undefined;
   try {
+    const contentLength = Number(request.headers.get('content-length') || '0');
+    if (contentLength > 4_096) return errorResponse('Request body is too large.', 413);
+    if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
+      return errorResponse('Request content type must be application/json.', 415);
+    }
     const body = (await request.json()) as AccountRequest;
     action = body.action;
-    if (!action) return errorResponse('Invalid account operation.', 400);
+    if (!action || !['change-email', 'change-password', 'prepare-replacement', 'confirm-replacement'].includes(action)) {
+      return errorResponse('Invalid account operation.', 400);
+    }
 
     const authorized = await authorize(request, true);
     identity = authorized.identity;
+    await enforceActorRateLimit({
+      scope: 'admin-account-management',
+      actorId: identity.uid,
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+    });
     const auth = getAdminAuth();
     const db = getAdminDb();
     const currentUser = await auth.getUser(identity.uid);
@@ -117,14 +152,15 @@ export async function POST(request: Request) {
       await auth.updateUser(identity.uid, { email, emailVerified: false });
       await db.collection('users').doc(identity.uid).set({ email, emailVerified: false, updatedAt: new Date() }, { merge: true });
       await audit(identity, 'CHANGE_SUPER_ADMIN_EMAIL', identity.uid, true, { emailVerified: false });
-      return NextResponse.json({ ok: true, email, emailVerified: false });
+      return clearAdminSession(NextResponse.json({ ok: true, email, emailVerified: false }));
     }
 
     if (action === 'change-password') {
       const password = normalizePassword(body.password);
       await auth.updateUser(identity.uid, { password });
+      await auth.revokeRefreshTokens(identity.uid);
       await audit(identity, 'CHANGE_SUPER_ADMIN_PASSWORD', identity.uid, true);
-      return NextResponse.json({ ok: true });
+      return clearAdminSession(NextResponse.json({ ok: true }));
     }
 
     if (action === 'prepare-replacement') {
@@ -141,7 +177,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'That email address is already associated with an account.', code: 'ACCOUNT_EXISTS' }, { status: 409 });
       }
 
-      const replacement = target ?? await auth.createUser({ email, emailVerified: false, disabled: false });
+      if (!target || !target.emailVerified || target.disabled) {
+        return errorResponse('Create and verify an active Agora account for this address before promoting it.', 409);
+      }
+      const replacement = target;
       const promoted = await promoteUser(replacement.uid);
       await db.collection('superAdminReplacementRequests').doc(identity.uid).set({
         actorUid: identity.uid,
@@ -164,7 +203,10 @@ export async function POST(request: Request) {
     if (replacement.actorUid !== identity.uid || replacement.targetUid === identity.uid) return errorResponse('Invalid replacement request.', 400);
 
     const target = await auth.getUser(replacement.targetUid);
-    if (target.disabled || target.customClaims?.superAdmin !== true) return errorResponse('The new Super Admin is not ready to be activated.', 409);
+    const targetHasTotp = target.multiFactor?.enrolledFactors.some((factor) => factor.factorId === 'totp') === true;
+    if (target.disabled || !target.emailVerified || target.customClaims?.role !== 'super_admin' || !targetHasTotp) {
+      return errorResponse('The new Super Admin must verify their email and enroll a TOTP authenticator before activation.', 409);
+    }
 
     const activeAdmins = await getActiveSuperAdmins();
     if (!activeAdmins.includes(target.uid)) return errorResponse('The new Super Admin is not active.', 409);
@@ -175,6 +217,12 @@ export async function POST(request: Request) {
     await audit(identity, 'DISABLE_SUPER_ADMIN', identity.uid, true, { replacementUid: target.uid });
     return NextResponse.json({ ok: true, targetEmail: target.email || replacement.targetEmail });
   } catch (error) {
+    if (error instanceof RateLimitError) {
+      return NextResponse.json(
+        { error: 'Too many account changes. Please wait before trying again.' },
+        { status: 429, headers: { 'Retry-After': String(error.retryAfterSeconds) } },
+      );
+    }
     const code = error instanceof Error ? error.message : '';
     if (code === 'AUTHENTICATION_REQUIRED') return errorResponse('Authentication is required.', 401);
     if (code === 'RECENT_AUTH_REQUIRED') return errorResponse('For your security, please sign in again before changing this information.', 401);

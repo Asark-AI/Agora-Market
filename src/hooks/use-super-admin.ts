@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { approveAdminSeller, deleteAdminProduct, deleteAdminSeller, deleteAdminUser, deleteAdminUsers, moderateProduct, moderateSeller, moderateUser } from '@/app/super/actions';
-import { getAdminData, getAdminOverview, type AdminDataRecord, type AdminView } from '@/app/super/data-actions';
+import { getAdminData, getAdminDashboardOverviewData, type AdminDataRecord, type AdminView } from '@/app/super/data-actions';
 import type { Seller, User } from '@/lib/types';
 
 export type AdminRecord = AdminDataRecord;
@@ -38,7 +38,7 @@ export function useSuperAdmin() {
       setClaimsLoading(true);
       try {
         const token = await firebaseUser.getIdTokenResult(true);
-        if (active) setIsSuperAdmin(token.claims.superAdmin === true);
+        if (active) setIsSuperAdmin(token.claims.role === 'super_admin');
       } catch (claimError) {
         console.error('Unable to verify admin claims:', claimError);
         if (active) setIsSuperAdmin(false);
@@ -56,16 +56,16 @@ export function useSuperAdmin() {
     setError(null);
     try {
       if (view === 'overview') {
-        const [metrics, sellers, applications, users, products, reports, solutions] = await Promise.all([
-          getAdminOverview(),
-          getAdminData('sellers', '', 100),
-          getAdminData('applications'),
-          getAdminData('users', '', 100),
-          getAdminData('products'),
-          getAdminData('reports'),
-          getAdminData('solutions'),
-        ]);
-        setSnapshot({ users: users.records as User[], sellers: sellers.records as Seller[], products: products.records, applications: applications.records, reports: reports.records, solutions: solutions.records, metrics });
+        const overview = await getAdminDashboardOverviewData();
+        setSnapshot({
+          users: overview.users as User[],
+          sellers: overview.sellers as Seller[],
+          products: overview.products,
+          applications: overview.applications,
+          reports: overview.reports,
+          solutions: overview.solutions,
+          metrics: overview.metrics,
+        });
       } else {
         const result = await getAdminData(view, search);
         setSnapshot((current) => ({ ...current, [view]: result.records }));

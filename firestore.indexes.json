@@ -139,6 +139,12 @@
       "ttl": true
     },
     {
+      "collectionGroup": "marketingOAuthStates",
+      "fieldPath": "expiresAt",
+      "indexes": [],
+      "ttl": true
+    },
+    {
       "collectionGroup": "products",
       "fieldPath": "status",
       "indexes": [

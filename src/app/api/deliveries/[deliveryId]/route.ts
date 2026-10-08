@@ -4,21 +4,36 @@ import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { getAdminAuth } from '@/lib/firebase-admin';
-import { verifySession } from '@/lib/server/admin-auth';
 import { assertDeliveryTransition } from '@/lib/delivery/state-machine';
+import { hasSuperAdminRole, requireSuperAdminToken, verifyAdminSession, verifySession, verifySuperAdminSession } from '@/lib/server/admin-auth';
 import type { DeliveryStatus } from '@/lib/types';
+import type { DecodedIdToken } from 'firebase-admin/auth';
 
 function hashCode(code: string) {
   return createHash('sha256').update(code).digest('hex');
 }
 
-async function getIdentity(request: NextRequest) {
+async function getIdentity(request: NextRequest): Promise<DecodedIdToken | null> {
+  const adminSessionIdentity = await verifyAdminSession();
+  if (adminSessionIdentity) {
+    return await verifySuperAdminSession() ? adminSessionIdentity : null;
+  }
   const sessionIdentity = await verifySession();
-  if (sessionIdentity) return sessionIdentity;
+  if (sessionIdentity) {
+    if (hasSuperAdminRole(sessionIdentity)) {
+      return await verifySuperAdminSession() ? sessionIdentity : null;
+    }
+    return sessionIdentity;
+  }
   const header = request.headers.get('authorization');
   if (!header?.startsWith('Bearer ')) return null;
   try {
-    return await getAdminAuth().verifyIdToken(header.slice(7), true);
+    const idToken = header.slice(7);
+    const identity = await getAdminAuth().verifyIdToken(idToken, true);
+    if (hasSuperAdminRole(identity)) {
+      await requireSuperAdminToken(idToken);
+    }
+    return identity;
   } catch {
     return null;
   }
@@ -33,7 +48,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const snapshot = await deliveryRef.get();
   if (!snapshot.exists) return NextResponse.json({ error: 'Delivery not found.' }, { status: 404 });
   const delivery = snapshot.data() as Record<string, unknown>;
-  const isAdmin = identity.superAdmin === true || identity.admin === true;
+  const isAdmin = identity.role === 'super_admin' || identity.admin === true;
   const isAuthorized = isAdmin || delivery.buyerId === identity.uid || delivery.riderId === identity.uid;
   if (!isAuthorized) return NextResponse.json({ error: 'You are not authorized to view this delivery.' }, { status: 403 });
 
@@ -61,7 +76,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const snapshot = await deliveryRef.get();
   if (!snapshot.exists) return NextResponse.json({ error: 'Delivery not found.' }, { status: 404 });
   const delivery = snapshot.data() as Record<string, unknown>;
-  const isAdmin = identity.superAdmin === true || identity.admin === true;
+  const isAdmin = identity.role === 'super_admin' || identity.admin === true;
   const isAssignedRider = delivery.riderId === identity.uid;
   if (!isAdmin && !isAssignedRider) return NextResponse.json({ error: 'You are not authorized to update this delivery.' }, { status: 403 });
 

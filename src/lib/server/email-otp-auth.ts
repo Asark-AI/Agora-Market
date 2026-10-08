@@ -24,7 +24,7 @@ export async function requireEmailOtpIdentity(request: Request): Promise<Decoded
     throw new EmailOtpRequestError('Authentication is required.', 401);
   }
 
-  if (identity.superAdmin === true) {
+  if (identity.role === 'super_admin' || identity.superAdmin === true) {
     throw new EmailOtpRequestError('This account cannot use marketplace email verification.', 403);
   }
   if (identity.email_verified === true) {

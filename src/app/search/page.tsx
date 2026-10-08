@@ -89,10 +89,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           </form>
         </div>
 
-        <nav className="-mx-3 mt-3 flex gap-1 overflow-x-auto border-b border-border/60 px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Browse product categories">
-          <Link href={`/search${query ? `?q=${encodeURIComponent(query)}` : ''}`} aria-current={!selectedCategory ? 'page' : undefined} className={`shrink-0 border-b-2 px-3 py-2 text-xs font-semibold ${!selectedCategory ? 'border-[#d65a24] text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>All</Link>
+        <nav className="-mx-3 mt-3 flex gap-1 overflow-x-auto border-b border-[#1d2227] bg-[#101316]/70 px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Browse product categories">
+          <Link href={`/search${query ? `?q=${encodeURIComponent(query)}` : ''}`} aria-current={!selectedCategory ? 'page' : undefined} className={`shrink-0 border-b-2 px-3 py-2 text-xs font-semibold ${!selectedCategory ? 'border-[#D4A72C] text-white' : 'border-transparent text-[#B7BCC3] hover:text-white'}`}>All</Link>
           {broadCategories.map((category) => (
-            <Link key={category.id} href={`/search?${new URLSearchParams({ ...(query ? { q: query } : {}), category: category.id })}`} aria-current={selectedCategory?.id === category.id ? 'page' : undefined} className={`shrink-0 border-b-2 px-3 py-2 text-xs font-semibold ${selectedCategory?.id === category.id ? 'border-[#d65a24] text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>
+            <Link key={category.id} href={`/search?${new URLSearchParams({ ...(query ? { q: query } : {}), category: category.id })}`} aria-current={selectedCategory?.id === category.id ? 'page' : undefined} className={`shrink-0 border-b-2 px-3 py-2 text-xs font-semibold ${selectedCategory?.id === category.id ? 'border-[#D4A72C] text-white' : 'border-transparent text-[#B7BCC3] hover:text-white'}`}>
               {category.label}
             </Link>
           ))}

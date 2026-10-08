@@ -49,35 +49,35 @@ export default function ForgotPasswordPage() {
     >
           {sent ? (
             <div className="space-y-5">
-              <div className="rounded-[1.75rem] border border-[#cfe1d2] bg-[#f2f8f3] p-5 shadow-[0_24px_40px_-28px_rgba(23,59,43,0.28)]">
+              <div className="agora-panel rounded-2xl p-5">
                 <div className="flex items-start gap-3">
-                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#dcecdf] text-[#24553d]"><CheckCircle2 className="size-5" /></div>
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary"><CheckCircle2 className="size-5" /></div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#24553d]">Reset link sent</p>
-                  <p className="mt-1 break-words text-sm leading-5 text-[#52705a]">We sent instructions to <span className="font-medium text-[#24553d]">{submittedEmail}</span>.</p>
+                  <p className="text-sm font-semibold text-foreground">Check your inbox</p>
+                  <p className="mt-1 break-words text-sm leading-5 text-muted-foreground">Request submitted for <span className="font-medium text-foreground">{submittedEmail}</span>. If an Agora account uses this address, a reset email will arrive shortly.</p>
                 </div>
                 </div>
               </div>
-              <p className="text-sm leading-6 text-[#6b786e]">The link expires for security. If you do not see it shortly, check your spam folder before requesting another one.</p>
-              <Button asChild className="h-12 w-full rounded-xl bg-[#173b2b] text-sm font-semibold text-[#f7f3ee] shadow-[0_18px_32px_-16px_rgba(23,59,43,0.8)] hover:bg-[#112b23]"><Link href="/sign-in">Return to sign in</Link></Button>
+              <p className="text-sm leading-6 text-muted-foreground">The reset link expires for security. Check your spam folder if you do not see an email, or wait a few minutes before submitting another request.</p>
+              <Button asChild className="h-12 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground hover:brightness-110"><Link href="/sign-in">Return to sign in</Link></Button>
             </div>
           ) : (
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 rounded-[1.75rem] border border-[#edf0ea] bg-[#f8faf8] p-4 shadow-[0_24px_40px_-28px_rgba(23,59,43,0.28)] sm:p-5" aria-busy={isLoading}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="agora-card space-y-5 rounded-2xl p-4 sm:p-5" aria-busy={isLoading}>
                 <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-[#24332c]">Email address</FormLabel>
+                    <FormLabel className="text-sm font-medium text-foreground">Email address</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8a978c]" />
-                        <Input type="email" autoComplete="email" placeholder="you@example.com" className="h-12 rounded-xl border-[#dfe7e2] bg-white pl-10 text-sm shadow-none focus-visible:ring-[#d7a84a]" {...field} />
+                        <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input type="email" autoComplete="email" placeholder="you@example.com" className="h-12 rounded-xl border-border bg-background pl-10 text-sm text-foreground shadow-none placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20" {...field} />
                       </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-                <Button type="submit" className="h-12 w-full rounded-xl bg-[#173b2b] text-sm font-semibold text-[#f7f3ee] shadow-[0_18px_32px_-16px_rgba(23,59,43,0.8)] transition hover:bg-[#112b23]" disabled={isLoading}>{isLoading ? <><LiquidLoader className="mr-2" />Sending reset link...</> : 'Send reset link'}</Button>
-                <Link href="/sign-in" className="flex items-center justify-center gap-2 text-sm font-medium text-[#52705a] underline-offset-4 hover:text-[#173b2b] hover:underline"><ArrowLeft className="size-3.5" />Back to sign in</Link>
+                <Button type="submit" className="h-12 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition hover:brightness-110" disabled={isLoading}>{isLoading ? <><LiquidLoader className="mr-2" />Sending reset link...</> : 'Send reset link'}</Button>
+                <Link href="/sign-in" className="flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-primary hover:underline"><ArrowLeft className="size-3.5" />Back to sign in</Link>
               </form>
             </Form>
           )}

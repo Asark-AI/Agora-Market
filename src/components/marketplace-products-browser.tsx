@@ -202,12 +202,12 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
 
   return (
     <div className="space-y-5 pb-28 md:pb-12">
-      <header className="border-b border-border px-0 py-3 sm:px-0">
+      <header className="border-b border-border px-0 py-4 sm:px-0">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <div><h1 className="text-xl font-semibold tracking-tight">Shop all products</h1></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">The Agora collection</p><h1 className="mt-1 text-xl font-semibold tracking-tight">Shop all products</h1></div>
 
           <div className="flex items-center gap-3">
-            <Link href="/cart" className="relative inline-flex items-center border border-[#cfd8e1] bg-white px-3 py-2 text-sm font-semibold text-[#26384a] transition hover:border-[#1769aa] hover:text-[#1769aa]">
+            <Link href="/cart" className="relative inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/70 hover:bg-primary/15">
               <ShoppingCart className="mr-2 h-4 w-4" />
               Cart
               <span className="ml-2 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{cartItems.length}</span>
@@ -224,9 +224,9 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Search products, brands, categories..."
-              className="h-12 rounded-md border-[#cfd8e1] bg-white pl-12 pr-14 text-sm"
+              className="h-12 rounded-full border-border bg-card pl-12 pr-14 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/30"
             />
-            <button type="button" aria-label="Search by voice" className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-[#1769aa] transition hover:text-[#12588f]">
+            <button type="button" aria-label="Search by voice" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-primary transition hover:bg-primary/10 hover:text-primary/80">
               <Mic className="h-4 w-4" />
             </button>
           </div>
@@ -254,7 +254,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
                 key={category.id || 'all'}
                 type="button"
                 onClick={() => setSelectedCategory(category.id)}
-                className={`shrink-0 border px-4 py-2 text-sm font-medium transition ${active ? 'border-[#1769aa] bg-[#1769aa] text-white' : 'border-[#d8e0e7] bg-white text-[#26384a] hover:border-[#1769aa] hover:text-[#1769aa]'}`}
+                className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition ${active ? 'border-primary bg-primary text-primary-foreground shadow-[0_0_18px_rgba(212,167,44,0.16)]' : 'border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-primary'}`}
               >
                 {category.name}
               </button>
@@ -270,14 +270,14 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
             </div>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 border border-[#d8e0e7] bg-white px-3 py-2 text-sm font-semibold text-[#26384a] transition hover:border-[#1769aa] hover:text-[#1769aa]"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:border-primary/50 hover:text-primary"
               onClick={() => setIsFilterOpen(true)}
             >
               <Filter className="h-4 w-4" /> Filter
             </button>
             <button
               type="button"
-              className="inline-flex items-center justify-center gap-2 border border-[#d8e0e7] bg-white px-3 py-2 text-sm font-semibold text-[#26384a] transition hover:border-[#1769aa] hover:text-[#1769aa]"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition hover:border-primary/50 hover:text-primary"
               onClick={cycleSort}
             >
               Sort <ChevronDown className="h-4 w-4" />
@@ -287,7 +287,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
 
         <section className="pt-1">
           {visibleProducts.length === 0 ? (
-            <div className="border border-dashed border-border/70 bg-background p-8 text-center text-muted-foreground">
+            <div className="agora-card rounded-2xl border-dashed p-8 text-center text-muted-foreground">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Search className="h-5 w-5" />
               </div>

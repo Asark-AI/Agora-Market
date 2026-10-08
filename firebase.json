@@ -1,1 +1,19 @@
-{"firestore":{"indexes":"firestore.indexes.json","rules":"firestore.rules"},"emulators":{"firestore":{"port":8082,"rules":"firestore.rules"}}}
+{
+  "firestore": {
+    "indexes": "firestore.indexes.json",
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8082,
+      "rules": "firestore.rules"
+    },
+    "storage": {
+      "port": 9199,
+      "rules": "storage.rules"
+    }
+  }
+}

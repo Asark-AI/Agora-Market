@@ -52,7 +52,7 @@ async function main() {
   do {
     const page = await getAuth().listUsers(1000, pageToken);
     for (const user of page.users) {
-      if (user.customClaims?.superAdmin === true) {
+      if (user.customClaims?.role === 'super_admin') {
         matches.push({
           uid: user.uid,
           email: user.email || null,
@@ -67,7 +67,7 @@ async function main() {
   } while (pageToken);
 
   if (matches.length === 0) {
-    console.log('No Firebase Authentication accounts with superAdmin: true were found.');
+    console.log('No Firebase Authentication accounts with role: super_admin were found.');
     return;
   }
 

@@ -14,19 +14,36 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function hasSuperAdminRole() {
+      return isSignedIn()
+        && request.auth.token.keys().hasAny(['role'])
+        && request.auth.token.role == 'super_admin';
+    }
+
+    function hasLegacySuperAdminClaim() {
+      return isSignedIn()
+        && request.auth.token.keys().hasAny(['superAdmin'])
+        && request.auth.token.superAdmin == true;
+    }
+
     function isAdmin() {
-      return isSignedIn() &&
-        request.auth.token.admin == true;
+      return isSignedIn()
+        && request.auth.token.admin == true
+        && !hasSuperAdminRole()
+        && !hasLegacySuperAdminClaim();
     }
 
     function isSuperAdmin() {
-      return isSignedIn() &&
-        request.auth.token.superAdmin == true;
+      return hasSuperAdminRole()
+        && request.auth.token.email_verified == true
+        && request.auth.token.keys().hasAny(['firebase'])
+        && request.auth.token.firebase.sign_in_second_factor == 'totp';
     }
 
     function isMarketplaceUser() {
-      return isSignedIn() &&
-        request.auth.token.superAdmin != true;
+      return isSignedIn()
+        && !hasSuperAdminRole()
+        && !hasLegacySuperAdminClaim();
     }
 
     function isOwner(uid) {
@@ -133,8 +150,7 @@ service cloud.firestore {
     */
     match /sellers/{uid} {
       allow read: if true;
-      allow create: if isSignedIn()
-        && request.auth.token.superAdmin != true
+      allow create: if isMarketplaceUser()
         && request.auth.token.email_verified == true
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.status == 'pending'

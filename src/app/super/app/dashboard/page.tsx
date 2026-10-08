@@ -166,7 +166,7 @@ export default function SuperAdminPage() {
 
   useEffect(() => {
     if (authLoading || claimsLoading) return;
-    if (!user) router.replace('/sign-in?next=%2Fsuper%2Fapp%2Fdashboard');
+    if (!user) router.replace('/admin/sign-in');
     else if (!isSuperAdmin) router.replace('/');
   }, [authLoading, claimsLoading, isSuperAdmin, router, user]);
 

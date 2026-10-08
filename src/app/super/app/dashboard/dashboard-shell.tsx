@@ -70,13 +70,13 @@ export function SuperDashboardShell({ children }: { children: React.ReactNode })
   const auth = useAuth();
 
   useEffect(() => {
-    if (!loading && !user) router.replace('/sign-in?next=%2Fsuper%2Fapp%2Fdashboard');
+    if (!loading && !user) router.replace('/admin/sign-in');
   }, [user, loading, router]);
 
   const handleLogout = async () => {
     await auth.signOut();
-    await fetch('/api/auth/session', { method: 'DELETE' });
-    router.replace('/sign-in?next=%2Fsuper%2Fapp%2Fdashboard');
+    await fetch('/api/admin/auth/session', { method: 'DELETE' });
+    router.replace('/admin/sign-in');
   };
 
   if (loading || !user) {

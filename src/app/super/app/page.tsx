@@ -12,12 +12,12 @@ export default function Home() {
   useEffect(() => {
     if (!loading) {
       if (!user) {
-        router.replace('/sign-in?next=%2Fsuper%2Fapp%2Fdashboard');
+        router.replace('/admin/sign-in');
         return;
       }
       void user.getIdTokenResult(true).then(({ claims }) => {
-        router.replace(claims.superAdmin === true ? '/super/app/dashboard' : '/sign-in');
-      }).catch(() => router.replace('/sign-in'));
+        router.replace(claims.role === 'super_admin' ? '/super/app/dashboard' : '/admin/sign-in');
+      }).catch(() => router.replace('/admin/sign-in'));
     }
   }, [user, loading, router]);
 

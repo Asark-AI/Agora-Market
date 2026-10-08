@@ -22,12 +22,13 @@ import {
   type Firestore,
   runTransaction,
 } from 'firebase/firestore';
+import { orderContainsProduct } from '@/lib/order-purchase';
 import {
   onAuthStateChanged,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  sendPasswordResetEmail,
   signOut,
+  sendEmailVerification,
   type User as FirebaseUser,
   GoogleAuthProvider,
   signInWithPopup,
@@ -69,6 +70,9 @@ export interface AuthState extends PublicAuthState {
 }
 
 const UPLOAD_IDLE_TIMEOUT_MS = 120_000;
+const isSuperAdminClaims = (claims: Record<string, unknown>) => (
+  claims.role === 'super_admin' || claims.superAdmin === true
+);
 
 export class EmailVerificationRequiredError extends Error {
   constructor(readonly email: string) {
@@ -350,7 +354,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const tokenResult = await authUser.getIdTokenResult();
-      const isSuperAdmin = tokenResult.claims.superAdmin === true;
+      const isSuperAdmin = isSuperAdminClaims(tokenResult.claims);
       if (isSuperAdmin) get().clearListeners();
 
       const userRef = doc(ensureFirestore(), 'users', authUser.uid);
@@ -489,7 +493,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const activeUser = auth.currentUser;
-    if (activeUser && (await activeUser.getIdTokenResult(true)).claims.superAdmin === true) {
+    if (activeUser && isSuperAdminClaims((await activeUser.getIdTokenResult(true)).claims)) {
       throw new Error('Super Admin identities are restricted to the admin workspace and cannot create buyer or seller accounts.');
     }
 
@@ -512,18 +516,39 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await setDoc(doc(ensureFirestore(), 'users', user.uid), newUser);
     await get().refreshAuthProfile(user);
     let verificationEmailSent = false;
+    let verificationMethod: 'code' | 'link' | null = null;
+    let useFirebaseLinkFallback = false;
     try {
       const idToken = await user.getIdToken();
       const response = await fetch('/api/auth/email-otp/send', {
         method: 'POST',
         headers: { Authorization: `Bearer ${idToken}` },
       });
-      verificationEmailSent = response.ok;
-      if (!response.ok) console.warn('Agora email verification code could not be sent.', { status: response.status });
+      if (response.ok) {
+        verificationEmailSent = true;
+        verificationMethod = 'code';
+      } else if (response.status === 502 || response.status === 503) {
+        useFirebaseLinkFallback = true;
+        console.warn('Agora email code delivery is unavailable; trying Firebase verification email.');
+      } else {
+        console.warn('Agora email verification code could not be sent.', { status: response.status });
+      }
     } catch (emailError) {
+      useFirebaseLinkFallback = true;
       console.warn('Agora email verification request failed.', emailError instanceof Error ? emailError.name : 'Unknown error');
     }
-    return { user, verificationEmailSent };
+
+    if (useFirebaseLinkFallback) {
+      try {
+        await sendEmailVerification(user);
+        verificationEmailSent = true;
+        verificationMethod = 'link';
+      } catch (verificationError) {
+        console.warn('Firebase verification link could not be sent.', (verificationError as { code?: string })?.code || 'Unknown error');
+      }
+    }
+
+    return { user, verificationEmailSent, verificationMethod };
   },
 
   logIn: async (email, password) => {
@@ -536,6 +561,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const authUser = userCredential.user;
       await authUser.reload();
       const refreshedUser = auth.currentUser;
+      const tokenResult = await refreshedUser?.getIdTokenResult(true);
+      if (tokenResult && isSuperAdminClaims(tokenResult.claims)) {
+        await signOut(auth);
+        get().clearAllData();
+        await clearServerSession();
+        throw new Error('Super Admin accounts must use the separate /admin/sign-in page.');
+      }
       if (!refreshedUser?.emailVerified) {
         set({ firebaseUser: refreshedUser, user: createFallbackUser(refreshedUser), loading: false, initialized: true });
         await get().refreshAuthProfile(refreshedUser);
@@ -558,6 +590,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const invalidCredentialMessage = String(error?.message ?? '').toLowerCase().includes('invalid_login_credentials');
 
       if (error instanceof EmailVerificationRequiredError) throw error;
+      if (error instanceof Error && error.message.includes('Super Admin accounts must use')) throw error;
       if (invalidCredentialCodes.includes(error?.code) || invalidCredentialMessage) {
         throw new Error('The email or password is incorrect.');
       }
@@ -566,23 +599,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   sendPasswordReset: async (email) => {
-    if (!auth) throw new Error('Authentication is unavailable.');
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) throw new Error('Enter a valid email address.');
     try {
-      await sendPasswordResetEmail(auth, email.trim().toLowerCase(), {
-        url: `${window.location.origin}/sign-in`,
-        handleCodeInApp: false,
+      const response = await fetch('/api/auth/password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normalizedEmail }),
+        cache: 'no-store',
       });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error || 'We could not send a password reset email. Please try again.');
     } catch (error) {
-      const code = (error as { code?: string })?.code;
-      const messages: Record<string, string> = {
-        'auth/invalid-email': 'Enter a valid email address.',
-        'auth/user-not-found': 'No Agora account was found for that email address.',
-        'auth/operation-not-allowed': 'Password reset is disabled because Email/Password sign-in is not enabled in Firebase Authentication.',
-        'auth/unauthorized-continue-uri': 'Firebase rejected the reset link domain. Add this site domain to Firebase Authentication authorized domains.',
-        'auth/too-many-requests': 'Too many reset requests were made. Please wait a few minutes and try again.',
-        'auth/network-request-failed': 'The reset request could not reach Firebase. Check the connection and try again.',
-      };
-      throw new Error(messages[code || ''] || `We could not send the reset email${code ? ` (${code})` : ''}. Please try again.`);
+      if (error instanceof Error && error.message !== 'Failed to fetch') throw error;
+      throw new Error('The reset request could not reach Agora. Check your connection and try again.');
     }
   },
 
@@ -592,7 +622,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const activeUser = auth.currentUser;
-    if (activeUser && (await activeUser.getIdTokenResult(true)).claims.superAdmin === true) {
+    if (activeUser && isSuperAdminClaims((await activeUser.getIdTokenResult(true)).claims)) {
       throw new Error('Super Admin accounts cannot create or switch into buyer or seller accounts.');
     }
 
@@ -600,19 +630,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const result = await signInWithPopup(auth, provider);
     const { user } = result;
     await user.reload();
+    const tokenResult = await user.getIdTokenResult(true);
+    if (isSuperAdminClaims(tokenResult.claims)) {
+      await signOut(auth);
+      get().clearAllData();
+      await clearServerSession();
+      throw new Error('Super Admin accounts must use the separate /admin/sign-in page.');
+    }
     if (!user.emailVerified) {
       set({ firebaseUser: user, user: createFallbackUser(user), loading: false, initialized: true });
       await get().refreshAuthProfile(user);
       await clearServerSession();
       throw new EmailVerificationRequiredError(user.email || '');
-    }
-
-    const tokenResult = await user.getIdTokenResult(true);
-    if (tokenResult.claims.superAdmin === true) {
-      set({ firebaseUser: user, loading: true, initialized: true });
-      await get().refreshAuthProfile(user);
-      await syncServerSession(user);
-      return user;
     }
 
     const fallbackUser = createFallbackUser(user);
@@ -662,7 +691,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const authUser = auth?.currentUser;
     if (!authUser) throw new Error('Please sign in again to continue.');
     const tokenResult = await authUser.getIdTokenResult();
-    if (tokenResult.claims.superAdmin === true) {
+    if (isSuperAdminClaims(tokenResult.claims)) {
       throw new Error('Super Admin accounts cannot create seller profiles.');
     }
     if (!authUser.emailVerified) throw new Error('Verify your email before creating a seller profile.');
@@ -969,11 +998,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
 
     const firestore = ensureFirestore();
-    const buyerOrders = await getDocs(query(collection(firestore, 'orders'), where('buyerId', '==', user.id)));
-    const hasPurchased = buyerOrders.docs.some((orderDoc) => {
-      const order = orderDoc.data() as { sellerId?: string; items?: Array<{ productId?: string }> };
-      return order.sellerId === sellerId && order.items?.some((item) => item.productId === productId);
-    });
+    const buyerOrdersQuery = query(collection(firestore, 'orders'), where('buyerId', '==', user.id));
+    const sellerOrdersQuery = query(collection(firestore, 'sellers', sellerId, 'orders'), where('buyerId', '==', user.id));
+    const [buyerOrders, sellerOrders] = await Promise.all([
+      getDocs(buyerOrdersQuery),
+      getDocs(sellerOrdersQuery),
+    ]);
+    const hasPurchased = [...buyerOrders.docs, ...sellerOrders.docs].some((orderDoc) =>
+      orderContainsProduct(orderDoc.data(), sellerId, productId, orderDoc.ref.parent.parent?.id)
+    );
     if (!hasPurchased) {
       throw new Error('You can review this product after purchasing it.');
     }

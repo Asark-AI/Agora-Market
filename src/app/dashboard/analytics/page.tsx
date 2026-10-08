@@ -63,7 +63,7 @@ const KpiCard = ({ title, value, change, icon: Icon, unit = '' }: { title: strin
   <Card>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
+    <Icon className="h-4 w-4 text-primary" />
     </CardHeader>
     <CardContent>
       <div className="text-2xl font-bold">{value}{unit}</div>
@@ -307,16 +307,16 @@ export default function AnalyticsPage() {
                                         <stop
                                             offset="5%"
                                             stopColor="var(--color-revenue)"
-                                            stopOpacity={0.8}
+                                            stopOpacity={0.22}
                                         />
                                         <stop
                                             offset="95%"
                                             stopColor="var(--color-revenue)"
-                                            stopOpacity={0.1}
+                                            stopOpacity={0.02}
                                         />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 5" vertical={false} />
                                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₵${value / 1000}k`} />
                                 <ChartTooltip
@@ -344,6 +344,7 @@ export default function AnalyticsPage() {
                     <CardContent>
                         <ChartContainer config={chartConfig} className="h-[150px] w-full">
                             <BarChart data={analyticsData.ordersData.daily}>
+                                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 5" vertical={false} />
                                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                                 <ChartTooltip
                                     cursor={false}

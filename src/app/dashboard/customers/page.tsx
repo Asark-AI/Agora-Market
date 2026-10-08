@@ -96,7 +96,7 @@ export default function CustomersPage() {
 
     return (
         <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
@@ -136,13 +136,14 @@ export default function CustomersPage() {
                         <Search className="absolute left-3 top-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             placeholder="Search customers by name or email..."
-                            className="pl-10"
+                            className="h-11 border-border bg-[#171b1f] pl-10"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </CardHeader>
                 <CardContent>
+                    <div className="hidden md:block">
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -160,8 +161,8 @@ export default function CustomersPage() {
                                     <TableRow key={customer.id}>
                                         <TableCell>
                                             <div className="flex items-center gap-3">
-                                                <Avatar>
-                                                    <AvatarImage src={customer.avatar} />
+                                                <Avatar className="border border-primary/25">
+                                                    <AvatarImage src={customer.avatar} alt="" />
                                                     <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                                 <span className="font-medium">{customer.name}</span>
@@ -215,6 +216,34 @@ export default function CustomersPage() {
                             )}
                         </TableBody>
                     </Table>
+                    </div>
+                    <div className="divide-y divide-border md:hidden">
+                        {filteredCustomers.length > 0 ? filteredCustomers.map((customer) => (
+                            <article key={customer.id} className="space-y-3 py-4 first:pt-1 last:pb-1">
+                                <div className="flex min-w-0 items-center gap-3">
+                                    <Avatar className="size-11 shrink-0 border border-primary/25">
+                                        <AvatarImage src={customer.avatar} alt="" />
+                                        <AvatarFallback className="bg-[#171b1f] text-primary">{customer.name.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-semibold">{customer.name}</p>
+                                        <a href={`mailto:${customer.email}`} className="block truncate text-xs text-muted-foreground hover:text-primary">{customer.email}</a>
+                                    </div>
+                                    <span className="dashboard-status dashboard-status--neutral shrink-0">{customer.totalOrders} orders</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-[#171b1f] p-3 text-xs">
+                                    <div><p className="text-muted-foreground">Total spent</p><p className="mt-1 font-semibold text-foreground">₵{customer.totalSpent.toFixed(2)}</p></div>
+                                    <div><p className="text-muted-foreground">Last order</p><p className="mt-1 font-medium text-foreground">{format(new Date(customer.lastOrderDate), 'dd MMM, yyyy')}</p></div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button asChild variant="outline" className="min-h-11 flex-1 border-border bg-[#171b1f]" onClick={showLoader}><Link href={pageConfig.ordersLink}>{pageConfig.orderIcon}{pageConfig.ordersLabel}</Link></Button>
+                                    <Button asChild variant="outline" className="min-h-11 flex-1 border-border bg-[#171b1f]" onClick={showLoader}><Link href="/dashboard/messages"><MessageSquare className="mr-2 h-4 w-4" />Message</Link></Button>
+                                </div>
+                            </article>
+                        )) : (
+                            <div className="py-12 text-center"><Users className="mx-auto size-6 text-muted-foreground" /><p className="mt-3 text-sm font-medium">No customers found</p><p className="mt-1 text-sm text-muted-foreground">Try another name or email.</p></div>
+                        )}
+                    </div>
                 </CardContent>
             </Card>
         </div>

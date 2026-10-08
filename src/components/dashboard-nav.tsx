@@ -15,10 +15,12 @@ import {
     Wallet,
     MessageSquare,
     Store,
+    Megaphone,
+    Boxes,
+    Truck,
     X,
     LogOut,
     ShoppingBag,
-    TrendingUp,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -27,8 +29,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
-  SidebarSeparator,
   SidebarGroup,
   SidebarGroupLabel,
 } from '@/components/ui/sidebar';
@@ -36,32 +36,7 @@ import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { AppLogo } from './app-logo';
-import { useTheme } from 'next-themes';
 import { usePageLoaderStore } from '@/hooks/use-page-loader';
-
-function ThemeToggle() {
-    const { setTheme, theme } = useTheme();
-    return (
-        <div className="hidden group-data-[state=expanded]:flex items-center justify-center gap-2 rounded-lg bg-sidebar-accent p-2 text-sidebar-accent-foreground">
-            <Button
-                variant={theme === 'light' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setTheme('light')}
-                className="flex-1"
-            >
-                Light
-            </Button>
-             <Button
-                variant={theme === 'dark' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => setTheme('dark')}
-                className="flex-1"
-            >
-                Dark
-            </Button>
-        </div>
-    );
-}
 
 interface NavItem {
   href: string;
@@ -99,15 +74,15 @@ function NavItemWithBadge({
         isActive={isActive}
         tooltip={{ children: label }}
         onClick={onClick}
-        className={cn(isMobile && 'h-12 rounded-xl px-3')}
+        className={cn('dashboard-nav-link', isMobile && 'h-12 rounded-xl px-3')}
       >
-        <Link href={href as Route} className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
+        <Link href={href as Route} className="relative flex items-center justify-between">
+          <span className={cn('flex items-center gap-3', isActive && 'text-primary')}>
             {icon}
             <span>{label}</span>
           </span>
           {badge && (
-            <span className="ml-2 inline-flex items-center rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-primary-foreground">
+            <span className="ml-2 inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
               {badge}
             </span>
           )}
@@ -125,7 +100,7 @@ export function DashboardNav({
   onMobileOpenChange: (open: boolean) => void;
 }) {
   const pathname = usePathname();
-  const { seller, logOut, sellerOrders, sellerProducts, sellerMessages, user } = useAuth();
+  const { logOut, sellerOrders, sellerProducts, sellerMessages, user } = useAuth();
   const { show: showLoader } = usePageLoaderStore();
 
   const unreadMessages = sellerMessages?.filter(m => !m.read && m.senderId !== user?.id).length || 0;
@@ -164,6 +139,11 @@ export function DashboardNav({
           icon: <BarChart2 className="h-4 w-4" />,
         },
         {
+          href: '/dashboard/marketing',
+          label: 'Marketing',
+          icon: <Megaphone className="h-4 w-4" />,
+        },
+        {
           href: '/dashboard/customers',
           label: 'Customers',
           icon: <Users className="h-4 w-4" />,
@@ -183,6 +163,16 @@ export function DashboardNav({
           href: '/dashboard/storefront',
           label: 'Business',
           icon: <Store className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/stock',
+          label: 'Inventory',
+          icon: <Boxes className="h-4 w-4" />,
+        },
+        {
+          href: '/dashboard/suppliers',
+          label: 'Suppliers',
+          icon: <Truck className="h-4 w-4" />,
         },
         {
           href: '/dashboard/subscription',
@@ -234,7 +224,7 @@ export function DashboardNav({
           </SidebarGroupLabel>
           <SidebarMenu>
             {section.items.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`));
               return (
                 <NavItemWithBadge
                   key={item.href}
@@ -252,15 +242,14 @@ export function DashboardNav({
         </SidebarGroup>
       ))}
 
-      <SidebarSeparator className={cn(isMobile && 'my-2')} />
-
       <SidebarGroup>
+        <SidebarGroupLabel className={cn('text-xs font-semibold uppercase tracking-wider', isMobile && 'px-3 text-xs')}>ACCOUNT</SidebarGroupLabel>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton 
+            <SidebarMenuButton
               asChild 
               onClick={handleNavigation} 
-              className={cn(isMobile && 'h-12 rounded-xl px-3')}
+              className={cn('dashboard-nav-link', isMobile && 'h-12 rounded-xl px-3')}
             >
               <Link href="/">
                 <ShoppingBag className="h-4 w-4" />
@@ -291,19 +280,16 @@ export function DashboardNav({
         <Sidebar collapsible="offcanvas" className="md:flex">
           <SidebarHeader>
             <div className="flex items-center gap-3">
-              <AppLogo className="w-8 h-8 text-primary" />
+                <AppLogo className="w-8 h-8 text-primary" />
               <div>
-                <h1 className="text-sm font-bold">Agora Seller</h1>
-                <p className="text-xs text-muted-foreground">Center</p>
+                <h1 className="text-sm font-semibold tracking-[0.12em]">AGORA</h1>
+                <p className="text-[11px] text-muted-foreground">Seller Center</p>
               </div>
             </div>
           </SidebarHeader>
           <SidebarContent className="space-y-1">
             <SidebarMenu>{renderNavSections(false)}</SidebarMenu>
           </SidebarContent>
-          <SidebarFooter>
-            <ThemeToggle />
-          </SidebarFooter>
         </Sidebar>
       </div>
 
@@ -325,8 +311,8 @@ export function DashboardNav({
               <div className="flex items-center gap-2">
                 <AppLogo className="h-8 w-8 text-primary" />
                 <div>
-                  <p className="text-sm font-semibold">Agora Seller</p>
-                  <p className="text-xs text-sidebar-foreground/70">Center</p>
+                  <p className="text-sm font-semibold tracking-[0.12em]">AGORA</p>
+                  <p className="text-xs text-sidebar-foreground/70">Seller Center</p>
                 </div>
               </div>
               <Button

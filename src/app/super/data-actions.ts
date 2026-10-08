@@ -32,12 +32,42 @@ function serializeDocs(snapshot: QuerySnapshot) {
 function isAdminProfile(record: AdminDataRecord) {
   const role = typeof record.role === 'string' ? record.role.toLowerCase() : '';
   const roles = record.roles && typeof record.roles === 'object' ? record.roles as Record<string, unknown> : {};
-  return role === 'admin' || role === 'superadmin' || record.superAdmin === true || roles.admin === true;
+  return role === 'admin' || role === 'superadmin' || role === 'super_admin' || record.superAdmin === true || roles.admin === true;
 }
 
 function applySearch(query: Query, field: string, search: string) {
   if (!search) return query;
   return query.orderBy(field).startAt(search).endAt(`${search}\uf8ff`);
+}
+
+async function readAdminOverviewMetrics(adminUid: string) {
+  const db = getAdminDb();
+  const [users, adminProfiles, currentAdminProfile, sellers, products, applications, reports, solutions] = await Promise.all([
+    db.collection('users').count().get(),
+    db.collection('users').where('role', '==', 'Admin').count().get(),
+    db.collection('users').doc(adminUid).get(),
+    db.collection('sellers').count().get(),
+    db.collectionGroup('products').count().get(),
+    db.collection('sellerApplications').count().get(),
+    db.collection('reports').count().get(),
+    db.collection('solutions').count().get(),
+  ]);
+  const [activeSellers, pendingApplications, openReports] = await Promise.all([
+    db.collection('sellers').where('status', '==', 'active').count().get(),
+    db.collection('sellerApplications').where('status', 'in', ['pending', 'under-review']).count().get(),
+    db.collection('reports').where('status', 'in', ['open', 'pending', 'under-review']).count().get(),
+  ]);
+  return {
+    users: Math.max(0, users.data().count - adminProfiles.data().count - (currentAdminProfile.exists && !isAdminProfile({ id: currentAdminProfile.id, ...(currentAdminProfile.data() || {}) }) ? 1 : 0)),
+    sellers: sellers.data().count,
+    products: products.data().count,
+    applications: applications.data().count,
+    reports: reports.data().count,
+    solutions: solutions.data().count,
+    activeSellers: activeSellers.data().count,
+    pendingApplications: pendingApplications.data().count,
+    openReports: openReports.data().count,
+  };
 }
 
 export async function getAdminData(view: AdminView = 'overview', search = '', pageSize = 25) {
@@ -91,32 +121,34 @@ export async function getAdminData(view: AdminView = 'overview', search = '', pa
 
 export async function getAdminOverview() {
   const adminIdentity = await requireSuperAdmin();
+  return readAdminOverviewMetrics(adminIdentity.uid);
+}
+
+export async function getAdminDashboardOverviewData() {
+  const adminIdentity = await requireSuperAdmin();
   const db = getAdminDb();
-  const [users, adminProfiles, currentAdminProfile, sellers, products, applications, reports, solutions] = await Promise.all([
-    db.collection('users').count().get(),
-    db.collection('users').where('role', '==', 'Admin').count().get(),
-    db.collection('users').doc(adminIdentity.uid).get(),
-    db.collection('sellers').count().get(),
-    db.collectionGroup('products').count().get(),
-    db.collection('sellerApplications').count().get(),
-    db.collection('reports').count().get(),
-    db.collection('solutions').count().get(),
+  const [metrics, sellers, applications, users, products, reports, solutions] = await Promise.all([
+    readAdminOverviewMetrics(adminIdentity.uid),
+    db.collection('sellers').limit(6).get(),
+    db.collection('sellerApplications').limit(6).get(),
+    db.collection('users').limit(24).get(),
+    db.collectionGroup('products').limit(6).get(),
+    db.collection('reports').limit(6).get(),
+    db.collection('solutions').limit(6).get(),
   ]);
-  const [activeSellers, pendingApplications, openReports] = await Promise.all([
-    db.collection('sellers').where('status', '==', 'active').count().get(),
-    db.collection('sellerApplications').where('status', 'in', ['pending', 'under-review']).count().get(),
-    db.collection('reports').where('status', 'in', ['open', 'pending', 'under-review']).count().get(),
-  ]);
+
   return {
-    users: Math.max(0, users.data().count - adminProfiles.data().count - (currentAdminProfile.exists && !isAdminProfile({ id: currentAdminProfile.id, ...(currentAdminProfile.data() || {}) }) ? 1 : 0)),
-    sellers: sellers.data().count,
-    products: products.data().count,
-    applications: applications.data().count,
-    reports: reports.data().count,
-    solutions: solutions.data().count,
-    activeSellers: activeSellers.data().count,
-    pendingApplications: pendingApplications.data().count,
-    openReports: openReports.data().count,
+    users: serializeDocs(users).filter((record) => record.id !== adminIdentity.uid && !isAdminProfile(record)).slice(0, 6),
+    sellers: serializeDocs(sellers),
+    products: products.docs.map((document) => ({
+      id: document.id,
+      sellerId: document.ref.parent.parent?.id || '',
+      ...(serialize(document.data()) as Record<string, unknown>),
+    })) as AdminDataRecord[],
+    applications: serializeDocs(applications),
+    reports: serializeDocs(reports),
+    solutions: serializeDocs(solutions),
+    metrics,
   };
 }
 
