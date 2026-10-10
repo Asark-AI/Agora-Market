@@ -1,27 +1,31 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, ChevronDown, Filter, ShoppingCart } from 'lucide-react';
 import { ProductCard } from '@/components/product-card';
-import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/use-cart';
 import type { StorefrontProduct } from '@/lib/storefront';
 
 type FlashDealsBrowserProps = {
   products: StorefrontProduct[];
   categories: Array<{ id: string; name: string }>;
+  initialQuery: string;
 };
 
 type DealFilter = 'all' | 'half-off' | 'under-100' | 'electronics';
 type SortOption = 'featured' | 'price-low' | 'discount';
 
-export function FlashDealsBrowser({ products, categories }: FlashDealsBrowserProps) {
+export function FlashDealsBrowser({ products, categories, initialQuery }: FlashDealsBrowserProps) {
   const { items } = useCart();
   const [filter, setFilter] = useState<DealFilter>('all');
   const [sort, setSort] = useState<SortOption>('featured');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery || '');
   const filterRowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setQuery(initialQuery || '');
+  }, [initialQuery]);
 
   const dealProducts = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -64,7 +68,6 @@ export function FlashDealsBrowser({ products, categories }: FlashDealsBrowserPro
       <section className="border-b border-border/70 py-5">
         <h2 className="text-2xl font-semibold tracking-tight">⚡ Flash Deals</h2>
         <p className="mt-1 text-sm text-muted-foreground">Limited-time prices while stock lasts.</p>
-        <div className="mt-4 max-w-md"><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search deals" className="h-10" /></div>
       </section>
 
       <div ref={filterRowRef} className="-mx-4 flex gap-2 overflow-x-auto border-b border-border/70 px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Deal filters">

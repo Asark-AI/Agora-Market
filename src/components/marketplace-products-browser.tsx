@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, CheckCircle2, Filter, Mic, Search, ShoppingCart, Truck, RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ChevronDown, CheckCircle2, Filter, Search, Truck, RefreshCw } from 'lucide-react';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { ProductCard } from '@/components/product-card';
 import { ProductCardSkeleton } from '@/components/loading-skeletons';
-import { useCart } from '@/hooks/use-cart';
 import { getCategoryLabel, type StorefrontProduct } from '@/lib/storefront';
 import type { Seller } from '@/lib/types';
 
@@ -15,6 +15,7 @@ type MarketplaceProductsBrowserProps = {
   initialProducts: StorefrontProduct[];
   categories: Array<{ id: string; name: string }>;
   sellers: Seller[];
+  initialQuery: string;
 };
 
 const BATCH_SIZE = 10;
@@ -24,9 +25,9 @@ type ConditionOption = 'new' | 'used' | '';
 type DeliveryOption = 'fast' | 'free' | '';
 type RatingFilterOption = '4+' | '3+' | '2+' | '';
 
-export function MarketplaceProductsBrowser({ initialProducts, categories, sellers }: MarketplaceProductsBrowserProps) {
-  const { items: cartItems } = useCart();
-  const [searchTerm, setSearchTerm] = useState('');
+export function MarketplaceProductsBrowser({ initialProducts, categories, sellers, initialQuery }: MarketplaceProductsBrowserProps) {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedSeller, setSelectedSeller] = useState('');
   const [sortBy, setSortBy] = useState<SortValue>('popular');
@@ -40,6 +41,10 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setSearchTerm(initialQuery);
+  }, [initialQuery]);
 
   const categoryChips = useMemo(() => [{ id: '', name: 'All' }, ...categories.slice(0, 8)], [categories]);
   const suggestionChips = ['Smartphones', 'Audio', 'Gaming', 'Accessories', 'Home essentials', 'Fashion'];
@@ -179,6 +184,7 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
   const hasMore = visibleCount < filteredProducts.length;
 
   const resetFilters = () => {
+    router.replace('/products', { scroll: false });
     setSearchTerm('');
     setSelectedCategory('');
     setSelectedSeller('');
@@ -201,52 +207,37 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
   };
 
   return (
-    <div className="space-y-5 pb-28 md:pb-12">
-      <header className="border-b border-border px-0 py-4 sm:px-0">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">The Agora collection</p><h1 className="mt-1 text-xl font-semibold tracking-tight">Shop all products</h1></div>
-
-          <div className="flex items-center gap-3">
-            <Link href="/cart" className="relative inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/70 hover:bg-primary/15">
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Cart
-              <span className="ml-2 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{cartItems.length}</span>
-            </Link>
-          </div>
+    <div className="space-y-5">
+      <header className="relative overflow-hidden bg-gradient-to-r from-[#17191B] via-[#111315] to-[#0B0D0F] px-4 py-7 sm:px-6 sm:py-9">
+        <div className="relative mx-auto max-w-7xl">
+          <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-primary sm:text-[11px]">
+            <span aria-hidden="true" className="size-1.5 rounded-full bg-primary shadow-[0_0_10px_rgba(212,167,44,0.65)]" />
+            Agora marketplace
+          </p>
+          <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-[-0.03em] text-foreground sm:text-4xl">Shop the collection</h1>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
+            Explore everyday essentials, standout finds, and more.
+          </p>
         </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6">
-        <section className="border-b border-border py-3 sm:py-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search products, brands, categories..."
-              className="h-12 rounded-full border-border bg-card pl-12 pr-14 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/30"
-            />
-            <button type="button" aria-label="Search by voice" className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-primary transition hover:bg-primary/10 hover:text-primary/80">
-              <Mic className="h-4 w-4" />
-            </button>
-          </div>
-
+        <section className="py-3 sm:py-4">
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">Try:</span>
             {suggestionChips.map((term) => (
-              <button
+              <Link
                 key={term}
-                type="button"
-                onClick={() => setSearchTerm(term)}
+                href={`/products?q=${encodeURIComponent(term)}`}
                 className="border-b border-transparent py-1 transition hover:border-primary hover:text-primary"
               >
                 {term}
-              </button>
+              </Link>
             ))}
           </div>
         </section>
 
-        <section className="flex gap-2 overflow-x-auto border-b border-border/60 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <section className="flex gap-2 overflow-x-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categoryChips.map((category) => {
             const active = selectedCategory === category.id;
             return (
@@ -262,9 +253,9 @@ export function MarketplaceProductsBrowser({ initialProducts, categories, seller
           })}
         </section>
 
-        <section className="border-b border-border py-3">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_auto_auto]">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <section className="py-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+            <div className="col-span-2 flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground sm:col-span-1">
               <span>All Products</span>
               <span className="text-xs font-normal text-muted-foreground">{filteredProducts.length} items</span>
             </div>

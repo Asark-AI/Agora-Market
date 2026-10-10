@@ -1,7 +1,7 @@
 import { getActiveProducts } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
-import { ArrowLeft, ArrowRight, Search } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { electronicsCategoryTree } from '@/lib/electronics-catalog';
 
@@ -33,7 +33,6 @@ export default async function CategoriesPage({ searchParams }: { searchParams: P
             <div><p className="agora-pill mb-3">Discover something new</p><h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Shop by category</h1><p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Browse departments built for the way people shop for technology, electronics, and everyday products.</p></div>
             <p className="text-sm text-muted-foreground"><span className="font-semibold text-foreground">{electronicsCategoryTree.length}</span> departments · <span className="font-semibold text-foreground">{totalCategories}</span> categories</p>
           </div>
-          <form action="/categories" className="relative mt-5 max-w-xl"><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input name="q" defaultValue={resolvedSearchParams.q || ''} placeholder="Search departments or categories" aria-label="Search departments or categories" className="h-12 w-full rounded-xl border border-border bg-card pl-10 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20" /></form>
         </header>
 
         {selectedDepartment ? (

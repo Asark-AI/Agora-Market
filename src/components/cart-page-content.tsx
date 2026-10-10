@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Check, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useCart } from '@/hooks/use-cart';
 import { SiteHeader } from '@/components/site-header';
+import { BuyerBottomNavigation } from '@/components/buyer-bottom-navigation';
 import { ProductCard } from '@/components/product-card';
 import type { Product, Seller } from '@/lib/types';
 import { getImageUrl, type StorefrontProduct } from '@/lib/storefront';
@@ -61,9 +62,9 @@ export function CartPageContent({ recommendations, sellers }: { recommendations:
   return (
     <>
       <SiteHeader />
-      <main className="min-h-screen bg-background pb-32 text-foreground">
+      <main className="min-h-screen bg-background pb-[calc(11rem+env(safe-area-inset-bottom))] text-foreground lg:pb-32">
         <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
-          <header className="mb-6 flex items-center gap-3 border-b border-border pb-5">
+          <header className="mb-6 flex items-center gap-3 pb-1">
             <Link href="/" aria-label="Continue shopping" className="inline-flex size-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:border-primary/50 hover:text-primary"><ArrowLeft className="size-5" /></Link>
             <div className="min-w-0 flex-1"><p className="agora-pill mb-2">Your selection</p><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Shopping cart <span className="text-muted-foreground">({items.length})</span></h1><p className="mt-1 text-sm text-muted-foreground">Products from Agora sellers</p></div>
             {items.length > 0 && <button type="button" onClick={toggleAll} className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-primary transition hover:bg-primary/10"><span className={`flex size-5 items-center justify-center rounded border ${allSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card'}`}>{allSelected && <Check className="size-3.5" />}</span>Select all</button>}
@@ -150,7 +151,8 @@ export function CartPageContent({ recommendations, sellers }: { recommendations:
           )}
         </div>
       </main>
-      {items.length > 0 && <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_30px_rgba(0,0,0,0.35)] backdrop-blur-sm lg:hidden"><div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6"><div className="min-w-0 flex-1"><p className="text-xs text-muted-foreground">{selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected</p><p className="mt-0.5 text-lg font-semibold tabular-nums">{money(subtotal)}</p></div><button type="button" onClick={checkout} disabled={!selectedItems.length} className="flex h-12 min-w-40 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">Checkout <span aria-hidden="true">→</span></button></div></div>}
+      {items.length > 0 && <div className="fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-12px_30px_rgba(0,0,0,0.35)] backdrop-blur-sm md:bottom-0 lg:hidden"><div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6"><div className="min-w-0 flex-1"><p className="text-xs text-muted-foreground">{selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected</p><p className="mt-0.5 text-lg font-semibold tabular-nums">{money(subtotal)}</p></div><button type="button" onClick={checkout} disabled={!selectedItems.length} className="flex h-12 min-w-40 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">Checkout <span aria-hidden="true">→</span></button></div></div>}
+      <BuyerBottomNavigation />
     </>
   );
 }

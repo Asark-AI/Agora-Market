@@ -24,8 +24,7 @@ export function AppLogo({ logoPath, className, ...props }: AppLogoProps) {
 
   return (
     <div className={cn("relative overflow-hidden", className)} {...props}>
-      <NextImage src="/agora-logo.png" alt="Agora Logo" fill className="object-contain" />
+      <NextImage src="/agora-logo.svg" alt="Agora Logo" fill className="object-contain" />
     </div>
   );
 }
-

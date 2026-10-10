@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test:ai-shopping": "node --experimental-strip-types --test tests/ai-shopping-state.test.mts",
+    "test:visual-search": "node --experimental-strip-types --test tests/visual-search-image.test.mts",
+    "test:solutions-engine": "node --experimental-strip-types --test tests/solutions-engine.test.mts",
     "test:checkout-security": "node --experimental-strip-types --test tests/checkout-security.test.mts tests/trusted-app-origin.test.mts tests/paystack-payment-validation.test.mts tests/payment-environment.test.mts",
     "test:email-otp": "node --experimental-strip-types --test tests/email-otp-crypto.test.mts",
     "test:password-reset-email": "node --experimental-strip-types --test tests/password-reset-email.test.mts",

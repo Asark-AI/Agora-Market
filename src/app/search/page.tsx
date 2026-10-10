@@ -2,7 +2,8 @@ import { getActiveProducts, getCategoryOptions } from '@/lib/storefront';
 import { PublicShell } from '@/components/public-shell';
 import { ProductCard } from '@/components/product-card';
 import { ExploreDiscovery, type ExploreShortcut } from '@/components/explore-discovery';
-import { Input } from '@/components/ui/input';
+import { SearchModes } from '@/components/search-modes';
+import { getPublicSolutionDefinitions } from '@/lib/server/solutions';
 import { ArrowRight, Search } from 'lucide-react';
 import Link from 'next/link';
 
@@ -29,7 +30,7 @@ function belongsToBroadCategory(categoryId: string, broadCategory: typeof broadC
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; sort?: string }> }) {
   const resolvedSearchParams = await searchParams;
-  const products = await getActiveProducts();
+  const [products, solutions] = await Promise.all([getActiveProducts(), getPublicSolutionDefinitions()]);
   const categories = getCategoryOptions();
   const query = resolvedSearchParams.q?.trim().toLowerCase() || '';
   const selectedCategory = broadCategories.find((category) => category.id === resolvedSearchParams.category);
@@ -80,19 +81,20 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   return (
     <PublicShell>
-      <div className="container mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6">
-        <div className="max-w-3xl">
-          <form action="/search" className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-            <Input defaultValue={resolvedSearchParams.q || ''} name="q" placeholder="Search products or categories" aria-label="Search products or categories" className="h-11 rounded-md border-border/80 bg-background pl-12" />
-            {selectedCategory && <input type="hidden" name="category" value={selectedCategory.id} />}
-          </form>
-        </div>
-
-        <nav className="-mx-3 mt-3 flex gap-1 overflow-x-auto border-b border-[#1d2227] bg-[#101316]/70 px-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Browse product categories">
-          <Link href={`/search${query ? `?q=${encodeURIComponent(query)}` : ''}`} aria-current={!selectedCategory ? 'page' : undefined} className={`shrink-0 border-b-2 px-3 py-2 text-xs font-semibold ${!selectedCategory ? 'border-[#D4A72C] text-white' : 'border-transparent text-[#B7BCC3] hover:text-white'}`}>All</Link>
+      <SearchModes
+        solutions={solutions.map((solution) => ({
+          slug: solution.slug,
+          name: solution.name,
+          category: solution.category,
+          metadata: solution.metadata,
+          requirements: solution.requirements.map(({ name, keywords }) => ({ name, keywords })),
+        }))}
+        normalContent={
+      <>
+        <nav className="-mx-3 mt-3 flex gap-1 overflow-x-auto px-3 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Browse product categories">
+          <Link href={`/search${query ? `?q=${encodeURIComponent(query)}` : ''}`} aria-current={!selectedCategory ? 'page' : undefined} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${!selectedCategory ? 'bg-[#292D31] text-primary' : 'text-[#B7BCC3] hover:bg-[#171B1F] hover:text-white'}`}>All</Link>
           {broadCategories.map((category) => (
-            <Link key={category.id} href={`/search?${new URLSearchParams({ ...(query ? { q: query } : {}), category: category.id })}`} aria-current={selectedCategory?.id === category.id ? 'page' : undefined} className={`shrink-0 border-b-2 px-3 py-2 text-xs font-semibold ${selectedCategory?.id === category.id ? 'border-[#D4A72C] text-white' : 'border-transparent text-[#B7BCC3] hover:text-white'}`}>
+            <Link key={category.id} href={`/search?${new URLSearchParams({ ...(query ? { q: query } : {}), category: category.id })}`} aria-current={selectedCategory?.id === category.id ? 'page' : undefined} className={`shrink-0 rounded-full px-3 py-2 text-xs font-semibold ${selectedCategory?.id === category.id ? 'bg-[#292D31] text-primary' : 'text-[#B7BCC3] hover:bg-[#171B1F] hover:text-white'}`}>
               {category.label}
             </Link>
           ))}
@@ -100,13 +102,13 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
         {isResultsView ? (
           <section className="mt-4">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2"><p className="text-xs font-semibold">{resultProducts.length} {resultProducts.length === 1 ? 'product' : 'products'}</p><Link href="/search" className="text-xs font-medium text-primary hover:underline">Clear</Link></div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold">{resultProducts.length} {resultProducts.length === 1 ? 'product' : 'products'}</p><Link href="/search" className="text-xs font-medium text-primary hover:underline">Clear</Link></div>
             <nav className="mb-3 flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Sort search results">
               {[['Relevant', ''], ['Newest', 'new'], ['Price: low to high', 'price-low'], ['Price: high to low', 'price-high'], ['Top rated', 'rating']].map(([label, value]) => (
                 <Link key={value || 'relevant'} href={resultHref(value)} aria-current={sort === value ? 'page' : undefined} className={`shrink-0 border px-2.5 py-1.5 text-[10px] font-medium ${sort === value ? 'border-[#d65a24] bg-[#fff1eb] text-[#bd4a1c]' : 'border-border text-muted-foreground'}`}>{label}</Link>
               ))}
             </nav>
-            {resultProducts.length > 0 ? <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">{resultProducts.map((product) => <div key={product.id} className="min-w-0"><ProductCard product={product} /></div>)}</div> : <div className="border-y border-border py-12 text-center"><div className="mx-auto flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground"><Search className="size-4" /></div><h2 className="mt-3 text-base font-semibold">No products found</h2><p className="mt-1 text-xs text-muted-foreground">Try a different search or choose another category.</p><Link href="/search" className="mt-4 inline-flex text-xs font-semibold text-primary hover:underline">Back to Explore</Link></div>}
+            {resultProducts.length > 0 ? <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">{resultProducts.map((product) => <div key={product.id} className="min-w-0"><ProductCard product={product} /></div>)}</div> : <div className="py-12 text-center"><div className="mx-auto flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground"><Search className="size-4" /></div><h2 className="mt-3 text-base font-semibold">No products found</h2><p className="mt-1 text-xs text-muted-foreground">Try a different search or choose another category.</p><Link href="/search" className="mt-4 inline-flex text-xs font-semibold text-primary hover:underline">Back to Explore</Link></div>}
           </section>
         ) : (
           <div className="mt-5 space-y-6">
@@ -117,7 +119,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             {recommendations.length > 0 && <section aria-labelledby="recommended-title"><div className="mb-2 flex items-center justify-between"><h2 id="recommended-title" className="text-base font-bold">Recommended For You</h2><Link href="/products" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">See all <ArrowRight className="size-3.5" /></Link></div><div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">{recommendations.map((product) => <div key={product.id} className="min-w-0"><ProductCard product={product} /></div>)}</div></section>}
           </div>
         )}
-        </div>
+        </>
+      } />
     </PublicShell>
   );
 }

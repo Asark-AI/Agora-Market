@@ -1,7 +1,7 @@
-const VERSION = 'agora-shell-v2';
+const VERSION = 'agora-shell-v3';
 const STATIC_CACHE = `${VERSION}-static`;
 const OFFLINE_URL = '/offline.html';
-const SHELL = ['/', '/index.html', OFFLINE_URL, '/manifest.webmanifest', '/agora-logo.png', '/favicon.png'];
+const SHELL = ['/', '/index.html', OFFLINE_URL, '/manifest.webmanifest', '/agora-logo.svg', '/agora-logo.png', '/favicon.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));

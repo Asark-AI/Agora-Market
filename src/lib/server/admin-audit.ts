@@ -24,7 +24,10 @@ export type AuditAction =
   | 'ADMIN_PASSWORD_RESET_COMPLETED'
   | 'ADMIN_ACCOUNT_CHANGED'
   | 'ADMIN_SECURITY_SETTING_CHANGED'
-  | 'ADMIN_REFUND';
+  | 'ADMIN_REFUND'
+  | 'CREATE_SOLUTION_DEFINITION'
+  | 'UPDATE_SOLUTION_DEFINITION'
+  | 'DELETE_SOLUTION_DEFINITION';
 
 export async function writeAuditLog({ admin, action, targetType, targetId, reason, success, metadata = {}, requestId = `req_${randomUUID()}` }: {
   admin: AdminIdentity;

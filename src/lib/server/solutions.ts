@@ -4,7 +4,10 @@ import 'server-only';
 
 import { getAdminDb } from '@/lib/firebase-admin';
 import { requireSuperAdmin } from '@/lib/server/admin-auth';
-import { buildGamingPcSolution, type SolutionDefinition } from '@/lib/solutions';
+import { writeAuditLog } from '@/lib/server/admin-audit';
+import { buildGamingPcSolution, SolutionDefinitionSchema, type SolutionDefinition } from '@/lib/solutions';
+import type { Product } from '@/lib/types';
+import { z } from 'zod';
 
 const DEFAULT_SOLUTIONS: SolutionDefinition[] = [buildGamingPcSolution()];
 
@@ -18,7 +21,7 @@ function normalizeSolutionRecord(input: Partial<SolutionDefinition> & { id?: str
     type: requirement?.type || 'required',
     required: requirement?.required ?? true,
     minQuantity: Number(requirement?.minQuantity || requirement?.quantity || 1),
-    maxQuantity: requirement?.maxQuantity ?? undefined,
+    maxQuantity: requirement?.maxQuantity === undefined ? undefined : Number(requirement.maxQuantity),
     quantity: Number(requirement?.quantity || requirement?.minQuantity || 1),
     keywords: Array.isArray(requirement?.keywords) ? requirement.keywords.map((keyword) => String(keyword)) : [],
     categoryIds: Array.isArray(requirement?.categoryIds) ? requirement.categoryIds.map((categoryId) => String(categoryId)) : [],
@@ -27,7 +30,7 @@ function normalizeSolutionRecord(input: Partial<SolutionDefinition> & { id?: str
   const metadata = base.metadata;
   const budgetRange = metadata?.budgetRange;
 
-  return {
+  return SolutionDefinitionSchema.parse({
     id: base.id || fallbackId || slug,
     slug,
     name: base.name || 'Untitled Solution',
@@ -49,7 +52,7 @@ function normalizeSolutionRecord(input: Partial<SolutionDefinition> & { id?: str
       },
     },
     requirements: normalizedRequirements,
-  };
+  });
 }
 
 export async function getPublicSolutionDefinitions(): Promise<SolutionDefinition[]> {
@@ -59,7 +62,7 @@ export async function getPublicSolutionDefinitions(): Promise<SolutionDefinition
     const snapshot = await db.collection('solutions').orderBy('updatedAt', 'desc').get();
     const records = snapshot.docs
       .map((doc) => normalizeSolutionRecord(doc.data() as Partial<SolutionDefinition>, doc.id))
-      .filter((solution) => solution.status === 'active' || solution.status === 'draft');
+      .filter((solution) => solution.status === 'active');
     if (records.length > 0) return records;
   } catch (error) {
     console.warn('Unable to load solution definitions from Firestore; falling back to defaults:', error);
@@ -71,6 +74,60 @@ export async function getPublicSolutionDefinitions(): Promise<SolutionDefinition
 export async function getPublicSolutionDefinitionBySlug(slug: string): Promise<SolutionDefinition | null> {
   const definitions = await getPublicSolutionDefinitions();
   return definitions.find((solution) => solution.slug === slug) || null;
+}
+
+function serializeFirestoreValue(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) return value.map(serializeFirestoreValue);
+  if (value && typeof value === 'object') {
+    const serializable = value as { toJSON?: () => unknown };
+    if (typeof serializable.toJSON === 'function') {
+      return serializeFirestoreValue(serializable.toJSON());
+    }
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, serializeFirestoreValue(entry)])
+    );
+  }
+  return value;
+}
+
+export async function refreshPublicSolutionProducts(productRefs: { sellerId: string; productId: string }[]) {
+  const refs = z.array(z.object({
+    sellerId: z.string().trim().min(1).max(128),
+    productId: z.string().trim().min(1).max(128),
+  })).min(1).max(40).parse(productRefs);
+  const uniqueRefs = [...new Map(refs.map((ref) => [JSON.stringify([ref.sellerId, ref.productId]), ref])).values()];
+  const db = getAdminDb();
+  const [sellerSnapshots, productSnapshots] = await Promise.all([
+    Promise.all([...new Set(uniqueRefs.map(({ sellerId }) => sellerId))]
+      .map((sellerId) => db.collection('sellers').doc(sellerId).get())),
+    Promise.all(uniqueRefs.map(({ sellerId, productId }) =>
+      db.collection('sellers').doc(sellerId).collection('products').doc(productId).get())),
+  ]);
+  const activeSellerIds = new Set(sellerSnapshots
+    .filter((snapshot) => snapshot.exists && snapshot.data()?.status === 'active')
+    .map((snapshot) => snapshot.id));
+  const currentProducts = productSnapshots.flatMap((snapshot, index): Product[] => {
+    const { sellerId } = uniqueRefs[index];
+    const data = snapshot.data();
+    if (
+      !snapshot.exists
+      || !activeSellerIds.has(sellerId)
+      || data?.status !== 'active'
+      || typeof data.stock !== 'number'
+      || !Number.isSafeInteger(data.stock)
+      || data.stock <= 0
+    ) return [];
+    return [{
+      ...(serializeFirestoreValue(data) as Omit<Product, 'id' | 'sellerId'>),
+      id: snapshot.id,
+      sellerId,
+    }];
+  });
+  if (currentProducts.length !== uniqueRefs.length) {
+    throw new Error('Some selected listings have changed or are no longer available. Review your solution and try again.');
+  }
+  return currentProducts;
 }
 
 export async function getAdminSolutionDefinitions(): Promise<SolutionDefinition[]> {
@@ -102,13 +159,30 @@ export async function saveSolutionDefinition(input: Partial<SolutionDefinition> 
   }
 
   await db.collection('solutions').doc(id).set(payload, { merge: true });
+  await writeAuditLog({
+    admin,
+    action: input.id ? 'UPDATE_SOLUTION_DEFINITION' : 'CREATE_SOLUTION_DEFINITION',
+    targetType: 'solution-definition',
+    targetId: id,
+    reason: input.id ? 'Super Admin updated solution template' : 'Super Admin created solution template',
+    success: true,
+    metadata: { slug: normalized.slug, status: normalized.status, requirementCount: normalized.requirements.length },
+  });
 
   return normalized;
 }
 
 export async function deleteSolutionDefinition(id: string) {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
   if (!id) throw new Error('A solution identifier is required.');
   const db = getAdminDb();
   await db.collection('solutions').doc(id).delete();
+  await writeAuditLog({
+    admin,
+    action: 'DELETE_SOLUTION_DEFINITION',
+    targetType: 'solution-definition',
+    targetId: id,
+    reason: 'Super Admin deleted solution template',
+    success: true,
+  });
 }

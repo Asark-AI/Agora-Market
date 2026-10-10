@@ -1,8 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, ShoppingBag, UserRound, Heart } from 'lucide-react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Camera, Search, ShoppingBag, UserRound, Heart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useCart } from '@/hooks/use-cart';
+import { useWishlist } from '@/hooks/use-wishlist';
+import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: '/search', label: 'Explore' },
@@ -12,28 +17,69 @@ const navLinks = [
 ];
 
 export function SiteHeader() {
-  return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-[#0B0D0F]/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center gap-3 px-3 py-3 sm:px-4 sm:py-4">
-        <Link href="/" className="flex shrink-0 items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-2xl border border-[#D4A72C]/40 bg-[#D4A72C]/10 text-sm font-bold text-[#F0C75E] shadow-[0_0_24px_rgba(212,167,44,0.22)]">
-            A
-          </div>
-          <div className="leading-none">
-            <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#D4A72C]">Agora</div>
-            <div className="mt-1 text-sm font-semibold text-white">Buyer</div>
-          </div>
-        </Link>
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const cartItemCount = useCart((state) =>
+    state.items.reduce((sum, item) => sum + item.quantity, 0),
+  );
+  const hasWishlistItems = useWishlist((state) => state.items.length > 0);
+  const supportsPageSearch = ['/search', '/products', '/categories', '/flash-deals'].some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+  const selectedSearchCategory = pathname === '/search' ? searchParams.get('category') : null;
+  const isVisualSearch = pathname === '/search' && searchParams.get('mode') === 'visual';
+  const searchAction = supportsPageSearch ? pathname : '/search';
+  const searchPlaceholder = pathname.startsWith('/products')
+    ? 'Search products, brands, categories...'
+    : pathname.startsWith('/categories')
+      ? 'Search departments or categories'
+      : pathname.startsWith('/flash-deals')
+        ? 'Search deals'
+        : 'Search products, sellers, and deals';
+  const updateVisualSearch = () => {
+    const params = new URLSearchParams();
+    if (searchTerm.trim()) params.set('q', searchTerm.trim());
+    if (selectedSearchCategory) params.set('category', selectedSearchCategory);
+    if (!isVisualSearch) params.set('mode', 'visual');
+    const query = params.toString();
+    router.push(`/search${query ? `?${query}` : ''}`);
+  };
 
-        <form action="/search" className="hidden min-w-0 flex-1 md:block">
+  useEffect(() => {
+    setSearchTerm(searchParams.get('q') || '');
+  }, [searchParams]);
+
+  return (
+    <header className="sticky top-0 z-40 bg-[#0B0D0F]/90 backdrop-blur-md">
+      <div className="mx-auto flex min-h-[60px] max-w-7xl flex-wrap items-center gap-3 px-4 py-2 sm:px-6 md:min-h-[68px] md:flex-nowrap">
+        <form action={searchAction} className="order-last basis-full md:order-none md:block md:min-w-0 md:flex-1 md:basis-auto">
+          {selectedSearchCategory && <input type="hidden" name="category" value={selectedSearchCategory} />}
           <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#B7BCC3]" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#858B94] md:left-4 md:text-[#B7BCC3]" />
             <Input
               name="q"
-              placeholder="Search products, sellers, and deals"
-              aria-label="Search products, sellers, and deals"
-              className="h-11 w-full rounded-full border border-[#2a2f34] bg-[#101316] pl-11 pr-4 text-sm text-white placeholder:text-[#858B94] focus-visible:ring-2 focus-visible:ring-[#D4A72C]/40"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+              className="h-11 w-full rounded-xl border border-[#2a2f34] bg-[#14171A] pl-10 pr-12 text-sm text-white placeholder:text-[#858B94] shadow-sm transition-colors focus-visible:border-[#D4A72C]/60 focus-visible:ring-2 focus-visible:ring-[#D4A72C]/20 md:rounded-full md:bg-[#101316] md:pl-11 md:pr-14 md:focus-visible:ring-[#D4A72C]/40"
             />
+            <button
+              type="button"
+              onClick={updateVisualSearch}
+              aria-label={isVisualSearch ? 'Return to text search' : 'Search by image'}
+              aria-pressed={isVisualSearch}
+              title={isVisualSearch ? 'Return to text search' : 'Search by image'}
+              className={`absolute right-1.5 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A72C]/60 ${
+                isVisualSearch
+                  ? 'bg-[#D4A72C]/15 text-[#F0C75E]'
+                  : 'text-[#9299A1] hover:bg-white/5 hover:text-[#F0C75E]'
+              }`}
+            >
+              <Camera aria-hidden="true" className="size-[18px]" strokeWidth={1.8} />
+            </button>
           </div>
         </form>
 
@@ -49,30 +95,22 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-2.5">
-          <Link href="/wishlist" className="inline-flex size-10 items-center justify-center rounded-full border border-[#2a2f34] bg-[#101316] text-[#B7BCC3] transition hover:border-[#D4A72C]/50 hover:text-[#F0C75E]" aria-label="Wishlist">
-            <Heart className="size-4" />
+        <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+          {hasWishlistItems && (
+            <Link href="/wishlist" className="inline-flex size-9 items-center justify-center rounded-xl text-[#B7BCC3] transition hover:bg-[#171B1F] hover:text-[#F0C75E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-10" aria-label="Wishlist">
+              <Heart className="size-[18px]" strokeWidth={1.8} />
+            </Link>
+          )}
+          <Link href="/cart" className="relative hidden size-9 items-center justify-center rounded-xl bg-[#D4A72C]/10 text-[#F0C75E] transition hover:bg-[#D4A72C]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-10 md:inline-flex" aria-label={cartItemCount > 0 ? `Cart, ${cartItemCount} ${cartItemCount === 1 ? 'item' : 'items'}` : 'Cart'}>
+            <ShoppingBag className="size-[18px]" strokeWidth={1.8} />
+            {cartItemCount > 0 && <span aria-hidden="true" className="absolute -right-1 -top-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-[#0B0D0F] bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground">{cartItemCount > 99 ? '99+' : cartItemCount}</span>}
           </Link>
-          <Link href="/cart" className="inline-flex size-10 items-center justify-center rounded-full border border-[#D4A72C]/40 bg-[#D4A72C]/10 text-[#F0C75E] transition hover:bg-[#D4A72C]/20" aria-label="Cart">
-            <ShoppingBag className="size-4" />
-          </Link>
-          <Link href="/profile" className="inline-flex size-10 items-center justify-center rounded-full border border-[#2a2f34] bg-[#101316] text-[#B7BCC3] transition hover:border-[#D4A72C]/50 hover:text-[#F0C75E]" aria-label="Account">
-            <UserRound className="size-4" />
+          <Link href="/profile" className="hidden size-9 items-center justify-center rounded-xl text-[#B7BCC3] transition hover:bg-[#171B1F] hover:text-[#F0C75E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:size-10 md:inline-flex" aria-label="Account">
+            <UserRound className="size-[18px]" strokeWidth={1.8} />
           </Link>
         </div>
       </div>
 
-      <div className="border-t border-[#1a1f24] px-3 py-2 md:hidden">
-        <form action="/search" className="relative">
-          <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#B7BCC3]" />
-          <Input
-            name="q"
-            placeholder="Search Agora"
-            aria-label="Search Agora"
-            className="h-10 w-full rounded-full border border-[#2a2f34] bg-[#101316] pl-11 pr-4 text-sm text-white placeholder:text-[#858B94]"
-          />
-        </form>
-      </div>
     </header>
   );
 }

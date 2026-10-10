@@ -4,8 +4,9 @@ import { FlashDealsBrowser } from '@/components/flash-deals-browser';
 
 export const dynamic = 'force-dynamic';
 
-export default async function FlashDealsPage() {
+export default async function FlashDealsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const resolvedSearchParams = await searchParams;
   const categories = getCategoryOptions();
   const products = await getActiveProducts();
-  return <PublicShell><FlashDealsBrowser products={products} categories={categories} /></PublicShell>;
+  return <PublicShell><FlashDealsBrowser products={products} categories={categories} initialQuery={resolvedSearchParams.q || ''} /></PublicShell>;
 }

@@ -27,7 +27,7 @@ const PromptInputSchema = ShoppingGoalInputSchema.extend({
 
 const prompt = ai.definePrompt({
   name: 'planShoppingGoalPrompt',
-  model: 'googleai/gemini-1.5-flash',
+  model: 'googleai/gemini-2.5-flash',
   input: { schema: PromptInputSchema },
   output: { schema: ShoppingGoalOutputSchema },
   prompt: `You are Agora AI, a careful shopping assistant for a local marketplace. Help the customer understand their goal using only the customer-provided shopping context and the aggregate catalog count below.

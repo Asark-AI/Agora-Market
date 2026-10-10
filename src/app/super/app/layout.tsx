@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   title: 'Agora',
   description: 'The official Agora dashboard.',
   icons: {
-    icon: '/agora-logo.png',
-    shortcut: '/agora-logo.png',
+    icon: '/agora-logo.svg',
+    shortcut: '/agora-logo.svg',
     apple: '/agora-logo.png',
   },
 };

@@ -49,6 +49,11 @@ export function FloatingCart() {
   const suppressClick = useRef(false);
   const safeAreaBottom = useRef(0);
   const isProductDetail = pathname.startsWith('/product/');
+  const maximumTop = () =>
+    window.innerHeight
+    - FLOATING_CART_SIZE
+    - safeAreaBottom.current
+    - (window.innerWidth < 768 ? 88 : 8);
 
   useEffect(() => {
     setPortalReady(true);
@@ -65,7 +70,7 @@ export function FloatingCart() {
         if (typeof position.left === 'number' && typeof position.top === 'number') {
           setDragPosition({
             left: clamp(position.left, 8, window.innerWidth - FLOATING_CART_SIZE - 8),
-            top: clamp(position.top, 8, window.innerHeight - FLOATING_CART_SIZE - safeAreaBottom.current - 8),
+            top: clamp(position.top, 8, maximumTop()),
           });
         }
       }
@@ -78,7 +83,7 @@ export function FloatingCart() {
     if (!portalReady) return;
     const handleResize = () => setDragPosition((position) => position ? {
       left: clamp(position.left, 8, window.innerWidth - FLOATING_CART_SIZE - 8),
-      top: clamp(position.top, 8, window.innerHeight - FLOATING_CART_SIZE - safeAreaBottom.current - 8),
+      top: clamp(position.top, 8, maximumTop()),
     } : null);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -113,7 +118,7 @@ export function FloatingCart() {
   const ariaLabel = itemCount > 0 ? `Open cart, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}` : 'Open cart';
   const positionClass = isProductDetail
     ? 'bottom-[calc(9rem+env(safe-area-inset-bottom))] md:bottom-20'
-    : 'bottom-[calc(5rem+env(safe-area-inset-bottom))]';
+    : 'bottom-[calc(6rem+env(safe-area-inset-bottom))]';
 
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (event.button !== 0) return;
@@ -140,7 +145,7 @@ export function FloatingCart() {
 
     drag.moved = true;
     drag.left = clamp(drag.originLeft + deltaX, 8, window.innerWidth - FLOATING_CART_SIZE - 8);
-    drag.top = clamp(drag.originTop + deltaY, 8, window.innerHeight - FLOATING_CART_SIZE - safeAreaBottom.current - 8);
+    drag.top = clamp(drag.originTop + deltaY, 8, maximumTop());
     setIsDragging(true);
     setDragPosition({ left: drag.left, top: drag.top });
   };
@@ -155,7 +160,7 @@ export function FloatingCart() {
     const rightPosition = window.innerWidth - FLOATING_CART_SIZE - 8;
     const snappedPosition = {
       left: drag.left <= window.innerWidth / 2 ? 8 : rightPosition,
-      top: clamp(drag.top, 8, window.innerHeight - FLOATING_CART_SIZE - safeAreaBottom.current - 8),
+      top: clamp(drag.top, 8, maximumTop()),
     };
     setDragPosition(snappedPosition);
     try {
