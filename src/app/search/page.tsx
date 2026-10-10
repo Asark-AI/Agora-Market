@@ -30,7 +30,30 @@ function belongsToBroadCategory(categoryId: string, broadCategory: typeof broadC
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; category?: string; sort?: string }> }) {
   const resolvedSearchParams = await searchParams;
-  const [products, solutions] = await Promise.all([getActiveProducts(), getPublicSolutionDefinitions()]);
+  const [loadedProducts, solutions] = await Promise.all([
+    getActiveProducts().catch((error: unknown) => {
+      console.error('Unable to load Explore products:', error);
+      return [];
+    }),
+    getPublicSolutionDefinitions().catch((error: unknown) => {
+      console.error('Unable to load Explore solution templates:', error);
+      return [];
+    }),
+  ]);
+  const products = loadedProducts.filter((product) => {
+    const isValid = Boolean(
+      product
+      && typeof product.id === 'string'
+      && typeof product.name === 'string'
+      && typeof product.price === 'number'
+      && Number.isFinite(product.price)
+      && typeof product.stock === 'number'
+      && Number.isFinite(product.stock)
+      && typeof product.categoryId === 'string'
+    );
+    if (!isValid) console.warn('Skipping an invalid product record while rendering Explore.');
+    return isValid;
+  });
   const categories = getCategoryOptions();
   const query = resolvedSearchParams.q?.trim().toLowerCase() || '';
   const selectedCategory = broadCategories.find((category) => category.id === resolvedSearchParams.category);
