@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Camera, Search, ShoppingBag, UserRound, Heart } from 'lucide-react';
+import { Camera, Heart, Search, ShoppingBag, Sparkles, UserRound } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
@@ -28,6 +28,7 @@ export function SiteHeader() {
   );
   const selectedSearchCategory = pathname === '/search' ? searchParams.get('category') : null;
   const isVisualSearch = pathname === '/search' && searchParams.get('mode') === 'visual';
+  const isAiSearch = pathname === '/search' && searchParams.get('mode') === 'ai';
   const searchAction = supportsPageSearch ? pathname : '/search';
   const searchPlaceholder = pathname.startsWith('/products')
     ? 'Search products, brands, categories...'
@@ -36,11 +37,12 @@ export function SiteHeader() {
       : pathname.startsWith('/flash-deals')
         ? 'Search deals'
         : 'Search products, sellers, and deals';
-  const updateVisualSearch = () => {
+  const updateSearchMode = (nextMode: 'visual' | 'ai') => {
     const params = new URLSearchParams();
     if (searchTerm.trim()) params.set('q', searchTerm.trim());
     if (selectedSearchCategory) params.set('category', selectedSearchCategory);
-    if (!isVisualSearch) params.set('mode', 'visual');
+    const activeMode = isVisualSearch ? 'visual' : isAiSearch ? 'ai' : null;
+    if (activeMode !== nextMode) params.set('mode', nextMode);
     const query = params.toString();
     window.history.pushState(null, '', `/search${query ? `?${query}` : ''}`);
   };
@@ -62,11 +64,25 @@ export function SiteHeader() {
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder={searchPlaceholder}
               aria-label={searchPlaceholder}
-              className="h-11 w-full rounded-xl border border-[#2a2f34] bg-[#14171A] pl-10 pr-12 text-sm text-white placeholder:text-[#858B94] shadow-sm transition-colors focus-visible:border-[#D4A72C]/60 focus-visible:ring-2 focus-visible:ring-[#D4A72C]/20 md:rounded-full md:bg-[#101316] md:pl-11 md:pr-14 md:focus-visible:ring-[#D4A72C]/40"
+              className="h-11 w-full rounded-xl border border-[#2a2f34] bg-[#14171A] pl-10 pr-[5.25rem] text-sm text-white placeholder:text-[#858B94] shadow-sm transition-colors focus-visible:border-[#D4A72C]/60 focus-visible:ring-2 focus-visible:ring-[#D4A72C]/20 md:rounded-full md:bg-[#101316] md:pl-11 md:pr-[5.5rem] md:focus-visible:ring-[#D4A72C]/40"
             />
             <button
               type="button"
-              onClick={updateVisualSearch}
+              onClick={() => updateSearchMode('ai')}
+              aria-label={isAiSearch ? 'Return to text search' : 'AI Search'}
+              aria-pressed={isAiSearch}
+              title={isAiSearch ? 'Return to text search' : 'AI Search'}
+              className={`absolute right-10 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A72C]/60 ${
+                isAiSearch
+                  ? 'bg-[#D4A72C]/15 text-[#F0C75E]'
+                  : 'text-[#9299A1] hover:bg-white/5 hover:text-[#F0C75E]'
+              }`}
+            >
+              <Sparkles aria-hidden="true" className="size-[18px]" strokeWidth={1.8} />
+            </button>
+            <button
+              type="button"
+              onClick={() => updateSearchMode('visual')}
               aria-label={isVisualSearch ? 'Return to text search' : 'Search by image'}
               aria-pressed={isVisualSearch}
               title={isVisualSearch ? 'Return to text search' : 'Search by image'}

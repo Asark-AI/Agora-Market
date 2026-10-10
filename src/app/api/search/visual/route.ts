@@ -29,7 +29,11 @@ async function readBoundedBody(request: Request, maxBytes: number) {
   return Buffer.concat(chunks);
 }
 
-export async function POST(request: Request) {
+async function handleVisualSearchRequest(
+  request: Request,
+  requestId: string,
+  setFailureStage: (stage: string) => void
+) {
   const requestMaxBytes = VISUAL_SEARCH_MAX_BYTES + 100_000;
   const rawContentLength = request.headers.get('content-length');
   const contentLength = rawContentLength ? Number(rawContentLength) : 0;
@@ -37,9 +41,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Choose an image smaller than 4 MB.' }, { status: 413 });
   }
 
+  setFailureStage('session_verification');
   const identity = await verifyMarketplaceSession();
-  const requestId = randomUUID();
   const startedAt = Date.now();
+  setFailureStage('rate_limit');
   try {
     await enforceActorRateLimit({
       scope: 'visual-product-search',
@@ -57,6 +62,7 @@ export async function POST(request: Request) {
     throw error;
   }
 
+  setFailureStage('upload_read');
   const boundedBody = await readBoundedBody(request, requestMaxBytes);
   if (!boundedBody) {
     return NextResponse.json({ error: 'Choose an image smaller than 4 MB.' }, { status: 413 });
@@ -90,6 +96,7 @@ export async function POST(request: Request) {
   }
 
   let result;
+  setFailureStage('image_and_catalog_search');
   try {
     result = await searchProductsByImage(bytes, upload.type);
   } catch (error) {
@@ -104,6 +111,7 @@ export async function POST(request: Request) {
       });
       return NextResponse.json({ error: error.message }, { status: 503 });
     }
+    setFailureStage('audit_write');
     await getAdminDb().collection('aiVisualSearchAudit').doc(requestId).create({
       requestId,
       actorId: identity?.uid || null,
@@ -141,4 +149,24 @@ export async function POST(request: Request) {
     expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
   });
   return NextResponse.json(result);
+}
+
+export async function POST(request: Request) {
+  const requestId = randomUUID();
+  let failureStage = 'request_validation';
+  try {
+    return await handleVisualSearchRequest(request, requestId, (stage) => {
+      failureStage = stage;
+    });
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: 'visual_product_search_request_failure',
+      requestId,
+      failureStage,
+      errorCategory: error instanceof Error ? error.name : 'unknown',
+    }));
+    return NextResponse.json({
+      error: `Visual search failed during ${failureStage.replace(/_/g, ' ')}. Please try again. Reference: ${requestId}`,
+    }, { status: 503 });
+  }
 }

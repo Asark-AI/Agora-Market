@@ -100,11 +100,11 @@ export function VisualProductSearch() {
       const formData = new FormData();
       formData.append('image', file);
       const response = await fetch('/api/search/visual', { method: 'POST', body: formData });
-      const payload: unknown = await response.json();
+      const payload: unknown = await response.json().catch(() => null);
       if (!response.ok) {
         const message = payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string'
           ? payload.error
-          : 'Visual search could not complete. Please try again.';
+          : `Visual search is temporarily unavailable (HTTP ${response.status}). Please try again.`;
         throw new Error(message);
       }
       if (!isVisualResult(payload)) {
