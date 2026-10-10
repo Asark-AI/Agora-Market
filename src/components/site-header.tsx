@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Camera, Heart, Search, ShoppingBag, Sparkles, UserRound } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ const navLinks = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const cartItemCount = useCart((state) =>
@@ -44,7 +45,12 @@ export function SiteHeader() {
     const activeMode = isVisualSearch ? 'visual' : isAiSearch ? 'ai' : null;
     if (activeMode !== nextMode) params.set('mode', nextMode);
     const query = params.toString();
-    window.history.pushState(null, '', `/search${query ? `?${query}` : ''}`);
+    const searchUrl = `/search${query ? `?${query}` : ''}`;
+    if (pathname === '/search') {
+      window.history.pushState(null, '', searchUrl);
+      return;
+    }
+    router.push(searchUrl);
   };
 
   useEffect(() => {
