@@ -2,7 +2,7 @@
 
 import { type ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AiShoppingPlanner } from '@/components/ai-shopping-planner';
@@ -20,7 +20,6 @@ type SolutionOption = {
 };
 
 export function SearchModes({ normalContent, solutions }: { normalContent: ReactNode; solutions: SolutionOption[] }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const mode = searchParams.get('mode') === 'visual'
@@ -33,7 +32,7 @@ export function SearchModes({ normalContent, solutions }: { normalContent: React
     if (nextMode === 'normal') params.delete('mode');
     else params.set('mode', nextMode);
     const query = params.toString();
-    router.push(`${pathname}${query ? `?${query}` : ''}`);
+    window.history.pushState(null, '', `${pathname}${query ? `?${query}` : ''}`);
   };
 
   return (

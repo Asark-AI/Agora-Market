@@ -56,9 +56,8 @@ function normalizeSolutionRecord(input: Partial<SolutionDefinition> & { id?: str
 }
 
 export async function getPublicSolutionDefinitions(): Promise<SolutionDefinition[]> {
-  const db = getAdminDb();
-
   try {
+    const db = getAdminDb();
     const snapshot = await db.collection('solutions').orderBy('updatedAt', 'desc').get();
     const records = snapshot.docs
       .map((doc) => normalizeSolutionRecord(doc.data() as Partial<SolutionDefinition>, doc.id))

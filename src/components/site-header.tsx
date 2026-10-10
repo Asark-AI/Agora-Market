@@ -7,7 +7,6 @@ import { Camera, Search, ShoppingBag, UserRound, Heart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/hooks/use-cart';
 import { useWishlist } from '@/hooks/use-wishlist';
-import { useRouter } from 'next/navigation';
 
 const navLinks = [
   { href: '/search', label: 'Explore' },
@@ -17,7 +16,6 @@ const navLinks = [
 ];
 
 export function SiteHeader() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
@@ -44,7 +42,7 @@ export function SiteHeader() {
     if (selectedSearchCategory) params.set('category', selectedSearchCategory);
     if (!isVisualSearch) params.set('mode', 'visual');
     const query = params.toString();
-    router.push(`/search${query ? `?${query}` : ''}`);
+    window.history.pushState(null, '', `/search${query ? `?${query}` : ''}`);
   };
 
   useEffect(() => {
