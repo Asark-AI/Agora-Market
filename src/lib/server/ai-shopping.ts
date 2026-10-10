@@ -493,8 +493,11 @@ async function runGroundedShopping(
   };
 }
 
-export async function planGroundedShopping(input: ShoppingPlanInput): Promise<GroundedShoppingPlan> {
-  return runAuditedShoppingTool('catalog_search', () => runGroundedShopping(input));
+export async function planGroundedShopping(
+  input: ShoppingPlanInput,
+  includeAiNarrative = true
+): Promise<GroundedShoppingPlan> {
+  return runAuditedShoppingTool('catalog_search', () => runGroundedShopping(input, includeAiNarrative));
 }
 
 function inputFromState(state: ShoppingPlanState): ShoppingPlanInput {

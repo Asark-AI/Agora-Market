@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 import { verifyMarketplaceSession, requestActorHash } from '@/lib/server/admin-auth';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { RateLimitError, enforceActorRateLimit } from '@/lib/server/rate-limit';
-import { searchProductsByImage } from '@/lib/server/visual-search';
+import { searchProductsByImage, VisualSearchStageError } from '@/lib/server/visual-search';
 import { validateVisualSearchImage, VISUAL_SEARCH_MAX_BYTES } from '@/lib/visual-search';
 
 export const runtime = 'nodejs';
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 async function readBoundedBody(request: Request, maxBytes: number) {
   if (!request.body) return null;
@@ -108,6 +108,7 @@ export async function POST(request: Request) {
       requestId,
       actorId: identity?.uid || null,
       result: 'failure',
+      failureStage: error instanceof VisualSearchStageError ? error.stage : 'unknown',
       errorCategory: error instanceof Error ? error.name : 'unknown',
       latencyMs: Date.now() - startedAt,
       createdAt: new Date(),
@@ -116,10 +117,18 @@ export async function POST(request: Request) {
     console.error(JSON.stringify({
       event: 'visual_product_search_failure',
       requestId,
+      failureStage: error instanceof VisualSearchStageError ? error.stage : 'unknown',
       errorCategory: error instanceof Error ? error.name : 'unknown',
+      causeCategory: error instanceof VisualSearchStageError && error.cause instanceof Error
+        ? error.cause.name
+        : undefined,
     }));
     return NextResponse.json({
-      error: 'Visual search could not complete. Please try again or use Normal Search.',
+      error: error instanceof VisualSearchStageError
+        ? error.stage === 'image_analysis'
+          ? `Image analysis failed. Check the Google AI key and quota in Vercel, then try again. Reference: ${requestId}`
+          : `Catalog search failed. Please try again. Reference: ${requestId}`
+        : `Visual search could not complete. Please try again. Reference: ${requestId}`,
     }, { status: 502 });
   }
   await getAdminDb().collection('aiVisualSearchAudit').doc(requestId).create({
